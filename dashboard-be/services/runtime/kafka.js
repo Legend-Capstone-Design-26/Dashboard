@@ -49,9 +49,21 @@ function createKafkaRuntime({ brokers, clientId }) {
     producerPromise = null;
   }
 
+  async function ping() {
+    const admin = kafka.admin();
+    await admin.connect();
+    try {
+      await admin.listTopics();
+      return { ok: true };
+    } finally {
+      await admin.disconnect();
+    }
+  }
+
   return {
     publishBatch,
     createConsumer,
+    ping,
     disconnect,
   };
 }

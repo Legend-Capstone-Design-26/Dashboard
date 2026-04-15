@@ -446,6 +446,58 @@ const eventStore = kafkaRuntime
       logger: (...args) => console.warn("[infra]", ...args),
     })
   : fileEventStore;
+
+async function buildInfraHealth() {
+  const checks = {
+    app: { ok: true },
+    sdk_package: { ok: fs.existsSync(SDK_PACKAGE_FILE), path: SDK_PACKAGE_FILE },
+    data_dir: { ok: fs.existsSync(DATA_DIR), path: DATA_DIR },
+    kafka: { ok: !infraConfig.kafka.enabled, enabled: infraConfig.kafka.enabled, topic: infraConfig.kafka.topicEvents },
+    redis: { ok: !infraConfig.redis.enabled, enabled: infraConfig.redis.enabled, url: infraConfig.redis.url },
+    insights_llm: { ok: true, provider: String(process.env.LLM_PROVIDER || "openai"), configured: Boolean(process.env.OPENAI_API_KEY) },
+  };
+
+  if (infraConfig.kafka.enabled && kafkaRuntime) {
+    try {
+      await kafkaRuntime.ping();
+      checks.kafka.ok = true;
+    } catch (error) {
+      checks.kafka.ok = false;
+      checks.kafka.error = String(error?.message || error);
+    }
+  }
+
+  if (infraConfig.redis.enabled && redisRuntime) {
+    try {
+      const pong = await redisRuntime.ping();
+      checks.redis.ok = pong === "PONG";
+      if (pong !== "PONG") {
+        checks.redis.error = `unexpected ping response: ${String(pong)}`;
+      }
+    } catch (error) {
+      checks.redis.ok = false;
+      checks.redis.error = String(error?.message || error);
+    }
+  }
+
+  const ok = Object.values(checks).every((entry) => entry.ok !== false);
+  return {
+    ok,
+    service: "dashboard-be",
+    timestamp: Date.now(),
+    checks,
+  };
+}
+
+app.get("/health", (_req, res) => {
+  return res.json({ ok: true, service: "dashboard-be", timestamp: Date.now() });
+});
+
+app.get("/ready", async (_req, res) => {
+  const payload = await buildInfraHealth();
+  return res.status(payload.ok ? 200 : 503).json(payload);
+});
+
 function slugify(value) {
   return String(value || "")
     .toLowerCase()
@@ -1331,6 +1383,8 @@ app.use(
 
 app.listen(PORT, () => {
   console.log(`✅ AB Sample running: http://localhost:${PORT}`);
+  console.log(`🩺 health: http://localhost:${PORT}/health`);
+  console.log(`🧪 ready: http://localhost:${PORT}/ready`);
   console.log(`📦 collecting events to: ${EVENTS_FILE}`);
   console.log(`🧪 experiments file: ${EXP_FILE}`);
   console.log(`🛰️  kafka dual write: ${infraConfig.kafka.enabled ? `enabled -> ${infraConfig.kafka.topicEvents}` : "disabled"}`);

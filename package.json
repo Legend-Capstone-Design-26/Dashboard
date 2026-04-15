@@ -13,6 +13,9 @@
     "infra:up": "npm run infra:up --workspace dashboard-be",
     "infra:down": "npm run infra:down --workspace dashboard-be",
     "infra:logs": "npm run infra:logs --workspace dashboard-be",
+    "stack:up": "docker compose -f docker-compose.full.yml up --build",
+    "stack:down": "docker compose -f docker-compose.full.yml down",
+    "stack:logs": "docker compose -f docker-compose.full.yml logs -f app worker kafka redis",
     "test": "npm run test --workspace dashboard-be",
     "simulate": "npm run simulate --workspace dashboard-be",
     "load:k6": "npm run load:k6 --workspace dashboard-be"

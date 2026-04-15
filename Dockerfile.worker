@@ -1,0 +1,18 @@
+FROM node:20-alpine AS base
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY package.json package-lock.json ./
+COPY dashboard-be/package.json ./dashboard-be/package.json
+COPY dashboard-fe/package.json ./dashboard-fe/package.json
+COPY vendor ./vendor
+
+RUN npm ci --omit=dev
+
+COPY dashboard-be ./dashboard-be
+COPY dashboard-fe ./dashboard-fe
+COPY README.md ./README.md
+COPY docs ./docs
+
+CMD ["npm", "run", "worker:events", "--workspace", "dashboard-be"]

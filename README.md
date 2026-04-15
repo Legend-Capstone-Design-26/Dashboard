@@ -86,6 +86,19 @@ cd Dashboard
 npm test
 ```
 
+## 배포 가이드
+
+완전체 배포(App + Worker + Kafka + Redis + Ecommerce 연동) 시작점은 아래 문서를 참고합니다.
+
+- `docs/deploy/aws-full-deployment.md`
+- `dashboard-be/.env.shared.example`
+- `dashboard-be/.env.app.example`
+- `dashboard-be/.env.worker.example`
+- `dashboard-be/.env.local.shared.example`
+- `dashboard-be/.env.local.app.example`
+- `dashboard-be/.env.local.worker.example`
+- `docker-compose.full.yml`
+
 ## 주의
 
 - preview proxy는 신뢰된 사이트에만 연결해야 함

@@ -28,8 +28,14 @@ function createRedisRuntime({ url, keyPrefix }) {
     client = null;
   }
 
+  async function ping() {
+    const redis = await connect();
+    return redis.ping();
+  }
+
   return {
     connect,
+    ping,
     disconnect,
   };
 }

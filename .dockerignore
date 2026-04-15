@@ -1,0 +1,12 @@
+node_modules/
+dashboard-be/node_modules/
+dashboard-fe/node_modules/
+npm-debug.log
+.git/
+.gitignore
+.sisyphus/
+coverage/
+.DS_Store
+*.local
+dashboard-be/data/*.jsonl
+dashboard-be/data/*.consumed.jsonl
