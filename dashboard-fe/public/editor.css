@@ -5,10 +5,10 @@
 body {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.47;
   color: var(--color-text);
-  background: #f7f8fa;
+  background: linear-gradient(180deg, #ffffff 0%, var(--color-surface-muted) 100%);
   overflow: hidden;
   height: 100vh;
 }
@@ -19,12 +19,15 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-5);
   height: 48px;
-  background: #fff;
-  border-bottom: 1px solid var(--color-border-input);
+  background: rgba(0, 0, 0, 0.8);
+  border-bottom: none;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   flex-shrink: 0;
   z-index: 20;
+  box-shadow: var(--shadow-glass);
 }
 
 .topbarLeft, .topbarRight {
@@ -36,63 +39,66 @@ body {
 .logo {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, var(--color-interactive), #9aa8ff);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #1f1f22 0%, #0a0a0b 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
   flex-shrink: 0;
 }
 
 .topbarTitle {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 15px;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   margin-right: var(--space-2);
+  color: var(--color-dark-text);
 }
 
 .topbarUser {
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-dark-text-secondary);
 }
 
 /* 세그먼트 (A/B 전환) */
 .seg {
   display: flex;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-btn);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .segBtn {
   border: none;
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0;
   padding: 5px 12px;
-  font-family: var(--font-display);
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-weight: 500;
   font-size: 12px;
   cursor: pointer;
   background: transparent;
-  color: var(--color-text);
+  color: var(--color-dark-text);
   transition: background 0.15s;
 }
 
 .segBtn:last-child { border-right: none; }
-.segBtn:hover { background: var(--color-surface-muted); }
+.segBtn:hover { background: rgba(255, 255, 255, 0.12); }
 .segBtn.active {
-  background: rgba(0,180,115,.1);
-  color: var(--pastel-teal-dark);
-  font-weight: 700;
+  background: rgba(0, 113, 227, 0.18);
+  color: var(--color-dark-text);
+  font-weight: 500;
 }
 
 /* 선택모드 토글 */
 .btnToggle {
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text);
-  border-radius: var(--radius-btn);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-dark-text);
+  border-radius: 999px;
   padding: 5px 12px;
-  font-family: var(--font-display);
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-weight: 500;
   font-size: 12px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
@@ -100,8 +106,8 @@ body {
 
 .btnToggle.is-on {
   border-color: var(--color-interactive);
-  background: rgba(91,118,254,.1);
-  color: var(--color-interactive);
+  background: rgba(0, 113, 227, 0.18);
+  color: var(--color-dark-text);
 }
 
 /* ===== 공용 버튼 ===== */
@@ -111,11 +117,11 @@ body {
   border: none;
   background: var(--color-interactive);
   color: #fff;
-  border-radius: var(--radius-btn);
-  padding: 8px 14px;
-  font-family: var(--font-display);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-family: var(--font-body);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -127,22 +133,22 @@ body {
 .btnGhost {
   cursor: pointer;
   text-decoration: none;
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text);
-  border-radius: var(--radius-btn);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-dark-text);
+  border-radius: 999px;
   padding: 6px 12px;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   transition: background 0.15s, border-color 0.15s;
 }
 .btnGhost:hover {
-  background: var(--color-surface-muted);
-  border-color: var(--color-text-secondary);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .btnDanger {
@@ -150,11 +156,11 @@ body {
   border: 1px solid #e8a0a0;
   background: var(--color-danger-surface);
   color: var(--color-danger);
-  border-radius: var(--radius-btn);
+  border-radius: 999px;
   padding: 6px 12px;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -167,13 +173,13 @@ body {
 /* 기존 .btn 클래스 (변경 요약 내부용) */
 .btn {
   cursor: pointer;
-  border: 1px solid var(--color-border);
-  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.88);
   color: var(--color-text);
-  border-radius: var(--radius-btn);
+  border-radius: 11px;
   padding: 5px 10px;
-  font-family: var(--font-display);
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-weight: 500;
   font-size: 12px;
   display: inline-flex;
   align-items: center;
@@ -182,7 +188,7 @@ body {
 }
 .btn:hover {
   background: var(--color-surface-muted);
-  border-color: var(--color-text-secondary);
+  border-color: rgba(0, 0, 0, 0.14);
 }
 .btn.primary {
   border-color: var(--color-interactive);
@@ -206,12 +212,14 @@ body {
   grid-template-columns: 380px 1fr;
   height: calc(100vh - 48px);
   overflow: hidden;
+  gap: 1px;
 }
 
 /* ===== 좌측 패널 ===== */
 .panel {
-  border-right: 1px solid var(--color-border-input);
-  background: #fff;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -236,7 +244,7 @@ body {
 .panelSection {
   padding-bottom: var(--space-4);
   margin-bottom: var(--space-4);
-  border-bottom: 1px solid var(--color-border-input);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .panelSection:last-child {
@@ -246,7 +254,7 @@ body {
 
 .panelSectionHead {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 13px;
   color: var(--color-text);
   margin-bottom: var(--space-3);
@@ -282,8 +290,8 @@ body {
 }
 
 select, input, textarea {
-  background: #fff;
-  border: 1px solid var(--color-border-input);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   color: var(--color-text);
   border-radius: var(--radius-input);
   padding: 8px 12px;
@@ -304,10 +312,10 @@ textarea { resize: vertical; }
 
 /* 정보 카드 (선택 요소) */
 .infoCard {
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-btn);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-card);
   padding: var(--space-3);
-  background: #fafbfc;
+  background: rgba(245, 245, 247, 0.88);
 }
 
 .infoRow {
@@ -335,9 +343,9 @@ textarea { resize: vertical; }
 
 /* 기술 상세 (접기) */
 .techDetails {
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-btn);
-  background: #fafbfc;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-card);
+  background: rgba(245, 245, 247, 0.88);
   padding: var(--space-2) var(--space-3);
   margin-top: var(--space-2);
 }
@@ -362,13 +370,13 @@ textarea { resize: vertical; }
 
 .intentBtn {
   cursor: pointer;
-  border: 1px solid var(--color-border);
-  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--color-text);
-  border-radius: var(--radius-btn);
+  border-radius: 11px;
   padding: 8px 10px;
-  font-family: var(--font-display);
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-weight: 500;
   font-size: 12px;
   text-align: center;
   transition: border-color 0.15s, background 0.15s;
@@ -378,7 +386,7 @@ textarea { resize: vertical; }
 
 .intentBtn.active {
   border-color: var(--color-interactive);
-  background: rgba(91,118,254,.08);
+  background: rgba(0, 113, 227, 0.08);
   color: var(--color-interactive);
 }
 
@@ -397,9 +405,9 @@ textarea { resize: vertical; }
   flex-direction: column;
   gap: 4px;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-btn);
-  background: #fafbfc;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-card);
+  background: rgba(245, 245, 247, 0.88);
 }
 
 .fieldCard span {
@@ -433,17 +441,17 @@ textarea { resize: vertical; }
   align-items: center;
   gap: var(--space-2);
   padding: 8px var(--space-3);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-btn);
-  background: #fff;
-  font-weight: 600;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.92);
+  font-weight: 500;
   font-size: 12px;
   cursor: pointer;
 }
 
 .choiceCard:has(input:checked) {
   border-color: var(--color-interactive);
-  background: rgba(91,118,254,.06);
+  background: rgba(0, 113, 227, 0.06);
 }
 
 .attrGrid {
@@ -478,10 +486,10 @@ textarea { resize: vertical; }
 }
 
 .changeItem {
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-btn);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-card);
   padding: var(--space-2) var(--space-3);
-  background: #fafbfc;
+  background: rgba(245, 245, 247, 0.88);
 }
 
 .changeTop {

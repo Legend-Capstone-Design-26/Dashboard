@@ -98,6 +98,11 @@ npm test
 - `dashboard-be/.env.local.app.example`
 - `dashboard-be/.env.local.worker.example`
 - `docker-compose.full.yml`
+- `docs/deploy/data-seed-strategy.md`
+- `dashboard-be/data/sites.production.example.json`
+- `docs/deploy/aws-secrets-and-ecs-strategy.md`
+- `infra/aws/ecs-app-task-definition.example.json`
+- `infra/aws/ecs-worker-task-definition.example.json`
 
 ## 주의
 

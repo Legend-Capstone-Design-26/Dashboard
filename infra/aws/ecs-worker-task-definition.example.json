@@ -1,0 +1,95 @@
+{
+  "family": "dashboard-worker",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::<account-id>:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::<account-id>:role/dashboardWorkerTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "worker",
+      "image": "<account-id>.dkr.ecr.<region>.amazonaws.com/dashboard-worker:latest",
+      "essential": true,
+      "environment": [],
+      "secrets": [
+        {
+          "name": "ENABLE_KAFKA_DUAL_WRITE",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/ENABLE_KAFKA_DUAL_WRITE"
+        },
+        {
+          "name": "KAFKA_BROKERS",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/KAFKA_BROKERS"
+        },
+        {
+          "name": "KAFKA_CLIENT_ID",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/KAFKA_CLIENT_ID"
+        },
+        {
+          "name": "KAFKA_TOPIC_EVENTS",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/KAFKA_TOPIC_EVENTS"
+        },
+        {
+          "name": "KAFKA_CONSUMER_GROUP_ID",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/KAFKA_CONSUMER_GROUP_ID"
+        },
+        {
+          "name": "KAFKA_CONSUMER_FROM_BEGINNING",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/KAFKA_CONSUMER_FROM_BEGINNING"
+        },
+        {
+          "name": "ENABLE_REDIS_SESSION_STORE",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/ENABLE_REDIS_SESSION_STORE"
+        },
+        {
+          "name": "REDIS_URL",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/REDIS_URL"
+        },
+        {
+          "name": "REDIS_KEY_PREFIX",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/REDIS_KEY_PREFIX"
+        },
+        {
+          "name": "REDIS_SESSION_TTL_SEC",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/REDIS_SESSION_TTL_SEC"
+        },
+        {
+          "name": "REDIS_ASSIGNMENT_TTL_SEC",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/REDIS_ASSIGNMENT_TTL_SEC"
+        },
+        {
+          "name": "NODE_ENV",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/worker/NODE_ENV"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "dashboard-data",
+          "containerPath": "/app/dashboard-be/data",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/dashboard-worker",
+          "awslogs-region": "<region>",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "dashboard-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "<efs-filesystem-id>",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "<efs-access-point-id>",
+          "iam": "ENABLED"
+        }
+      }
+    }
+  ]
+}

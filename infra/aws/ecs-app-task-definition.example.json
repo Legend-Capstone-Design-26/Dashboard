@@ -1,0 +1,136 @@
+{
+  "family": "dashboard-app",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::<account-id>:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::<account-id>:role/dashboardAppTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "<account-id>.dkr.ecr.<region>.amazonaws.com/dashboard-app:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3001,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [],
+      "secrets": [
+        {
+          "name": "ENABLE_KAFKA_DUAL_WRITE",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/ENABLE_KAFKA_DUAL_WRITE"
+        },
+        {
+          "name": "KAFKA_BROKERS",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/KAFKA_BROKERS"
+        },
+        {
+          "name": "KAFKA_CLIENT_ID",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/KAFKA_CLIENT_ID"
+        },
+        {
+          "name": "KAFKA_TOPIC_EVENTS",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/KAFKA_TOPIC_EVENTS"
+        },
+        {
+          "name": "KAFKA_CONSUMER_GROUP_ID",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/KAFKA_CONSUMER_GROUP_ID"
+        },
+        {
+          "name": "KAFKA_CONSUMER_FROM_BEGINNING",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/KAFKA_CONSUMER_FROM_BEGINNING"
+        },
+        {
+          "name": "ENABLE_REDIS_SESSION_STORE",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/ENABLE_REDIS_SESSION_STORE"
+        },
+        {
+          "name": "REDIS_URL",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/REDIS_URL"
+        },
+        {
+          "name": "REDIS_KEY_PREFIX",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/REDIS_KEY_PREFIX"
+        },
+        {
+          "name": "REDIS_SESSION_TTL_SEC",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/REDIS_SESSION_TTL_SEC"
+        },
+        {
+          "name": "REDIS_ASSIGNMENT_TTL_SEC",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/shared/REDIS_ASSIGNMENT_TTL_SEC"
+        },
+        {
+          "name": "NODE_ENV",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/app/NODE_ENV"
+        },
+        {
+          "name": "PORT",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/app/PORT"
+        },
+        {
+          "name": "LLM_PROVIDER",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/app/LLM_PROVIDER"
+        },
+        {
+          "name": "OPENAI_MODEL",
+          "valueFrom": "arn:aws:ssm:<region>:<account-id>:parameter/dashboard/prod/app/OPENAI_MODEL"
+        },
+        {
+          "name": "DASHBOARD_ADMIN_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:<region>:<account-id>:secret:/dashboard/prod/app/admin:DASHBOARD_ADMIN_USERNAME::"
+        },
+        {
+          "name": "DASHBOARD_ADMIN_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:<region>:<account-id>:secret:/dashboard/prod/app/admin:DASHBOARD_ADMIN_PASSWORD::"
+        },
+        {
+          "name": "DASHBOARD_ADMIN_DISPLAY_NAME",
+          "valueFrom": "arn:aws:secretsmanager:<region>:<account-id>:secret:/dashboard/prod/app/admin:DASHBOARD_ADMIN_DISPLAY_NAME::"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<region>:<account-id>:secret:/dashboard/prod/app/llm:OPENAI_API_KEY::"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "dashboard-data",
+          "containerPath": "/app/dashboard-be/data",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/dashboard-app",
+          "awslogs-region": "<region>",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "node -e \"const http=require('http');const req=http.get('http://127.0.0.1:'+(process.env.PORT||3001)+'/health',res=>process.exit(res.statusCode===200?0:1));req.on('error',()=>process.exit(1));\""],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 20
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "dashboard-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "<efs-filesystem-id>",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "<efs-access-point-id>",
+          "iam": "ENABLED"
+        }
+      }
+    }
+  ]
+}

@@ -285,3 +285,32 @@ npm run stack:logs
 
 즉 **완전체 배포의 시작점은 이 저장소**이고,
 **SDK 자체를 더 강하게 만드는 작업은 UX_SDK 저장소에서 이어집니다.**
+
+## 10. 운영 데이터/시드 전략
+
+AWS에 가기 전 반드시 아래 문서를 기준으로 운영 데이터 전략을 확정합니다.
+
+- `docs/deploy/data-seed-strategy.md`
+- `dashboard-be/data/sites.production.example.json`
+
+현재 권장안은 아래와 같습니다.
+
+- `sites.json` -> 운영 seed로 준비
+- `users.json`, `user_site_access.json`, `experiments.json` -> persistent volume 유지
+- `events.jsonl`, `events.consumed.jsonl`, `chat_events.jsonl` -> persistent volume 유지
+- 초기 admin 생성 -> env bootstrap 사용
+
+## 11. 시크릿 주입 + ECS 템플릿
+
+AWS 직전 기준으로 아래 파일을 그대로 참조하면 됩니다.
+
+- `docs/deploy/aws-secrets-and-ecs-strategy.md`
+- `infra/aws/ecs-app-task-definition.example.json`
+- `infra/aws/ecs-worker-task-definition.example.json`
+
+현재 최종 권장안:
+
+- 민감값 -> **Secrets Manager**
+- 비민감 런타임 설정 -> **SSM Parameter Store**
+- `/app/dashboard-be/data` -> **EFS 마운트**
+- ECS/Fargate -> **app / worker 분리**

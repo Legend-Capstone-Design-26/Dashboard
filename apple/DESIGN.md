@@ -138,7 +138,7 @@ The color story is starkly binary. Product sections alternate between pure black
 - Use: Play/pause, carousel arrows
 
 ### Cards & Containers
-- Background: `#f5f5f7` (light) or `#272729`-`#2a2d` (dark)
+- Background: `#f5f5f7` (light) or `#272729`-`#2a2a2d` (dark)
 - Border: none (borders are rare in Apple's system)
 - Radius: 5px-8px
 - Shadow: `rgba(0, 0, 0, 0.22) 3px 5px 30px 0px` for elevated product cards
