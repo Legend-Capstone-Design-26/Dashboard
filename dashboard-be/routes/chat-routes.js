@@ -64,7 +64,12 @@ function createChatRoutes({ files, middlewares = {} }) {
   router.get("/event-summary", requireAuth, requireSiteAccess, (req, res) => {
     const siteId = String(req.query.site_id || "ab-sample");
     const page = req.query.page ? String(req.query.page) : null;
-    return res.json(eventsService.getEventSummary({ siteId, page }));
+    const fromTs = Number.isFinite(Number(req.query.from_ts)) ? Number(req.query.from_ts) : undefined;
+    const toTs = Number.isFinite(Number(req.query.to_ts)) ? Number(req.query.to_ts) : undefined;
+    const limitEvents = Number.isFinite(Number(req.query.limit_events)) ? Number(req.query.limit_events) : undefined;
+    return eventsService.getEventSummary({ siteId, page, fromTs, toTs, limitEvents })
+      .then((payload) => res.json(payload))
+      .catch((error) => res.status(500).json({ ok: false, reason: String(error) }));
   });
 
   router.get("/chat-issues-summary", requireAuth, requireSiteAccess, (req, res) => {

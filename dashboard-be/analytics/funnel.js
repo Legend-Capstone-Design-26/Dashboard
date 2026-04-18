@@ -15,13 +15,26 @@ function stepIndex(step) {
 }
 
 function inferStepFromPath(pathname) {
-  const p = String(pathname || "");
+  const p = normalizeAnalyticsPath(pathname);
   if (p === "/" || p.startsWith("/home")) return "home";
-  if (p.startsWith("/category") || p.startsWith("/search")) return "browse";
+  if (p.startsWith("/collection") || p.startsWith("/category") || p.startsWith("/search") || p.startsWith("/shop")) return "browse";
   if (p.startsWith("/detail") || p.startsWith("/product")) return "product";
   if (p.startsWith("/cart")) return "cart";
   if (p.startsWith("/checkout")) return "checkout";
+  if (p.startsWith("/order-complete")) return "payment";
   return "browse";
+}
+
+function normalizeAnalyticsPath(pathname) {
+  const path = String(pathname || "/").split("?")[0].trim() || "/";
+  if (path === "/" || path.startsWith("/home")) return "/";
+  if (path.startsWith("/collection")) return "/collection";
+  if (path.startsWith("/product/")) return "/product/:id";
+  if (path.startsWith("/product")) return "/product";
+  if (path.startsWith("/cart")) return "/cart";
+  if (path.startsWith("/checkout")) return "/checkout";
+  if (path.startsWith("/order-complete")) return "/order-complete";
+  return path;
 }
 
 function inferStepFromEvent(e) {
@@ -55,6 +68,7 @@ module.exports = {
   STEPS,
   inferStepFromEvent,
   inferStepFromPath,
+  normalizeAnalyticsPath,
   maxStep,
   stepIndex
 };

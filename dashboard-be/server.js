@@ -22,10 +22,13 @@ const { createRedisSessionStore } = require("./services/stores/redis-session-sto
 const { createRedisMetricsStore } = require("./services/stores/redis-metrics-store");
 
 const {
+  computeSessionsFromJsonl,
   computeLabeledSessionSummaries,
   computeLabelsSummary,
   buildInsightsInput
 } = require("./analytics/pipeline");
+const { summarizeSession } = require("./analytics/sessionSummary");
+const { labelSessionSummary } = require("./analytics/labeler");
 const { generateInsights } = require("./insights/generator");
 const {
   VALID_EXPERIMENT_STATUSES,
@@ -1299,6 +1302,52 @@ app.get("/api/sessions", requireAuth, requireSiteAccess, async (req, res) => {
     return res.json({ ok: true, site_id, from_ts, to_ts, sessions });
   } catch (e) {
     return res.status(500).json({ ok: false, reason: String(e) });
+  }
+});
+
+app.get("/api/sessions/:sessionId", requireAuth, requireSiteAccess, async (req, res) => {
+  const site_id = String(req.query.site_id || "ab-sample");
+  const sessionId = String(req.params.sessionId || "").trim();
+  const from_ts = toNum(req.query.from_ts);
+  const to_ts = toNum(req.query.to_ts);
+  const limit_events = Math.max(100, Math.min(200_000, toInt(req.query.limit_events) ?? 100_000));
+
+  if (!sessionId) {
+    return res.status(400).json({ ok: false, reason: "missing sessionId" });
+  }
+
+  try {
+    const sessions = await computeSessionsFromJsonl(EVENTS_FILE, {
+      site_id,
+      from_ts,
+      to_ts,
+      limit_events,
+      session_ttl_ms: 30 * 60 * 1000,
+    });
+    const session = sessions.find((item) => String(item.session_id || "") === sessionId);
+    if (!session) {
+      return res.status(404).json({ ok: false, reason: "session not found" });
+    }
+
+    const summary = summarizeSession(session);
+    const label = labelSessionSummary(summary);
+    const timeline = (session.events || []).map((event) => ({
+      ts: event.ts,
+      event_name: event.event_name,
+      path: event.path,
+      ui_variant: event.ui_variant || null,
+      props: {
+        element_id: typeof event.props?.element_id === "string" ? event.props.element_id : null,
+        reason: typeof event.props?.reason === "string" ? event.props.reason : null,
+        message: typeof event.props?.message === "string" ? event.props.message : null,
+        code: typeof event.props?.code === "string" ? event.props.code : null,
+        dwell_ms: typeof event.props?.dwell_ms === "number" ? event.props.dwell_ms : null,
+      },
+    }));
+
+    return res.json({ ok: true, site_id, session: { summary, label, timeline } });
+  } catch (error) {
+    return res.status(500).json({ ok: false, reason: String(error) });
   }
 });
 

@@ -37,26 +37,92 @@
 
   <main class="wrap">
 
-    <!-- ===== 1. 요약 카드 (좌상단 = 가장 중요) ===== -->
-    <section class="summaryRow" id="summaryRow">
-      <div class="summaryCard">
-        <div class="summaryLabel">세션 수</div>
-        <div class="summaryValue mono" id="uxTotalSessions">—</div>
-        <div class="summaryHint">이 사이트로 잡힌 방문 세션 합계</div>
+    <!-- ===== 0. 전역 시간 필터 ===== -->
+    <section class="card filterCard" id="dateRangeCard">
+      <div class="cardHead compactHead">
+        <h2>분석 범위</h2>
+        <div class="muted" id="dateRangeNote">sessions / labels / insights / funnel 에 적용됩니다.</div>
       </div>
-      <div class="summaryCard">
-        <div class="summaryLabel">가장 많은 유형</div>
-        <div class="summaryValue" id="uxTopLabel">—</div>
-        <div class="summaryHint">지금 트래픽에서 비중이 가장 큰 패턴</div>
-      </div>
-      <div class="summaryCard accent">
-        <div class="summaryLabel">긴급 제안</div>
-        <div class="summaryValue mono" id="uxHighPriorityCount">—</div>
-        <div class="summaryHint">‘긴급’으로 표시된 제안 개수</div>
+      <div class="filterRow">
+        <label class="filterField" for="datePresetSelect">
+          <span>기간</span>
+          <select id="datePresetSelect" class="selectInput">
+            <option value="today">오늘</option>
+            <option value="7d" selected>7일</option>
+            <option value="30d">30일</option>
+            <option value="custom">사용자 지정</option>
+          </select>
+        </label>
+        <label class="filterField" for="dateFromInput">
+          <span>시작</span>
+          <input id="dateFromInput" type="datetime-local" class="textInput" />
+        </label>
+        <label class="filterField" for="dateToInput">
+          <span>종료</span>
+          <input id="dateToInput" type="datetime-local" class="textInput" />
+        </label>
+        <div class="filterActions">
+          <button class="btnPrimary" id="applyDateFilterBtn" type="button">적용</button>
+        </div>
       </div>
     </section>
 
-    <!-- ===== 2. 고객 유형 분포 + 주요 개선 기회 (근접성) ===== -->
+    <!-- ===== 1. 요약 카드 (좌상단 = 가장 중요) ===== -->
+    <section class="summaryRow" id="summaryRow">
+      <div class="summaryCard">
+        <div class="summaryLabel">Active Experiments</div>
+        <div class="summaryValue mono" id="uxActiveExperiments">—</div>
+        <div class="summaryHint">지금 운영 중인 실험 수</div>
+      </div>
+      <div class="summaryCard">
+        <div class="summaryLabel">Primary Issue Label</div>
+        <div class="summaryValue" id="uxTopLabel">—</div>
+        <div class="summaryHint">현재 분석 범위에서 가장 많이 보이는 패턴</div>
+      </div>
+      <div class="summaryCard">
+        <div class="summaryLabel">High Priority Insights</div>
+        <div class="summaryValue mono" id="uxHighPriorityCount">—</div>
+        <div class="summaryHint">‘긴급’으로 표시된 제안 개수</div>
+      </div>
+      <div class="summaryCard accent">
+        <div class="summaryLabel">Data Freshness</div>
+        <div class="summaryValue mono" id="uxDataFreshness">—</div>
+        <div class="summaryHint" id="uxDataFreshnessMeta">마지막 이벤트 수집 시각</div>
+      </div>
+    </section>
+
+    <!-- ===== 2. 퍼널 / 문제 발견 ===== -->
+    <section class="twoCol" id="funnelSection">
+      <div class="card">
+        <div class="cardHead">
+          <h2>퍼널 / 흐름</h2>
+          <div class="muted">현재 범위에서 사용자가 어디까지 도달하는지</div>
+        </div>
+        <div class="miniStatsGrid" id="funnelSummaryGrid">
+          <div class="emptyState">이벤트를 읽는 중입니다.</div>
+        </div>
+        <div class="subsectionHead">주요 경로 이동</div>
+        <div id="pageFlowBody" class="stackList">
+          <div class="emptyState">경로 전환 데이터가 아직 없어요.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="cardHead">
+          <h2>문제 발견</h2>
+          <div class="muted">어디서 많이 들어오고, 어디서 많이 멈추는지</div>
+        </div>
+        <div class="subsectionHead">이탈 많은 페이지</div>
+        <div id="problemPagesBody" class="stackList">
+          <div class="emptyState">페이지 이탈 데이터가 아직 없어요.</div>
+        </div>
+        <div class="subsectionHead">상호작용 많은 요소</div>
+        <div id="problemElementsBody" class="stackList compactListBlock">
+          <div class="emptyState">요소 상호작용 데이터가 아직 없어요.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 3. 고객 유형 분포 + 주요 개선 기회 (근접성) ===== -->
     <section class="twoCol">
       <div class="card">
         <div class="cardHead">
@@ -78,7 +144,7 @@
       </div>
     </section>
 
-    <!-- ===== 3. 실험 관리 ===== -->
+    <!-- ===== 4. 실험 관리 ===== -->
     <section class="card">
       <div class="cardHead">
         <h2>실험 관리</h2>
@@ -107,13 +173,39 @@
           <tbody id="expTbody"></tbody>
         </table>
       </div>
+
+      <div id="selectedExperimentPanel" class="selectedExperimentPanel">
+        <div class="emptyState">실험을 선택하면 상세 정보가 여기에 나타납니다.</div>
+      </div>
     </section>
 
-    <!-- ===== 4. 실험 성과 (Metrics) — 실험 선택 시 표시 ===== -->
+    <!-- ===== 5. 실험 상세 / 성과 (실험 선택 시 표시) ===== -->
     <section class="card" id="metricsCard" style="display:none;">
       <div class="cardHead">
-        <h2>실험 결과</h2>
+        <h2>선택한 실험 상세</h2>
         <div class="muted">보고 있는 실험 <span class="mono" id="metricKey">—</span></div>
+      </div>
+
+      <div class="selectedExperimentMeta">
+        <div class="detailGrid">
+          <div class="detailItem"><span>상태</span><strong id="selectedExpStatus">—</strong></div>
+          <div class="detailItem"><span>적용 경로</span><strong class="mono" id="selectedExpPath">—</strong></div>
+          <div class="detailItem"><span>버전</span><strong class="mono" id="selectedExpVersion">—</strong></div>
+          <div class="detailItem"><span>변경 수</span><strong class="mono" id="selectedExpChanges">—</strong></div>
+        </div>
+        <div class="detailTextBlock">
+          <div class="detailTextLabel">가설</div>
+          <div class="detailTextValue" id="selectedExpHypothesis">—</div>
+        </div>
+        <div class="detailTextBlock">
+          <div class="detailTextLabel">목표</div>
+          <div class="tagRow" id="selectedExpGoals"><span class="badge draft">—</span></div>
+        </div>
+        <div class="detailTextBlock">
+          <div class="detailTextLabel">Variant B 변경 요약</div>
+          <div class="detailTextValue" id="selectedExpVariantSummary">—</div>
+        </div>
+        <div class="hint" id="metricsScopeNote">실험 지표는 현재 구현상 전체 기간 기준입니다.</div>
       </div>
 
       <div class="metricsGrid">
@@ -154,7 +246,7 @@
       </div>
     </section>
 
-    <!-- ===== 5. 고객 유형 상세 ===== -->
+    <!-- ===== 6. 고객 유형 상세 ===== -->
     <section class="card" id="labelsCard">
       <div class="cardHead">
         <h2>유형별 지표</h2>
@@ -180,7 +272,7 @@
       </div>
     </section>
 
-    <!-- ===== 6. 최근 세션 ===== -->
+    <!-- ===== 7. 최근 세션 ===== -->
     <section class="card" id="sessionsCard">
       <div class="cardHead">
         <h2>최근 세션</h2>
@@ -209,7 +301,7 @@
       </div>
     </section>
 
-    <!-- ===== 7. 개선 제안 (Insights) ===== -->
+    <!-- ===== 8. 개선 제안 (Insights) ===== -->
     <section class="card" id="insightsCard">
       <div class="cardHead">
         <h2>인사이트</h2>
@@ -221,7 +313,7 @@
       </div>
     </section>
 
-    <!-- ===== 8. 빠른 테스트 (접기) ===== -->
+    <!-- ===== 9. 빠른 테스트 (접기) ===== -->
     <details class="card detailsCard">
       <summary class="detailsSummary">연동 점검 <span class="muted">스크립트가 사이트에 붙었는지</span></summary>
       <div class="detailsBody">
@@ -234,7 +326,30 @@
       </div>
     </details>
 
+    <details class="card detailsCard" id="adminUtilityCard" style="display:none;">
+      <summary class="detailsSummary">관리자 도구 <span class="muted">계정 / 권한 / 운영 유틸리티</span></summary>
+      <div class="detailsBody">
+        <div class="btnRow">
+          <button class="btnGhost" id="openAdminToolsBtn" type="button">사용자 관리 열기</button>
+        </div>
+        <div class="hint">기존 사용자 관리는 유지하되, 메인 분석 흐름을 방해하지 않도록 유틸리티 영역으로 내렸습니다.</div>
+      </div>
+    </details>
+
   </main>
+
+  <aside class="sessionDrawer" id="sessionDrawer" aria-hidden="true">
+    <div class="sessionDrawerHeader">
+      <div>
+        <div class="sessionDrawerEyebrow">세션 드릴다운</div>
+        <div class="sessionDrawerTitle mono" id="sessionDrawerTitle">—</div>
+      </div>
+      <button class="btnGhost" id="sessionDrawerCloseBtn" type="button">닫기</button>
+    </div>
+    <div class="sessionDrawerBody" id="sessionDrawerBody">
+      <div class="emptyState">세션을 선택하면 상세 정보가 여기에 표시됩니다.</div>
+    </div>
+  </aside>
 
   <!-- ===== 사용자 관리 모달 (admin 전용) ===== -->
   <dialog id="userManagementDialog" class="dialog">

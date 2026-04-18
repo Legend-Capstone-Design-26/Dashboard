@@ -16,8 +16,19 @@
   const quickTestLinks = document.getElementById("quickTestLinks");
   const quickTestHint = document.getElementById("quickTestHint");
   const sessionsSourceLabel = document.getElementById("sessionsSourceLabel");
+  const datePresetSelect = document.getElementById("datePresetSelect");
+  const dateFromInput = document.getElementById("dateFromInput");
+  const dateToInput = document.getElementById("dateToInput");
+  const applyDateFilterBtn = document.getElementById("applyDateFilterBtn");
+  const dateRangeNote = document.getElementById("dateRangeNote");
+  const funnelSummaryGrid = document.getElementById("funnelSummaryGrid");
+  const pageFlowBody = document.getElementById("pageFlowBody");
+  const problemPagesBody = document.getElementById("problemPagesBody");
+  const problemElementsBody = document.getElementById("problemElementsBody");
 
   const settingsBtn = document.getElementById("settingsBtn");
+  const openAdminToolsBtn = document.getElementById("openAdminToolsBtn");
+  const adminUtilityCard = document.getElementById("adminUtilityCard");
   const userManagementDialog = document.getElementById("userManagementDialog");
   const closeDialogBtn = document.getElementById("closeDialogBtn");
   const usersTbody = document.getElementById("usersTbody");
@@ -44,20 +55,36 @@
   const topA = document.getElementById("topA");
   const topB = document.getElementById("topB");
 
-  const uxTotalSessions = document.getElementById("uxTotalSessions");
+  const uxActiveExperiments = document.getElementById("uxActiveExperiments");
   const uxTopLabel = document.getElementById("uxTopLabel");
   const uxHighPriorityCount = document.getElementById("uxHighPriorityCount");
+  const uxDataFreshness = document.getElementById("uxDataFreshness");
+  const uxDataFreshnessMeta = document.getElementById("uxDataFreshnessMeta");
   const labelBars = document.getElementById("labelBars");
   const opportunityList = document.getElementById("opportunityList");
   const labelSummaryBody = document.getElementById("labelSummaryBody");
   const sessionsBody = document.getElementById("sessionsBody");
   const insightsList = document.getElementById("insightsList");
+  const selectedExperimentPanel = document.getElementById("selectedExperimentPanel");
+  const selectedExpStatus = document.getElementById("selectedExpStatus");
+  const selectedExpPath = document.getElementById("selectedExpPath");
+  const selectedExpVersion = document.getElementById("selectedExpVersion");
+  const selectedExpChanges = document.getElementById("selectedExpChanges");
+  const selectedExpHypothesis = document.getElementById("selectedExpHypothesis");
+  const selectedExpGoals = document.getElementById("selectedExpGoals");
+  const selectedExpVariantSummary = document.getElementById("selectedExpVariantSummary");
+  const metricsScopeNote = document.getElementById("metricsScopeNote");
   const copilotExperimentKey = document.getElementById("copilotExperimentKey");
   const copilotDraftStatus = document.getElementById("copilotDraftStatus");
   const saveDraftBtn = document.getElementById("saveDraftBtn");
   const openDraftInEditorBtn = document.getElementById("openDraftInEditorBtn");
+  const sessionDrawer = document.getElementById("sessionDrawer");
+  const sessionDrawerTitle = document.getElementById("sessionDrawerTitle");
+  const sessionDrawerBody = document.getElementById("sessionDrawerBody");
+  const sessionDrawerCloseBtn = document.getElementById("sessionDrawerCloseBtn");
 
   const DRAFT_STORAGE_KEY = "uxsdk.analyticsCopilotDraft";
+  const DATE_RANGE_STORAGE_KEY = "uxsdk.dashboard.dateRange";
   const state = {
     siteId: resolveSiteId(),
     sites: [],
@@ -67,10 +94,17 @@
     latestDraft: null,
     chatWidget: null,
     sessionsSource: "analytics",
+    sessions: [],
+    labelSummary: [],
+    insightData: null,
+    eventSummary: null,
     authUser: null,
     users: [],
     userFetchError: null,
     newUserSiteIds: [],
+    selectedExperimentMetrics: null,
+    selectedSessionId: null,
+    dateRange: resolveStoredDateRange(),
   };
 
   // ─── 한국어 라벨 매핑 ───
@@ -95,6 +129,113 @@
 
   function statusName(status) {
     return STATUS_KO[status] || status || "—";
+  }
+
+  function getStartOfToday() {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now.getTime();
+  }
+
+  function getPresetRange(preset) {
+    const endTs = Date.now();
+    if (preset === "today") {
+      return { preset: "today", fromTs: getStartOfToday(), toTs: endTs };
+    }
+    if (preset === "30d") {
+      return { preset: "30d", fromTs: endTs - (30 * 24 * 60 * 60 * 1000), toTs: endTs };
+    }
+    return { preset: "7d", fromTs: endTs - (7 * 24 * 60 * 60 * 1000), toTs: endTs };
+  }
+
+  function resolveStoredDateRange() {
+    try {
+      const raw = localStorage.getItem(DATE_RANGE_STORAGE_KEY);
+      if (!raw) return getPresetRange("7d");
+      const parsed = JSON.parse(raw);
+      if (parsed?.preset === "custom") {
+        return {
+          preset: "custom",
+          fromTs: Number.isFinite(Number(parsed.fromTs)) ? Number(parsed.fromTs) : null,
+          toTs: Number.isFinite(Number(parsed.toTs)) ? Number(parsed.toTs) : null,
+        };
+      }
+      return getPresetRange(parsed?.preset || "7d");
+    } catch {
+      return getPresetRange("7d");
+    }
+  }
+
+  function persistDateRange() {
+    try {
+      localStorage.setItem(DATE_RANGE_STORAGE_KEY, JSON.stringify(state.dateRange));
+    } catch {}
+  }
+
+  function formatDateTimeLocal(ts) {
+    if (!Number.isFinite(Number(ts))) return "";
+    const date = new Date(Number(ts));
+    const pad = (value) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function parseDateTimeLocal(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+    const ts = new Date(raw).getTime();
+    return Number.isFinite(ts) ? ts : null;
+  }
+
+  function getActiveDateRange() {
+    if (state.dateRange?.preset === "custom") {
+      return {
+        preset: "custom",
+        fromTs: Number.isFinite(Number(state.dateRange?.fromTs)) ? Number(state.dateRange.fromTs) : null,
+        toTs: Number.isFinite(Number(state.dateRange?.toTs)) ? Number(state.dateRange.toTs) : null,
+      };
+    }
+    return getPresetRange(state.dateRange?.preset || "7d");
+  }
+
+  function buildTimeRangeParams() {
+    const range = getActiveDateRange();
+    const params = new URLSearchParams();
+    if (Number.isFinite(range.fromTs)) params.set("from_ts", String(range.fromTs));
+    if (Number.isFinite(range.toTs)) params.set("to_ts", String(range.toTs));
+    return params;
+  }
+
+  function syncDateRangeControls() {
+    if (datePresetSelect) datePresetSelect.value = state.dateRange?.preset || "7d";
+    if (dateFromInput) dateFromInput.value = formatDateTimeLocal(state.dateRange?.fromTs);
+    if (dateToInput) dateToInput.value = formatDateTimeLocal(state.dateRange?.toTs);
+    const isCustom = state.dateRange?.preset === "custom";
+    if (dateFromInput) dateFromInput.disabled = !isCustom;
+    if (dateToInput) dateToInput.disabled = !isCustom;
+  }
+
+  function applySelectedDateRange() {
+    const preset = String(datePresetSelect?.value || "7d");
+    if (preset === "custom") {
+      state.dateRange = {
+        preset: "custom",
+        fromTs: parseDateTimeLocal(dateFromInput?.value),
+        toTs: parseDateTimeLocal(dateToInput?.value),
+      };
+    } else {
+      state.dateRange = getPresetRange(preset);
+    }
+    persistDateRange();
+    syncDateRangeControls();
+  }
+
+  function formatFreshness(ts) {
+    if (!Number.isFinite(Number(ts))) return "—";
+    const diffMs = Date.now() - Number(ts);
+    if (diffMs < 60 * 1000) return "방금";
+    if (diffMs < 60 * 60 * 1000) return `${Math.floor(diffMs / (60 * 1000))}분 전`;
+    if (diffMs < 24 * 60 * 60 * 1000) return `${Math.floor(diffMs / (60 * 60 * 1000))}시간 전`;
+    return `${Math.floor(diffMs / (24 * 60 * 60 * 1000))}일 전`;
   }
 
   // ─── 도우미 ───
@@ -257,33 +398,49 @@
     return j;
   }
 
-  async function fetchSessions() {
-    const siteId = encodeURIComponent(getCurrentSiteId());
-    try {
-      const rr = await fetch(`/api/realtime/sessions?site_id=${siteId}&limit=12`);
-      const rj = await rr.json();
-      if (rj?.ok) {
-        state.sessionsSource = rj.source || "redis";
-        return Array.isArray(rj.sessions) ? rj.sessions : [];
-      }
-    } catch (_) { /* fallback */ }
+  async function fetchEventSummary() {
+    const params = buildTimeRangeParams();
+    params.set("site_id", getCurrentSiteId());
+    const r = await fetch(`/api/event-summary?${params.toString()}`);
+    const j = await r.json();
+    if (!j?.ok) throw new Error(j?.reason || "event summary failed");
+    return j;
+  }
 
-    const r = await fetch(`/api/sessions?site_id=${siteId}&limit=12`);
+  async function fetchSessions() {
+    const params = buildTimeRangeParams();
+    params.set("site_id", getCurrentSiteId());
+    params.set("limit", "12");
+    const r = await fetch(`/api/sessions?${params.toString()}`);
     const j = await r.json();
     if (!j?.ok) throw new Error(j?.reason || "sessions failed");
     state.sessionsSource = "analytics";
     return j.sessions || [];
   }
 
+  async function fetchSessionDetail(sessionId) {
+    const params = buildTimeRangeParams();
+    params.set("site_id", getCurrentSiteId());
+    const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}?${params.toString()}`);
+    const j = await r.json();
+    if (!j?.ok) throw new Error(j?.reason || "session detail failed");
+    return j.session;
+  }
+
   async function fetchLabelsSummary() {
-    const r = await fetch(`/api/labels/summary?site_id=${encodeURIComponent(getCurrentSiteId())}`);
+    const params = buildTimeRangeParams();
+    params.set("site_id", getCurrentSiteId());
+    const r = await fetch(`/api/labels/summary?${params.toString()}`);
     const j = await r.json();
     if (!j?.ok) throw new Error(j?.reason || "labels summary failed");
     return j.summary || [];
   }
 
   async function fetchInsights() {
-    const r = await fetch(`/api/insights?site_id=${encodeURIComponent(getCurrentSiteId())}&reps=3`);
+    const params = buildTimeRangeParams();
+    params.set("site_id", getCurrentSiteId());
+    params.set("reps", "3");
+    const r = await fetch(`/api/insights?${params.toString()}`);
     const j = await r.json();
     if (!j?.ok) throw new Error(j?.reason || "insights failed");
     return j;
@@ -571,6 +728,7 @@
     const key = exp.key || "(코드 없음)";
     const urlPrefix = exp.url_prefix || "/";
     const version = exp.version || 0;
+    const selected = state.selectedExperimentKey === key ? " is-selected" : "";
 
     const btnToggle = status === "running"
       ? `<button class="btn danger" data-act="pause" data-id="${exp.id}">중지</button>`
@@ -587,7 +745,7 @@
       ? `<button class="btn" data-act="edit-draft" data-id="${exp.id}" data-key="${key}">편집기에서 열기</button>`
       : `<button class="btn" data-act="metrics" data-key="${key}">결과 보기</button>`;
 
-    return `<tr>
+    return `<tr class="experimentRow${selected}" data-exp-key="${escapeHtml(key)}" data-exp-id="${escapeHtml(exp.id)}">
       <td class="mono">${escapeHtml(key)}</td>
       <td>${badge(status)}</td>
       <td class="mono">${escapeHtml(urlPrefix)}</td>
@@ -616,6 +774,7 @@
     topA.textContent = topB.textContent = "…";
 
     const m = await fetchMetrics(key);
+    state.selectedExperimentMetrics = m;
     cvrA.textContent = fmtPct(m.A.cvr);
     cvrB.textContent = fmtPct(m.B.cvr);
     ctrA.textContent = fmtPct(m.A.ctr);
@@ -630,6 +789,7 @@
 
     topA.textContent = renderTop(m.A.top_clicked_elements);
     topB.textContent = renderTop(m.B.top_clicked_elements);
+    renderSelectedExperimentPanel();
   }
 
   // ─── 렌더링: 라벨 분포 바 ───
@@ -687,14 +847,14 @@
     if (sessionsSourceLabel) {
       sessionsSourceLabel.textContent = state.sessionsSource === "redis"
         ? "실시간(연동 시)"
-        : "최근 방문 기록";
+        : "시간 필터가 반영된 최근 방문 기록";
     }
     if (!Array.isArray(sessions) || !sessions.length) {
       sessionsBody.innerHTML = '<tr><td colspan="9" class="emptyState">세션 데이터가 없어요.</td></tr>';
       return;
     }
     if (state.sessionsSource === "redis") {
-      sessionsBody.innerHTML = sessions.map((s) => `<tr>
+      sessionsBody.innerHTML = sessions.map((s) => `<tr data-session-id="${escapeHtml(s.session_id || "")}" class="sessionRow clickableRow">
         <td class="mono">${escapeHtml(s.session_id || "—")}</td>
         <td><span class="badge running">라이브</span></td>
         <td class="mono">—</td>
@@ -707,12 +867,12 @@
       </tr>`).join("");
       return;
     }
-    sessionsBody.innerHTML = sessions.map((entry) => {
-      const sm = entry.summary || {};
-      const lb = entry.label || {};
-      return `<tr>
-        <td class="mono">${escapeHtml(sm.session_id || "—")}</td>
-        <td><span class="badge label">${escapeHtml(labelName(lb.label))}</span></td>
+      sessionsBody.innerHTML = sessions.map((entry) => {
+        const sm = entry.summary || {};
+        const lb = entry.label || {};
+        return `<tr data-session-id="${escapeHtml(sm.session_id || "")}" class="sessionRow clickableRow">
+          <td class="mono">${escapeHtml(sm.session_id || "—")}</td>
+          <td><span class="badge label">${escapeHtml(labelName(lb.label))}</span></td>
         <td class="mono">${fmtPct(lb.confidence)}</td>
         <td class="mono">${fmtDuration(sm.duration_ms)}</td>
         <td class="mono">${fmtInt(sm.page_views)}</td>
@@ -761,27 +921,198 @@
   }
 
   // ─── 렌더링: UX 개요 ───
-  function renderUxOverview(summary, insightData) {
-    const totalSessions = Array.isArray(summary) ? summary.reduce((s, i) => s + (Number(i.sessions) || 0), 0) : 0;
+  function renderOverview(summary, insightData, eventSummary) {
     const top = Array.isArray(summary) && summary.length ? summary[0] : null;
+    const activeExperiments = (state.experiments || []).filter((exp) => exp.status === "running").length;
+    const insights = Array.isArray(insightData?.output?.insights) ? insightData.output.insights : [];
 
-    uxTotalSessions.textContent = totalSessions > 0 ? fmtInt(totalSessions) : "—";
+    if (uxActiveExperiments) uxActiveExperiments.textContent = fmtInt(activeExperiments);
     uxTopLabel.textContent = top ? labelName(top.label) : "—";
+    uxHighPriorityCount.textContent = String(insights.filter((i) => i.priority === "high").length);
+    if (uxDataFreshness) uxDataFreshness.textContent = formatFreshness(eventSummary?.last_event_ts);
+    if (uxDataFreshnessMeta) {
+      const source = eventSummary?.source ? `${eventSummary.source} 기준` : "수집 데이터 기준";
+      uxDataFreshnessMeta.textContent = eventSummary?.last_event_ts
+        ? `${fmtDate(eventSummary.last_event_ts)} · ${source}`
+        : `${source} 마지막 이벤트 없음`;
+    }
+    if (dateRangeNote) {
+      const range = getActiveDateRange();
+      dateRangeNote.textContent = `${range.preset === "custom" ? "사용자 지정" : range.preset === "today" ? "오늘" : range.preset === "30d" ? "30일" : "7일"} · sessions / labels / insights / funnel 에 적용됩니다. metrics 는 전체 기간 기준입니다.`;
+    }
     renderLabelBars(summary);
     renderInsights(insightData);
+  }
+
+  function renderFunnelSection(summary) {
+    const funnelSteps = Array.isArray(summary?.funnel?.steps) ? summary.funnel.steps : [];
+    const topExitPages = Array.isArray(summary?.top_exit_pages) ? summary.top_exit_pages : [];
+    const topElements = Array.isArray(summary?.top_elements) ? summary.top_elements : [];
+    const pageFlow = Array.isArray(summary?.page_flow) ? summary.page_flow : [];
+
+    if (funnelSummaryGrid) {
+      const heroStats = [
+        { label: "상품 유입", value: fmtInt(summary?.funnel?.product_page_view), hint: "/product/:id 집계" },
+        { label: "장바구니 진입", value: fmtInt(summary?.funnel?.cart_page_view), hint: "/cart" },
+        { label: "체크아웃 진입", value: fmtInt(summary?.funnel?.checkout_page_view), hint: "/checkout" },
+        { label: "결제 완료", value: fmtInt(summary?.funnel?.checkout_complete), hint: fmtPct(summary?.funnel?.checkout_completion_rate) },
+      ];
+      const reachStats = funnelSteps.length
+        ? funnelSteps.map((step) => `<div class="miniStat compact"><span>${escapeHtml(step.step)}</span><strong class="mono">${fmtInt(step.sessions)}</strong></div>`).join("")
+        : '<div class="emptyState">퍼널 단계 데이터가 아직 없어요.</div>';
+      funnelSummaryGrid.innerHTML = `${heroStats.map((item) => `
+        <div class="miniStat">
+          <span>${escapeHtml(item.label)}</span>
+          <strong class="mono">${item.value}</strong>
+          <small>${escapeHtml(item.hint)}</small>
+        </div>`).join("")}
+        <div class="miniStat wide"><span>단계별 도달 세션</span><div class="miniStatRow">${reachStats}</div></div>`;
+    }
+
+    if (pageFlowBody) {
+      pageFlowBody.innerHTML = pageFlow.length
+        ? pageFlow.slice(0, 6).map((item) => `<div class="stackItem"><strong class="mono">${escapeHtml(item.from)}</strong><span>→</span><strong class="mono">${escapeHtml(item.to)}</strong><span class="muted mono">${fmtInt(item.count)}</span></div>`).join("")
+        : '<div class="emptyState">경로 전환 데이터가 아직 없어요.</div>';
+    }
+
+    if (problemPagesBody) {
+      problemPagesBody.innerHTML = topExitPages.length
+        ? topExitPages.slice(0, 6).map((item) => `<div class="stackItem between"><div><strong class="mono">${escapeHtml(item.path)}</strong><div class="muted">페이지뷰 ${fmtInt(item.page_views)} · 이탈 ${fmtInt(item.exit_count)}</div></div><span class="badge medium">${fmtPct(item.exit_rate)}</span></div>`).join("")
+        : '<div class="emptyState">페이지 이탈 데이터가 아직 없어요.</div>';
+    }
+
+    if (problemElementsBody) {
+      problemElementsBody.innerHTML = topElements.length
+        ? topElements.slice(0, 8).map((item) => `<div class="stackItem between"><strong class="mono">${escapeHtml(item.element_id)}</strong><span class="mono">${fmtInt(item.count)}</span></div>`).join("")
+        : '<div class="emptyState">요소 상호작용 데이터가 아직 없어요.</div>';
+    }
+  }
+
+  function summarizeVariantChanges(experiment) {
+    const changes = Array.isArray(experiment?.variants?.B) ? experiment.variants.B : [];
+    if (!changes.length) return { count: 0, text: "Variant B 변경이 아직 없습니다." };
+    const previews = changes.slice(0, 3).map((change) => {
+      if (change?.label) return change.label;
+      if (change?.element_name) return change.element_name;
+      if (change?.selector) return change.selector;
+      return change?.type || "변경";
+    });
+    return {
+      count: changes.length,
+      text: `${changes.length}개 변경 · ${previews.join(", ")}${changes.length > previews.length ? " 외" : ""}`,
+    };
+  }
+
+  function renderSelectedExperimentPanel() {
+    if (!selectedExperimentPanel) return;
+    const selected = (state.experiments || []).find((item) => item.key === state.selectedExperimentKey);
+    if (!selected) {
+      selectedExperimentPanel.innerHTML = '<div class="emptyState">실험을 선택하면 상세 정보가 여기에 나타납니다.</div>';
+      return;
+    }
+
+    const changeSummary = summarizeVariantChanges(selected);
+    const metrics = state.selectedExperimentMetrics;
+    const snapshotHtml = metrics?.ok ? `
+      <div class="selectionSummaryGrid topGap">
+        <div class="miniStat compact"><span>CVR A/B</span><strong class="mono">${fmtPct(metrics.A?.cvr)} / ${fmtPct(metrics.B?.cvr)}</strong></div>
+        <div class="miniStat compact"><span>CTR A/B</span><strong class="mono">${fmtPct(metrics.A?.ctr)} / ${fmtPct(metrics.B?.ctr)}</strong></div>
+        <div class="miniStat compact"><span>Bounce A/B</span><strong class="mono">${fmtPct(metrics.A?.bounce_rate)} / ${fmtPct(metrics.B?.bounce_rate)}</strong></div>
+        <div class="miniStat compact"><span>Session Count</span><strong class="mono">${fmtInt((metrics.A?.sessions || 0) + (metrics.B?.sessions || 0))}</strong></div>
+      </div>` : "";
+    selectedExperimentPanel.innerHTML = `
+      <div class="selectionPanelHead">
+        <div>
+          <div class="selectionEyebrow">selected experiment</div>
+          <div class="selectionTitle mono">${escapeHtml(selected.key || "—")}</div>
+        </div>
+        <div class="tagRow">
+          ${badge(selected.status || "paused")}
+          <span class="badge label mono">${escapeHtml(selected.url_prefix || "/")}</span>
+        </div>
+      </div>
+      <div class="selectionSummaryGrid">
+        <div class="miniStat compact"><span>버전</span><strong class="mono">v${fmtInt(selected.version || 0)}</strong></div>
+        <div class="miniStat compact"><span>목표 수</span><strong class="mono">${fmtInt((selected.goals || []).length)}</strong></div>
+        <div class="miniStat compact"><span>변경 수</span><strong class="mono">${fmtInt(changeSummary.count)}</strong></div>
+        <div class="miniStat compact"><span>수정 시각</span><strong class="mono">${escapeHtml(fmtDate(selected.updated_at))}</strong></div>
+      </div>
+      ${snapshotHtml}
+      <div class="selectionBodyText">
+        <div><strong>가설</strong><p>${escapeHtml(selected.hypothesis || "기록된 가설이 없습니다.")}</p></div>
+        <div><strong>목표</strong><p>${escapeHtml((selected.goals || []).join(", ") || "목표가 없습니다.")}</p></div>
+        <div><strong>변경 요약</strong><p>${escapeHtml(changeSummary.text)}</p></div>
+      </div>`;
+
+    if (selectedExpStatus) selectedExpStatus.textContent = statusName(selected.status);
+    if (selectedExpPath) selectedExpPath.textContent = selected.url_prefix || "/";
+    if (selectedExpVersion) selectedExpVersion.textContent = `v${selected.version || 0}`;
+    if (selectedExpChanges) selectedExpChanges.textContent = fmtInt(changeSummary.count);
+    if (selectedExpHypothesis) selectedExpHypothesis.textContent = selected.hypothesis || "기록된 가설이 없습니다.";
+    if (selectedExpVariantSummary) selectedExpVariantSummary.textContent = changeSummary.text;
+    if (selectedExpGoals) {
+      const goals = Array.isArray(selected.goals) ? selected.goals : [];
+      selectedExpGoals.innerHTML = goals.length
+        ? goals.map((goal) => `<span class="badge label mono">${escapeHtml(goal)}</span>`).join("")
+        : '<span class="badge draft">기록된 목표 없음</span>';
+    }
+    if (metricsScopeNote) {
+      metricsScopeNote.textContent = state.dateRange?.preset === "custom" || state.dateRange?.preset === "today" || state.dateRange?.preset === "7d" || state.dateRange?.preset === "30d"
+        ? "실험 지표는 현재 전체 기간 기준입니다. 시간 필터는 sessions / labels / insights / funnel 에만 적용됩니다."
+        : "실험 지표는 현재 구현상 전체 기간 기준입니다.";
+    }
+  }
+
+  function renderSessionDrawer(detail) {
+    if (!sessionDrawer || !sessionDrawerBody || !sessionDrawerTitle) return;
+    if (!detail) {
+      sessionDrawer.setAttribute("aria-hidden", "true");
+      sessionDrawer.classList.remove("is-open");
+      return;
+    }
+    const summary = detail.summary || {};
+    const label = detail.label || {};
+    const timeline = Array.isArray(detail.timeline) ? detail.timeline : [];
+    const evidence = Array.isArray(label.evidence) ? label.evidence : [];
+    sessionDrawerTitle.textContent = summary.session_id || state.selectedSessionId || "—";
+    sessionDrawerBody.innerHTML = `
+      <div class="drawerSection">
+        <div class="selectionSummaryGrid">
+          <div class="miniStat compact"><span>유형</span><strong>${escapeHtml(labelName(label.label))}</strong></div>
+          <div class="miniStat compact"><span>confidence</span><strong class="mono">${fmtPct(label.confidence)}</strong></div>
+          <div class="miniStat compact"><span>체류</span><strong class="mono">${fmtDuration(summary.duration_ms)}</strong></div>
+          <div class="miniStat compact"><span>깊이</span><strong class="mono">${fmtInt(summary.depth)}</strong></div>
+        </div>
+      </div>
+      <div class="drawerSection">
+        <div class="detailTextLabel">판단 이유</div>
+        <div class="tagRow">${(label.reasons || []).length ? (label.reasons || []).map((reason) => `<span class="badge label mono">${escapeHtml(reason)}</span>`).join("") : '<span class="badge draft">기록 없음</span>'}</div>
+      </div>
+      <div class="drawerSection">
+        <div class="detailTextLabel">evidence</div>
+        <div class="timelineList">${evidence.length ? evidence.map((item) => `<div class="timelineItem"><strong>${escapeHtml(item.event_name || "event")}</strong><span class="mono">${escapeHtml(item.path || "—")}</span><span class="muted">${fmtDate(item.ts)}</span></div>`).join("") : '<div class="emptyState">evidence가 아직 없습니다.</div>'}</div>
+      </div>
+      <div class="drawerSection">
+        <div class="detailTextLabel">event timeline</div>
+        <div class="timelineList">${timeline.length ? timeline.map((item) => `<div class="timelineItem"><strong>${escapeHtml(item.event_name || "event")}</strong><span class="mono">${escapeHtml(item.path || "—")}</span><span class="muted">${fmtDate(item.ts)}</span>${item.props?.element_id ? `<span class="badge label mono">${escapeHtml(item.props.element_id)}</span>` : ""}</div>`).join("") : '<div class="emptyState">타임라인이 비어 있습니다.</div>'}</div>
+      </div>`;
+    sessionDrawer.setAttribute("aria-hidden", "false");
+    sessionDrawer.classList.add("is-open");
   }
 
   // ─── 메인 렌더 ───
   async function render() {
     state.authUser = await fetchAuthMe();
     enforceAuthorizedSiteId();
+    syncDateRangeControls();
 
-    const [sites, exps, sessions, labelSummary, insightData, usersResult] = await Promise.all([
+    const [sites, exps, sessions, labelSummary, insightData, eventSummary, usersResult] = await Promise.all([
       fetchSites(),
       fetchExperiments(),
       fetchSessions(),
       fetchLabelsSummary(),
       fetchInsights(),
+      fetchEventSummary(),
       state.authUser?.is_admin === true
         ? fetchUsers().then((users) => ({ users, error: null })).catch((error) => ({ users: [], error: String(error) }))
         : Promise.resolve({ users: [], error: null }),
@@ -790,6 +1121,10 @@
     state.sites = sites;
     state.siteConfig = getCurrentSiteConfig();
     state.experiments = exps;
+    state.sessions = sessions;
+    state.labelSummary = labelSummary;
+    state.insightData = insightData;
+    state.eventSummary = eventSummary;
     state.userFetchError = usersResult.error;
     syncNewUserSiteIds();
 
@@ -797,26 +1132,38 @@
       state.selectedExperimentKey = exps[0].key || null;
       updateCopilotExperimentUI();
     }
+    if (state.selectedExperimentKey && !exps.some((exp) => exp.key === state.selectedExperimentKey)) {
+      state.selectedExperimentKey = exps[0]?.key || null;
+      state.selectedExperimentMetrics = null;
+    }
 
     if (exps.length === 0) {
       if (expTableWrap) expTableWrap.style.display = "none";
       if (expEmptyState) expEmptyState.style.display = "";
+      if (metricsCard) metricsCard.style.display = "none";
     } else {
       if (expTableWrap) expTableWrap.style.display = "";
       if (expEmptyState) expEmptyState.style.display = "none";
       expTbody.innerHTML = exps.map(rowHtml).join("");
     }
 
+    renderSelectedExperimentPanel();
     renderSessions(sessions);
     renderLabelSummary(labelSummary);
-    renderUxOverview(labelSummary, insightData);
+    renderOverview(labelSummary, insightData, eventSummary);
+    renderFunnelSection(eventSummary);
 
     if (state.authUser?.is_admin === true) {
       renderUserSiteOptions();
       renderUsers(usersResult.users);
       if (state.userFetchError) setUserFormStatus(state.userFetchError, true);
     }
+    if (adminUtilityCard) adminUtilityCard.style.display = state.authUser?.is_admin ? "" : "none";
     updateSiteContextUI();
+
+    if (state.selectedExperimentKey) {
+      await showMetrics(state.selectedExperimentKey);
+    }
   }
 
   // ─── 이벤트 리스너 ───
@@ -839,11 +1186,55 @@
     } catch (err) { alert(String(err)); }
   });
 
+  expTbody.addEventListener("click", async (e) => {
+    if (e.target.closest("button[data-act], a")) return;
+    const row = e.target.closest("tr[data-exp-key]");
+    if (!row) return;
+    const nextKey = String(row.dataset.expKey || "").trim();
+    if (!nextKey) return;
+    state.selectedExperimentKey = nextKey;
+    expTbody.innerHTML = state.experiments.map(rowHtml).join("");
+    try {
+      await showMetrics(nextKey);
+    } catch (error) {
+      alert(String(error));
+    }
+  });
+
+  sessionsBody.addEventListener("click", async (e) => {
+    const row = e.target.closest("tr[data-session-id]");
+    if (!row) return;
+    const sessionId = String(row.dataset.sessionId || "").trim();
+    if (!sessionId) return;
+    try {
+      state.selectedSessionId = sessionId;
+      sessionDrawerBody.innerHTML = '<div class="emptyState">세션 상세를 불러오는 중입니다.</div>';
+      renderSessionDrawer({ summary: { session_id: sessionId }, label: {}, timeline: [] });
+      const detail = await fetchSessionDetail(sessionId);
+      renderSessionDrawer(detail);
+    } catch (error) {
+      alert(String(error));
+    }
+  });
+
   helpButtons.forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); toggleHelpPopover(b); }));
   document.addEventListener("click", (e) => { if (!e.target.closest(".helpBtn, .helpPopover")) closeHelpPopovers(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeHelpPopovers(); });
 
   refreshBtn.addEventListener("click", () => render());
+
+  if (applyDateFilterBtn) {
+    applyDateFilterBtn.addEventListener("click", () => {
+      applySelectedDateRange();
+      render().catch((error) => alert(String(error)));
+    });
+  }
+  if (datePresetSelect) {
+    datePresetSelect.addEventListener("change", () => {
+      applySelectedDateRange();
+      syncDateRangeControls();
+    });
+  }
 
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
@@ -870,6 +1261,9 @@
     settingsBtn.addEventListener("click", () => {
       userManagementDialog.showModal();
     });
+  }
+  if (openAdminToolsBtn && userManagementDialog) {
+    openAdminToolsBtn.addEventListener("click", () => userManagementDialog.showModal());
   }
   if (closeDialogBtn && userManagementDialog) {
     closeDialogBtn.addEventListener("click", () => userManagementDialog.close());
@@ -908,6 +1302,10 @@
       if (!state.latestDraft) return;
       window.open(getEditorUrl({ from: "copilot" }), "_blank", "noopener");
     });
+  }
+
+  if (sessionDrawerCloseBtn) {
+    sessionDrawerCloseBtn.addEventListener("click", () => renderSessionDrawer(null));
   }
 
   if (window.AnalyticsChatWidget) {
