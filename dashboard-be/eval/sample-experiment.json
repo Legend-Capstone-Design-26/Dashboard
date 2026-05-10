@@ -1,0 +1,39 @@
+{
+  "experiment": {
+    "id": "exp_fixture_1",
+    "site_id": "legend-ecommerce",
+    "key": "exp_checkout_cta_v1",
+    "status": "draft",
+    "url_prefix": "/checkout",
+    "traffic": { "A": 50, "B": 50 },
+    "goals": ["checkout_complete"],
+    "hypothesis": "리뷰와 신뢰 문구를 더 명확히 보여주면 결제 진입이 증가한다",
+    "variants": {
+      "A": [
+        {
+          "selector": ".checkout-cta",
+          "actions": [
+            { "type": "set_text", "value": "구매하기" }
+          ]
+        }
+      ],
+      "B": [
+        {
+          "selector": ".review-proof",
+          "actions": [
+            { "type": "set_text", "value": "후기 2,341개로 검증된 선택" }
+          ]
+        },
+        {
+          "selector": ".trust-badge",
+          "actions": [
+            { "type": "set_text", "value": "안심결제 보장" }
+          ]
+        }
+      ]
+    },
+    "version": 1,
+    "updated_at": 0,
+    "published_at": null
+  }
+}

@@ -20,6 +20,8 @@ const { createKafkaRuntime } = require("./services/runtime/kafka");
 const { createRedisRuntime } = require("./services/runtime/redis");
 const { createRedisSessionStore } = require("./services/stores/redis-session-store");
 const { createRedisMetricsStore } = require("./services/stores/redis-metrics-store");
+const { listPersonas } = require("./personas");
+const { generateOverlay, upsertOverlayRecord, listOverlayRecords } = require("./personas/overlay-generator");
 
 const {
   computeLabeledSessionSummaries,
@@ -933,6 +935,13 @@ function toInt(x) {
   return Number.isFinite(n) ? n : null;
 }
 
+function normalizeActorTypeInput(value) {
+  const actorType = String(value || "").trim();
+  if (!actorType) return null;
+  if (actorType === "real_user" || actorType === "synthetic_agent") return actorType;
+  return "invalid";
+}
+
 // ---------- collect endpoint ----------
 app.post("/collect", async (req, res) => {
   const payload = req.body;
@@ -1164,6 +1173,61 @@ app.get("/api/config", (req, res) => {
   return res.json({ ok: true, site_id, pathname, experiments: running });
 });
 
+app.get("/api/personas", requireAuth, requireSiteAccess, (req, res) => {
+  const personas = listPersonas().map((persona) => ({
+    id: persona.id,
+    description: persona.description || "",
+    weight: Number(persona.weight) || 0,
+    group_id: persona.group_id || persona.id,
+    group_label: persona.group_label || persona.description || persona.id,
+    age_group: persona?.normalized_persona?.age_group || null,
+    occupation_group: persona?.normalized_persona?.occupation_group || null,
+    style_key: persona?.normalized_persona?.style_key || null,
+    style_label: ({
+      price_sensitive: "가격민감형",
+      review_oriented: "리뷰의존형",
+      impulsive: "트렌드충동형",
+      comparison: "비교검토형",
+      brand_loyal: "브랜드충성형",
+      fast_decision: "빠른결정형",
+      shipping_sensitive: "배송민감형",
+    })[persona?.normalized_persona?.style_key] || persona?.normalized_persona?.style_key || null,
+  }));
+  return res.json({ ok: true, personas });
+});
+
+app.get("/api/persona-overlays", requireAuth, requireSiteAccess, (req, res) => {
+  const overlays = listOverlayRecords();
+  return res.json({ ok: true, overlays });
+});
+
+app.post("/api/persona-overlays/generate", requireAuth, requireSiteAccess, async (req, res) => {
+  const site_id = String(req.body?.site_id || req.query.site_id || "").trim() || "ab-sample";
+  const experimentKey = String(req.body?.experiment_key || req.body?.key || "").trim();
+  const personaId = String(req.body?.persona_id || "").trim();
+  if (!experimentKey || !personaId) {
+    return res.status(400).json({ ok: false, reason: "missing experiment_key or persona_id" });
+  }
+
+  const experiment = experimentStore.getByKey(site_id, experimentKey);
+  if (!experiment) {
+    return res.status(404).json({ ok: false, reason: "experiment not found" });
+  }
+
+  const persona = listPersonas().find((item) => item.id === personaId);
+  if (!persona) {
+    return res.status(404).json({ ok: false, reason: "persona not found" });
+  }
+
+  try {
+    const generated = await generateOverlay({ experiment, persona });
+    const record = upsertOverlayRecord({ experiment, persona, generated });
+    return res.json({ ok: true, overlay: record, prompt: generated.prompt, provider: generated.provider });
+  } catch (error) {
+    return res.status(500).json({ ok: false, reason: String(error) });
+  }
+});
+
 // ---------- Metrics (events.jsonl 기반) ----------
 /**
  * GET /api/metrics?site_id=ab-sample&key=exp_checkout_cta_v1
@@ -1178,14 +1242,19 @@ app.get("/api/metrics", requireAuth, requireSiteAccess, async (req, res) => {
   const key = String(req.query.key || "");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
+  const actor_type = normalizeActorTypeInput(req.query.actor_type);
+  const persona_id = String(req.query.persona_id || "").trim() || null;
   if (!key) return res.status(400).json({ ok: false, reason: "missing key" });
+  if (actor_type === "invalid") {
+    return res.status(400).json({ ok: false, reason: "invalid actor_type" });
+  }
 
   const experiment = experimentStore.getByKey(site_id, key);
   if (!experiment) {
     return res.status(404).json({ ok: false, reason: "experiment not found" });
   }
 
-  if (redisMetricsStore && typeof from_ts !== "number" && typeof to_ts !== "number") {
+  if (redisMetricsStore && !actor_type && !persona_id && typeof from_ts !== "number" && typeof to_ts !== "number") {
     const realtime = await redisMetricsStore.getExperimentMetrics({
       siteId: site_id,
       key,
@@ -1197,7 +1266,14 @@ app.get("/api/metrics", requireAuth, requireSiteAccess, async (req, res) => {
     }
   }
 
-  const out = metricsReadModel.getExperimentMetrics({ siteId: site_id, key, fromTs: from_ts, toTs: to_ts });
+  const out = metricsReadModel.getExperimentMetrics({
+    siteId: site_id,
+    key,
+    fromTs: from_ts,
+    toTs: to_ts,
+    actorType: actor_type || null,
+    personaId: persona_id,
+  });
   if (!out.ok && out.reason === "experiment not found") {
     return res.status(404).json(out);
   }

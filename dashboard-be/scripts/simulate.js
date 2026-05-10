@@ -23,6 +23,12 @@ function intArg(name, def) {
   return Number.isFinite(v) ? Math.trunc(v) : def;
 }
 
+function listArg(name) {
+  const value = String(arg(name, "")).trim();
+  if (!value) return [];
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
 async function postEvents(endpoint, events) {
   const r = await fetch(endpoint, {
     method: "POST",
@@ -42,6 +48,10 @@ async function main() {
   const site_id = arg("site", "ab-sample");
   const users = Math.max(1, intArg("users", 50));
   const sessionsPerUser = Math.max(1, intArg("sessions", 1));
+  const experimentKey = arg("experiment-key", "").trim();
+  const variant = arg("variant", "").trim();
+  const experimentVersion = intArg("experiment-version", null);
+  const experimentGoals = listArg("experiment-goals");
   const availablePersonaIds = listPersonas().map((persona) => persona.id);
 
   let sent = 0;
@@ -60,8 +70,13 @@ async function main() {
       const events = generateSessionEvents({
         personaId,
         base,
-        startTs: t0 + (u * 1000) + (s * 100)
+        startTs: t0 + (u * 1000) + (s * 100),
+        experimentKey,
+        variant,
+        experimentVersion,
+        experimentGoals,
       });
+
       await postEvents(endpoint, events);
       sent += events.length;
     }

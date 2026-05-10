@@ -11,7 +11,9 @@
     "infra:logs": "docker compose logs -f kafka redis",
     "test": "node --test",
     "simulate": "node scripts/simulate.js",
-    "load:k6": "k6 run load/persona-load.js"
+    "load:k6": "k6 run load/persona-load.js",
+    "personas:import": "python scripts/import_nemotron_personas.py",
+    "personas:overlay": "node scripts/generate_persona_overlay.js"
   },
   "dependencies": {
     "@enejwl/ux-sdk": "file:../vendor/enejwl-ux-sdk-0.1.1.tgz",

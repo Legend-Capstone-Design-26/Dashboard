@@ -1,4 +1,8 @@
 function createMetricsReadModel({ eventStore, experimentStore }) {
+  function normalizeActorType(actorType) {
+    return actorType === "synthetic_agent" ? "synthetic_agent" : "real_user";
+  }
+
   function getEventTs(event) {
     if (typeof event?.ts === "number") return event.ts;
     if (typeof event?.received_at === "number") return event.received_at;
@@ -17,7 +21,7 @@ function createMetricsReadModel({ eventStore, experimentStore }) {
       || "(no_element_id)";
   }
 
-  function getExperimentMetrics({ siteId, key, fromTs, toTs }) {
+  function getExperimentMetrics({ siteId, key, fromTs, toTs, actorType, personaId }) {
     const exp = experimentStore.getByKey(siteId, key);
     if (!exp) {
       return { ok: false, reason: "experiment not found" };
@@ -36,6 +40,10 @@ function createMetricsReadModel({ eventStore, experimentStore }) {
       const hit = exps.find((item) => item && item.key === key);
       if (!hit) continue;
 
+      const normalizedActorType = normalizeActorType(e.actor_type);
+      if (actorType && normalizedActorType !== actorType) continue;
+      if (personaId && String(e.persona_id || "") !== personaId) continue;
+
       events.push({
         event_name: e.event_name,
         anon_user_id: e.anon_user_id,
@@ -44,6 +52,8 @@ function createMetricsReadModel({ eventStore, experimentStore }) {
         props: e.props || {},
         exp_variant: hit.variant || "A",
         ts,
+        actor_type: normalizedActorType,
+        persona_id: typeof e.persona_id === "string" ? e.persona_id : null,
       });
     }
 
@@ -134,6 +144,8 @@ function createMetricsReadModel({ eventStore, experimentStore }) {
       ok: true,
       site_id: siteId,
       key,
+      actor_type: actorType || null,
+      persona_id: personaId || null,
       goals,
       experiment: {
         id: exp.id,

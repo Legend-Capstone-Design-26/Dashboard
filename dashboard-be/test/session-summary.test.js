@@ -31,3 +31,41 @@ test("session summary counts canonical explicit commerce events", () => {
   assert.equal(summary.checkout_complete, true);
   assert.equal(summary.max_step, "payment");
 });
+
+test("session summary lifts persona profile context from event props", () => {
+  const summary = summarizeSession({
+    anon_user_id: "u_profile",
+    session_id: "s_profile",
+    events: [
+      {
+        site_id: "legend-ecommerce",
+        anon_user_id: "u_profile",
+        session_id: "s_profile",
+        event_name: "persona_profile_observed",
+        path: "/mypage",
+        ts: 1000,
+        props: {
+          user_id: 42,
+          age_group: "20s",
+          occupation: "직장인",
+          persona_group: "20s__직장인",
+        },
+      },
+      {
+        site_id: "legend-ecommerce",
+        anon_user_id: "u_profile",
+        session_id: "s_profile",
+        event_name: "page_view",
+        path: "/checkout",
+        ts: 1200,
+        props: {},
+      },
+    ],
+  });
+
+  assert.equal(summary.actor_type, "real_user");
+  assert.equal(summary.user_id, 42);
+  assert.equal(summary.age_group, "20s");
+  assert.equal(summary.occupation, "직장인");
+  assert.equal(summary.persona_group, "20s__직장인");
+});

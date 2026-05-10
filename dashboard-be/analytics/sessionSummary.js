@@ -101,6 +101,16 @@ function detectRageClicks(events) {
   return out;
 }
 
+function readProfileValue(event, key) {
+  if (!event || typeof event !== "object") return null;
+  if (typeof event[key] === "string" && event[key].trim()) return event[key].trim();
+  if (typeof event[key] === "number" && Number.isFinite(event[key])) return event[key];
+  const props = event.props || {};
+  if (typeof props[key] === "string" && props[key].trim()) return props[key].trim();
+  if (typeof props[key] === "number" && Number.isFinite(props[key])) return props[key];
+  return null;
+}
+
 function summarizeSession(session, opts) {
   const { evidenceLimit = 12 } = opts || {};
   const events = Array.isArray(session?.events) ? session.events : [];
@@ -125,6 +135,11 @@ function summarizeSession(session, opts) {
   let checkout_entered = false;
 
   const steps = [];
+  let actor_type = null;
+  let user_id = null;
+  let age_group = null;
+  let occupation = null;
+  let persona_group = null;
 
   for (const e of events) {
     if (e.path) paths.add(e.path);
@@ -150,6 +165,12 @@ function summarizeSession(session, opts) {
     const step = inferStepFromEvent(e);
     steps.push(step);
     if (step === "checkout" || step === "payment") checkout_entered = true;
+
+    if (!actor_type && typeof e.actor_type === "string" && e.actor_type.trim()) actor_type = e.actor_type.trim();
+    if (user_id == null) user_id = readProfileValue(e, "user_id");
+    if (!age_group) age_group = readProfileValue(e, "age_group");
+    if (!occupation) occupation = readProfileValue(e, "occupation");
+    if (!persona_group) persona_group = readProfileValue(e, "persona_group") || readProfileValue(e, "persona_group_id");
   }
 
   const rageClicks = detectRageClicks(events);
@@ -195,6 +216,11 @@ function summarizeSession(session, opts) {
     site_id: events[0].site_id,
     anon_user_id: session.anon_user_id,
     session_id: session.session_id,
+    actor_type: actor_type || "real_user",
+    user_id,
+    age_group,
+    occupation,
+    persona_group,
     start_ts,
     end_ts,
     duration_ms,

@@ -56,8 +56,53 @@
           "experiment_key": "exp_checkout_cta_v1"
         }
       ],
-      "inferred_preview_targets": [],
-      "inferred_targets_updated_at": 1777877487839
+      "inferred_preview_targets": [
+        {
+          "id": "home",
+          "label": "홈",
+          "path": "/",
+          "url_prefix": "/",
+          "default": true,
+          "experiment_key": "exp_home_cta_v1",
+          "origin": "inferred",
+          "confidence": 100,
+          "last_discovered_at": 1778264251853
+        },
+        {
+          "id": "checkout",
+          "label": "체크아웃",
+          "path": "/checkout",
+          "url_prefix": "/checkout",
+          "default": false,
+          "experiment_key": "exp_checkout_cta_v1",
+          "origin": "inferred",
+          "confidence": 95,
+          "last_discovered_at": 1778264251853
+        },
+        {
+          "id": "cart",
+          "label": "장바구니",
+          "path": "/cart",
+          "url_prefix": "/cart",
+          "default": false,
+          "experiment_key": "exp_cart_cta_v1",
+          "origin": "inferred",
+          "confidence": 92,
+          "last_discovered_at": 1778264251853
+        },
+        {
+          "id": "shop",
+          "label": "샵",
+          "path": "/shop",
+          "url_prefix": "/shop",
+          "default": false,
+          "experiment_key": "exp_shop_cta_v1",
+          "origin": "inferred",
+          "confidence": 88,
+          "last_discovered_at": 1778264251853
+        }
+      ],
+      "inferred_targets_updated_at": 1778264251854
     },
     {
       "site_id": "test_site_011",
