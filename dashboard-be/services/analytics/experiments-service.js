@@ -4,6 +4,13 @@ const { normalizeExperimentStatus } = require("./experiment-status");
 function createExperimentsService({ experimentsFile, experimentStore }) {
   const store = experimentStore || createFileExperimentStore({ experimentsFile });
 
+  function snapshotExperiment(experiment) {
+    if (!experiment || typeof experiment !== "object") return null;
+    const copy = JSON.parse(JSON.stringify(experiment));
+    delete copy.history;
+    return copy;
+  }
+
   function listExperiments(siteId) {
     return store.list(siteId);
   }
@@ -49,6 +56,11 @@ function createExperimentsService({ experimentsFile, experimentStore }) {
       published_at: null,
       archived_at: null,
       version: existing ? (existing.version || 0) + 1 : 1,
+      history: hasLiveRecord && liveRecord
+        ? [snapshotExperiment(liveRecord), ...(Array.isArray(liveRecord.history) ? liveRecord.history.map(snapshotExperiment).filter(Boolean) : [])]
+        : Array.isArray(existing?.history)
+          ? existing.history.map(snapshotExperiment).filter(Boolean)
+          : [],
     };
 
     store.upsert(draft, (item) => item.id === draft.id && item.site_id === draft.site_id);

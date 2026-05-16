@@ -180,6 +180,18 @@ body {
   flex-wrap: wrap;
 }
 
+.experimentAudienceControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) 0 var(--space-2);
+}
+
+.experimentAudienceControls .summaryHint {
+  margin-left: auto;
+}
+
 .dateRangeInputs {
   display: flex;
   align-items: center;
@@ -816,6 +828,189 @@ tr:hover td { background: rgba(91, 118, 254, 0.03); }
   line-height: 1.45;
 }
 
+.overlayBuilderCard {
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-card);
+  background: #fff;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.overlayBuilderHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.overlayBuilderHead h3 {
+  margin: 0 0 4px;
+}
+
+.overlayBuilderControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.overlayBuilderPreview {
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-border-input);
+  background: #fafbfc;
+  padding: var(--space-3);
+}
+
+.overlayPreviewMeta {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.overlayPreviewReason {
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 1.6;
+  margin-bottom: var(--space-3);
+}
+
+.overlayPreviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.overlayPreviewRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: 13px;
+}
+
+.experimentOverlayToggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.experimentOverlayPreviewPanel {
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-card);
+  background: #fff;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.experimentOverlayPreviewHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.experimentOverlayPreviewHead h3 {
+  margin: 0 0 4px;
+}
+
+.experimentOverlayPreviewSentence {
+  margin: 0 0 6px;
+  font-size: 15px;
+  line-height: 1.55;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.experimentOverlayPreviewSentence.impactPositive {
+  color: #d12f2f;
+}
+
+.experimentOverlayPreviewSentence.impactNegative {
+  color: #2563eb;
+}
+
+.experimentOverlayPreviewMeta {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.experimentOverlayFrameShell {
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-btn);
+  background: #eef2f8;
+  max-height: 72vh;
+  overflow: auto;
+}
+
+.experimentOverlayStage {
+  position: relative;
+  width: 100%;
+}
+
+.experimentOverlayFrame {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.experimentOverlayLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.experimentOverlayMarker {
+  position: absolute;
+  border-radius: 14px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  font: 12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.42);
+  mix-blend-mode: multiply;
+  overflow: hidden;
+}
+
+.experimentOverlayMarker[data-direction="positive"] { background: rgba(209, 47, 47, 0.22); border: 2px solid rgba(209, 47, 47, 0.88); }
+.experimentOverlayMarker[data-direction="negative"] { background: rgba(37, 99, 235, 0.18); border: 2px solid rgba(37, 99, 235, 0.84); }
+.experimentOverlayMarker[data-direction="neutral"] { background: rgba(170, 170, 170, 0.18); border: 2px solid rgba(170, 170, 170, 0.72); }
+
+.experimentOverlayMarkerInner {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 240px;
+}
+
+.experimentOverlayMarkerPct {
+  font-size: 14px;
+}
+
+.badge.impactPos {
+  border-color: rgba(209, 47, 47, 0.38);
+  background: rgba(209, 47, 47, 0.10);
+  color: #9f1d1d;
+}
+
+.badge.impactNeg {
+  border-color: rgba(37, 99, 235, 0.38);
+  background: rgba(37, 99, 235, 0.10);
+  color: #1d4ed8;
+}
+
 .big {
   font-size: 18px;
   font-weight: 700;
@@ -1217,6 +1412,112 @@ details[open] > .detailsSummary::before {
   color: var(--color-text);
   font-size: 13px;
   line-height: 1.6;
+}
+
+.experimentHistoryPanel {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border-input);
+  background: #fff;
+  padding: var(--space-4);
+}
+
+.dialogSectionHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.dialogSectionHead h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.experimentHistoryList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.experimentHistoryItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 12px 14px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border-input);
+  background: #fdfdfd;
+}
+
+.experimentHistoryItem.current {
+  border-color: rgba(91, 118, 254, 0.35);
+  background: rgba(91, 118, 254, 0.06);
+}
+
+.experimentHistoryMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.experimentHistoryTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.experimentHistoryTitle .mono {
+  font-weight: 700;
+}
+
+.experimentHistorySummary {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.experimentHistoryActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.experimentHistoryDiff {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-card);
+  background: #f7f8fa;
+  border: 1px dashed var(--color-border-input);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.experimentHistoryDiff strong {
+  color: var(--color-text);
+}
+
+.experimentHistoryDiffList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.experimentHistoryDiffItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  border: 1px solid var(--color-border-input);
+  color: var(--color-text);
 }
 
 /* ===== 폼 필드 ===== */
