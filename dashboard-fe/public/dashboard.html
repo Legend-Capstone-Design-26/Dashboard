@@ -25,6 +25,7 @@
         <a class="sidebarLink" href="#journeyCard"><span aria-hidden="true">↝</span>사용자 흐름</a>
         <a class="sidebarLink" href="#trendPanel"><span aria-hidden="true">⌁</span>모니터링</a>
         <a class="sidebarLink" href="#experimentPanel"><span aria-hidden="true">◈</span>실험 관리</a>
+        <a class="sidebarLink" href="/persona-lab"><span aria-hidden="true">⚗</span>실험실</a>
         <a class="sidebarLink" href="#labelsCard"><span aria-hidden="true">▤</span>유형별 지표</a>
         <a class="sidebarLink" href="#sessionsCard"><span aria-hidden="true">♙</span>세션 로그</a>
         <a class="sidebarLink" href="#insightsCard"><span aria-hidden="true">✦</span>AI 인사이트</a>
@@ -458,58 +459,6 @@
           </div>
         </div>
 
-        <div class="experimentAudienceControls">
-          <label class="filterField" for="experimentAudienceSelect">
-            <span>비교 대상</span>
-            <select id="experimentAudienceSelect" class="selectInput" aria-label="실험 비교 대상 선택">
-              <option value="all">전체</option>
-              <option value="real_user">실제 사용자</option>
-              <option value="synthetic_agent">시뮬레이션 에이전트</option>
-            </select>
-          </label>
-          <label class="filterField" for="experimentPersonaSelect">
-            <span>페르소나</span>
-            <select id="experimentPersonaSelect" class="selectInput" aria-label="페르소나 선택" disabled>
-              <option value="">전체 에이전트</option>
-            </select>
-          </label>
-          <div class="summaryHint" id="experimentAudienceHint">전체 트래픽 기준으로 실험 성과를 비교합니다.</div>
-        </div>
-
-        <section class="overlayBuilderCard" aria-labelledby="overlayBuilderTitle">
-          <div class="overlayBuilderHead">
-            <div>
-              <h3 id="overlayBuilderTitle">UI/UX 반응 오버레이 생성</h3>
-              <div class="muted">선택한 실험과 페르소나를 기준으로 variant B UI/UX 반응 보정안을 만듭니다.</div>
-            </div>
-            <button class="btnPrimary" id="generateOverlayBtn" type="button">오버레이 생성</button>
-          </div>
-          <div class="overlayBuilderControls">
-            <label class="filterField" for="overlayAgeGroupSelect">
-              <span>나이대</span>
-              <select id="overlayAgeGroupSelect" class="selectInput" aria-label="오버레이 대상 나이대 선택">
-                <option value="">전체 나이대</option>
-              </select>
-            </label>
-            <label class="filterField" for="overlayStyleSelect">
-              <span>유형</span>
-              <select id="overlayStyleSelect" class="selectInput" aria-label="오버레이 대상 유형 선택">
-                <option value="">전체 유형</option>
-              </select>
-            </label>
-            <label class="filterField" for="overlayPersonaSelect">
-              <span>대표 페르소나</span>
-              <select id="overlayPersonaSelect" class="selectInput" aria-label="오버레이 대상 페르소나 선택">
-                <option value="">페르소나를 선택하세요</option>
-              </select>
-            </label>
-            <div class="summaryHint" id="overlayBuilderStatus">실험과 페르소나를 고르면 생성 결과를 여기서 확인할 수 있습니다.</div>
-          </div>
-          <div class="overlayBuilderPreview" id="overlayBuilderPreview">
-            <div class="emptyState compactEmpty">아직 생성된 오버레이가 없습니다.</div>
-          </div>
-        </section>
-
         <div class="metricsGrid experimentMetricsGrid">
           <div class="metricBlock">
             <div class="metricTitle">전환율</div>
@@ -573,28 +522,6 @@
           </div>
         </section>
 
-        <div class="experimentOverlayToggleRow">
-          <button class="btnPrimary" id="toggleExperimentOverlayPreviewBtn" type="button">전체 페이지 + 오버레이 보기</button>
-          <div class="summaryHint">실험 B안의 변경 요소를 실제 페이지 위에 히트맵으로 겹쳐 보여줍니다.</div>
-        </div>
-
-        <section class="experimentOverlayPreviewPanel" id="experimentOverlayPreviewPanel" hidden>
-          <div class="experimentOverlayPreviewHead">
-            <div>
-              <h3>전체 페이지 미리보기</h3>
-              <div class="experimentOverlayPreviewSentence" id="experimentOverlayPreviewSentence">오버레이 요약을 불러오는 중입니다.</div>
-              <div class="muted" id="experimentOverlayPreviewTarget">미리보기 대상을 불러오는 중입니다.</div>
-            </div>
-            <span class="badge label" id="experimentOverlayPreviewStatus">오버레이 준비 중</span>
-          </div>
-          <div class="experimentOverlayPreviewMeta" id="experimentOverlayPreviewMeta"></div>
-          <div class="experimentOverlayFrameShell">
-            <div class="experimentOverlayStage" id="experimentOverlayPreviewStage">
-              <iframe id="experimentOverlayPreviewFrame" class="experimentOverlayFrame" title="실험 페이지 미리보기"></iframe>
-              <div class="experimentOverlayLayer" id="experimentOverlayPreviewLayer"></div>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   </dialog>
