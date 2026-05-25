@@ -1,5 +1,31 @@
 const { readJson, writeJson } = require("../data-store");
 
+function cloneExperiment(experiment) {
+  if (!experiment || typeof experiment !== "object") return null;
+  return JSON.parse(JSON.stringify(experiment));
+}
+
+function snapshotExperiment(experiment) {
+  const copy = cloneExperiment(experiment);
+  if (!copy) return null;
+  delete copy.history;
+  return copy;
+}
+
+function prependHistory(current, next) {
+  const currentSnapshot = snapshotExperiment(current);
+  if (!currentSnapshot) return next;
+
+  const nextHistory = Array.isArray(next?.history)
+    ? next.history.map(snapshotExperiment).filter(Boolean)
+    : [];
+
+  return {
+    ...next,
+    history: [currentSnapshot, ...nextHistory],
+  };
+}
+
 function createFileExperimentStore({ experimentsFile }) {
   function load() {
     return readJson(experimentsFile, { experiments: [] }) || { experiments: [] };
@@ -28,10 +54,13 @@ function createFileExperimentStore({ experimentsFile }) {
   function upsert(experiment, matchFn) {
     const db = load();
     const index = db.experiments.findIndex(matchFn);
-    if (index >= 0) db.experiments[index] = experiment;
-    else db.experiments.push(experiment);
+    if (index >= 0) {
+      db.experiments[index] = prependHistory(db.experiments[index], experiment);
+    } else {
+      db.experiments.push(experiment);
+    }
     save(db);
-    return experiment;
+    return db.experiments[index >= 0 ? index : db.experiments.length - 1];
   }
 
   function patchById(siteId, id, updater) {
@@ -40,9 +69,9 @@ function createFileExperimentStore({ experimentsFile }) {
     if (index < 0) return null;
     const current = db.experiments[index];
     const next = typeof updater === "function" ? updater(current) : current;
-    db.experiments[index] = next;
+    db.experiments[index] = prependHistory(current, next);
     save(db);
-    return next;
+    return db.experiments[index];
   }
 
   function deleteById(siteId, id) {

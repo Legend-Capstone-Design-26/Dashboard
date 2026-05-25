@@ -20,6 +20,12 @@ const { createKafkaRuntime } = require("./services/runtime/kafka");
 const { createRedisRuntime } = require("./services/runtime/redis");
 const { createRedisSessionStore } = require("./services/stores/redis-session-store");
 const { createRedisMetricsStore } = require("./services/stores/redis-metrics-store");
+const { listPersonas, getPersona } = require("./personas");
+const {
+  generateOverlay,
+  upsertOverlayRecord,
+  listOverlayRecords,
+} = require("./personas/overlay-generator");
 
 const {
   computeLabeledSessionSummaries,
@@ -68,9 +74,12 @@ app.use((req, res, next) => {
     "/login",
     "/editor",
     "/dashboard",
+    "/persona-lab",
     "/login.js",
     "/editor.js",
     "/dashboard.js",
+    "/persona-lab.js",
+    "/persona-lab.css",
     "/analytics-chat.js",
     "/api/sites",
   ];
@@ -96,6 +105,7 @@ app.get("/", (req, res) => {
 app.get("/login", (req, res) => res.sendFile(path.join(FRONTEND_PUBLIC_DIR, "login.html")));
 app.get("/editor", requireAuth, (req, res) => res.sendFile(path.join(FRONTEND_PUBLIC_DIR, "editor.html")));
 app.get("/dashboard", requireAuth, (req, res) => res.sendFile(path.join(FRONTEND_PUBLIC_DIR, "dashboard.html")));
+app.get("/persona-lab", requireAuth, (req, res) => res.sendFile(path.join(FRONTEND_PUBLIC_DIR, "persona-lab.html")));
 
 // data dir
 const DATA_DIR = path.join(__dirname, "data");
@@ -1025,6 +1035,54 @@ app.put("/api/sites/:siteId/preview-targets", requireAuth, requireSiteAccess, (r
   return res.json({ ok: true, site: normalizeSite(next) });
 });
 
+function personaForApi(persona) {
+  const normalized = persona?.normalized_persona || {};
+  return {
+    id: persona?.id || "",
+    group_id: persona?.group_id || null,
+    group_label: persona?.group_label || persona?.description || persona?.id || "페르소나",
+    description: persona?.description || "",
+    weight: Number(persona?.weight) || 0,
+    runner_type: persona?.runner_type || "timeline",
+    age_group: persona?.age_group || normalized.age_group || null,
+    style_key: persona?.style_key || normalized.style_key || null,
+    style_label: persona?.style_label || normalized.style_label || normalized.style_key || null,
+    normalized_persona: normalized,
+    state_model: persona?.state_model || null,
+  };
+}
+
+app.get("/api/personas", requireAuth, requireSiteAccess, (req, res) => {
+  return res.json({ ok: true, site_id: req.authorizedSiteId, personas: listPersonas().map(personaForApi) });
+});
+
+app.get("/api/persona-overlays", requireAuth, requireSiteAccess, (req, res) => {
+  return res.json({ ok: true, site_id: req.authorizedSiteId, overlays: listOverlayRecords() });
+});
+
+app.post("/api/persona-overlays/generate", requireAuth, requireSiteAccess, async (req, res) => {
+  const siteId = req.authorizedSiteId;
+  const experimentKey = String(req.body?.experiment_key || req.body?.key || "").trim();
+  const personaId = String(req.body?.persona_id || "").trim();
+  if (!experimentKey || !personaId) {
+    return res.status(400).json({ ok: false, reason: "missing experiment_key/persona_id" });
+  }
+
+  const experiment = experimentStore.getByKey(siteId, experimentKey);
+  if (!experiment) return res.status(404).json({ ok: false, reason: "experiment not found" });
+
+  const persona = getPersona(personaId);
+  if (!persona) return res.status(404).json({ ok: false, reason: "persona not found" });
+
+  try {
+    const generated = await generateOverlay({ experiment, persona });
+    const overlay = upsertOverlayRecord({ experiment, persona, generated });
+    return res.json({ ok: true, site_id: siteId, overlay, generated: { provider: generated.provider, reason: generated.reason } });
+  } catch (error) {
+    return res.status(500).json({ ok: false, reason: `persona overlay generation failed: ${String(error)}` });
+  }
+});
+
 async function proxyPreviewRequest(req, res) {
   const siteId = String(req.params.siteId || "").trim();
   const site = getSiteById(siteId);
@@ -1105,6 +1163,13 @@ app.all("/preview-api/:siteId/*", requireAuth, requireSiteAccess, proxyPreviewAp
 // ---------- Experiment API (MVP) ----------
 // experiment = { id, site_id, key, status:"draft"|"running"|"paused", url_prefix, traffic, variants, goals, updated_at, published_at, version }
 
+function snapshotExperiment(experiment) {
+  if (!experiment || typeof experiment !== "object") return null;
+  const copy = JSON.parse(JSON.stringify(experiment));
+  delete copy.history;
+  return copy;
+}
+
 app.post("/api/experiments/real-apply", requireAuth, requireSiteAccess, (req, res) => {
   const {
     site_id = "ab-sample",
@@ -1136,8 +1201,49 @@ app.post("/api/experiments/real-apply", requireAuth, requireSiteAccess, (req, re
     version: existing ? (existing.version || 0) + 1 : 1
   };
 
-  experimentStore.upsert(base, (item) => item.site_id === site_id && item.key === key);
-  return res.json({ ok: true, experiment: base });
+  const updated = experimentStore.upsert(base, (item) => item.site_id === site_id && item.key === key);
+  return res.json({ ok: true, experiment: updated });
+});
+
+app.post("/api/experiments/:id/rollback", requireAuth, requireSiteAccess, (req, res) => {
+  const { id } = req.params;
+  const site_id = String(req.body?.site_id || req.query.site_id || "").trim();
+  const targetVersion = Number(req.body?.version ?? req.body?.target_version ?? req.query.version);
+
+  if (!site_id) {
+    return res.status(400).json({ ok: false, reason: "missing site_id" });
+  }
+  if (!Number.isFinite(targetVersion)) {
+    return res.status(400).json({ ok: false, reason: "missing version" });
+  }
+
+  const current = experimentStore.getById(site_id, id);
+  if (!current) return res.status(404).json({ ok: false, reason: "not found" });
+
+  const history = Array.isArray(current.history) ? current.history : [];
+  const target = history.find((item) => item && Number(item.version) === targetVersion) || null;
+  if (!target) {
+    return res.status(404).json({ ok: false, reason: "target version not found" });
+  }
+
+  const nowTs = now();
+  const restored = {
+    ...target,
+    id: current.id,
+    site_id: current.site_id,
+    key: current.key,
+    status: current.status,
+    updated_at: nowTs,
+    published_at: current.status === "running" ? nowTs : (current.published_at || null),
+    archived_at: current.status === "archived" ? (current.archived_at || null) : null,
+    version: (current.version || 0) + 1,
+    restored_from_version: Number(target.version) || null,
+    restored_at: nowTs,
+    history: Array.isArray(target.history) ? target.history : [],
+  };
+
+  const updated = experimentStore.upsert(restored, (item) => item.id === current.id && item.site_id === site_id);
+  return res.json({ ok: true, experiment: updated, restored_from_version: restored.restored_from_version });
 });
 
 // list

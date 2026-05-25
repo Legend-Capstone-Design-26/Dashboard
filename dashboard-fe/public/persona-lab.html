@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>페르소나 실험실</title>
+  <link rel="stylesheet" href="/theme.css" />
+  <link rel="stylesheet" href="/dashboard.css" />
+  <link rel="stylesheet" href="/persona-lab.css" />
+</head>
+<body>
+  <div class="dashboardShell personaLabShell">
+    <aside class="dashboardSidebar" aria-label="실험실 메뉴">
+      <div class="sidebarBrand">
+        <div class="sidebarLogo" aria-hidden="true">L</div>
+        <div>
+          <div class="sidebarTitle">Persona Lab</div>
+          <div class="sidebarSubtitle">Synthetic UX</div>
+        </div>
+      </div>
+      <nav class="sidebarNav" aria-label="주요 메뉴">
+        <div class="sidebarNavLabel">메뉴</div>
+        <a class="sidebarLink" href="/dashboard"><span aria-hidden="true">▦</span>대시보드</a>
+        <a class="sidebarLink is-active" href="/persona-lab"><span aria-hidden="true">⚗</span>실험실</a>
+        <a class="sidebarLink" href="/editor" target="_blank" rel="noopener"><span aria-hidden="true">✎</span>화면 편집기</a>
+      </nav>
+    </aside>
+
+    <div class="dashboardMain">
+      <header class="topbar">
+        <div class="brand">
+          <div class="topbarIcon" aria-hidden="true">⚗</div>
+          <div>
+            <div class="title">페르소나 실험실</div>
+            <div class="subtitle">운영 사이트를 한국인 페르소나 에이전트로 실험합니다</div>
+          </div>
+        </div>
+        <div class="topActions">
+          <label class="topLabel" for="siteSelect">대상 사이트</label>
+          <select id="siteSelect" class="selectInput" aria-label="대상 사이트 선택"><option value="">불러오는 중…</option></select>
+          <span class="topUser" id="authUserLabel"></span>
+          <button class="btnGhost" id="refreshBtn" type="button">새로고침</button>
+          <button class="btnGhost" id="logoutBtn" type="button">로그아웃</button>
+        </div>
+      </header>
+
+      <main class="wrap personaLabWrap">
+        <section class="card personaHeroCard">
+          <div>
+            <div class="eyebrow">Persona Simulation Workspace</div>
+            <h1>관리자용 페르소나 실험실</h1>
+            <p>실험, 페르소나, 대상 페이지를 고르고 variant B의 UI/UX 변경이 어떤 행동 전이를 만들지 검증합니다.</p>
+          </div>
+          <div class="personaHeroStats">
+            <div class="summaryMiniCard">
+              <div class="summaryLabel">페르소나</div>
+              <div class="summaryMiniValue mono" id="personaCount">—</div>
+            </div>
+            <div class="summaryMiniCard">
+              <div class="summaryLabel">실험</div>
+              <div class="summaryMiniValue mono" id="experimentCount">—</div>
+            </div>
+            <div class="summaryMiniCard">
+              <div class="summaryLabel">오버레이</div>
+              <div class="summaryMiniValue mono" id="overlayCount">—</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card labControlCard">
+          <div class="cardHead">
+            <div>
+              <h2>실험 조건</h2>
+              <div class="muted">사이트, 실험, 페르소나를 선택하면 결과와 오버레이 생성 영역이 갱신됩니다.</div>
+            </div>
+            <a class="btnGhost" id="editorLink" href="/editor" target="_blank" rel="noopener">화면 편집기 열기</a>
+          </div>
+          <div class="labControlGrid">
+            <label class="filterField vertical" for="experimentSelect"><span>실험</span><select id="experimentSelect" class="selectInput"><option value="">불러오는 중…</option></select></label>
+            <label class="filterField vertical" for="ageGroupSelect"><span>나이대</span><select id="ageGroupSelect" class="selectInput"><option value="">전체 나이대</option></select></label>
+            <label class="filterField vertical" for="styleSelect"><span>행동 유형</span><select id="styleSelect" class="selectInput"><option value="">전체 유형</option></select></label>
+            <label class="filterField vertical" for="personaSelect"><span>대표 페르소나</span><select id="personaSelect" class="selectInput"><option value="">페르소나 선택</option></select></label>
+          </div>
+          <div class="summaryHint" id="labStatus">실험실을 초기화하는 중입니다.</div>
+        </section>
+
+        <section class="twoCol personaLabMainGrid">
+          <div class="card personaPanel">
+            <div class="cardHead">
+              <div>
+                <h2>페르소나 프로필</h2>
+                <div class="muted">선택한 에이전트의 실험 성향과 상태 모델을 확인합니다.</div>
+              </div>
+            </div>
+            <div id="personaProfile" class="personaProfile"><div class="emptyState">페르소나를 선택하세요.</div></div>
+          </div>
+
+          <div class="card experimentPanelLab">
+            <div class="cardHead">
+              <div>
+                <h2>실험 요약</h2>
+                <div class="muted">Variant B 변경사항과 현재 수집된 성과를 함께 봅니다.</div>
+              </div>
+            </div>
+            <div id="experimentSummary" class="experimentSummaryLab"><div class="emptyState">실험을 선택하세요.</div></div>
+          </div>
+        </section>
+
+        <section class="card overlayLabCard">
+          <div class="overlayBuilderHead">
+            <div>
+              <h2>UI/UX 반응 오버레이</h2>
+              <div class="muted">선택한 페르소나가 variant B 변경에 어떻게 반응할지 전이 multiplier로 생성합니다.</div>
+            </div>
+            <button class="btnPrimary" id="generateOverlayBtn" type="button">오버레이 생성</button>
+          </div>
+          <div id="overlayPreview" class="overlayBuilderPreview"><div class="emptyState compactEmpty">아직 생성된 오버레이가 없습니다.</div></div>
+        </section>
+
+        <section class="card previewLabCard">
+          <div class="cardHead">
+            <div>
+              <h2>전체 페이지 미리보기</h2>
+              <div class="muted">실험 B안의 변경 요소를 페이지 위에 반응 마커로 겹쳐 보여줍니다.</div>
+            </div>
+            <button class="btnGhost" id="reloadPreviewBtn" type="button">미리보기 새로고침</button>
+          </div>
+          <div class="experimentOverlayPreviewSentence" id="previewSentence">미리보기 대상을 불러오는 중입니다.</div>
+          <div class="experimentOverlayPreviewMeta" id="previewMeta"></div>
+          <div class="experimentOverlayFrameShell">
+            <div class="experimentOverlayStage" id="previewStage">
+              <iframe id="previewFrame" class="experimentOverlayFrame" title="페르소나 실험 미리보기"></iframe>
+              <div class="experimentOverlayLayer" id="previewLayer"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="/persona-lab.js"></script>
+</body>
+</html>

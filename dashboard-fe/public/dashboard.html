@@ -28,6 +28,7 @@
         <a class="sidebarLink" href="#labelsCard"><span aria-hidden="true">▤</span>유형별 지표</a>
         <a class="sidebarLink" href="#sessionsCard"><span aria-hidden="true">♙</span>세션 로그</a>
         <a class="sidebarLink" href="#insightsCard"><span aria-hidden="true">✦</span>AI 인사이트</a>
+        <a class="sidebarLink" href="/persona-lab" target="_blank" rel="noopener"><span aria-hidden="true">⚗</span>실험실 ↗</a>
       </nav>
     </aside>
 
@@ -179,7 +180,7 @@
       <div class="cardHead">
         <div>
           <h2>A/B 실험 관리</h2>
-          <div class="muted">진행 중이거나 종료된 실험의 핵심 성과를 비교합니다.</div>
+          <div class="muted">문구, 스타일, 노출, 링크, CSS 변경이 어떤 사용자 반응을 만드는지 비교합니다.</div>
         </div>
         <div class="muted">사이트 ID <span class="mono" id="siteIdText"></span></div>
       </div>
@@ -230,7 +231,7 @@
 
           <div class="experimentSummaryActions">
             <button class="btnPrimary" id="openExperimentResultsBtn" type="button">결과 자세히 보기</button>
-            <div class="summaryHint" id="experimentSummaryHint">전환율, 이탈률, 체류 시간, 방문 깊이, 클릭 요소를 비교합니다.</div>
+            <div class="summaryHint" id="experimentSummaryHint">UI/UX 변경 유형별 반응을 비교합니다.</div>
           </div>
         </div>
       </div>
@@ -510,6 +511,17 @@
         </div>
 
         <div class="experimentInterpretation" id="experimentInterpretation">현재 수집된 데이터 기준 해석을 준비 중입니다.</div>
+
+        <section class="experimentHistoryPanel">
+          <div class="dialogSectionHead">
+            <h3>버전 히스토리</h3>
+            <div class="muted">이전 버전으로 되돌릴 수 있습니다.</div>
+          </div>
+          <div id="experimentHistoryList" class="experimentHistoryList">
+            <div class="emptyState compactEmpty">히스토리를 불러오는 중입니다.</div>
+          </div>
+        </section>
+
       </div>
     </div>
   </dialog>
