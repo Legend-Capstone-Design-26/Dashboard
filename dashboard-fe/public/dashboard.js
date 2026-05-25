@@ -78,6 +78,16 @@
   const modalPeriodResultStatus = document.getElementById("modalPeriodResultStatus");
   const modalVariantAName = document.getElementById("modalVariantAName");
   const modalVariantBName = document.getElementById("modalVariantBName");
+  const experimentHistoryList = document.getElementById("experimentHistoryList");
+  const experimentAudienceSelect = document.getElementById("experimentAudienceSelect");
+  const experimentPersonaSelect = document.getElementById("experimentPersonaSelect");
+  const experimentAudienceHint = document.getElementById("experimentAudienceHint");
+  const overlayPersonaSelect = document.getElementById("overlayPersonaSelect");
+  const overlayAgeGroupSelect = document.getElementById("overlayAgeGroupSelect");
+  const overlayStyleSelect = document.getElementById("overlayStyleSelect");
+  const generateOverlayBtn = document.getElementById("generateOverlayBtn");
+  const overlayBuilderStatus = document.getElementById("overlayBuilderStatus");
+  const overlayBuilderPreview = document.getElementById("overlayBuilderPreview");
 
   const metricKeyEl = document.getElementById("metricKey");
   const cvrA = document.getElementById("cvrA");
@@ -99,6 +109,15 @@
   const topA = document.getElementById("topA");
   const topB = document.getElementById("topB");
   const experimentInterpretation = document.getElementById("experimentInterpretation");
+  const toggleExperimentOverlayPreviewBtn = document.getElementById("toggleExperimentOverlayPreviewBtn");
+  const experimentOverlayPreviewPanel = document.getElementById("experimentOverlayPreviewPanel");
+  const experimentOverlayPreviewSentence = document.getElementById("experimentOverlayPreviewSentence");
+  const experimentOverlayPreviewTarget = document.getElementById("experimentOverlayPreviewTarget");
+  const experimentOverlayPreviewMeta = document.getElementById("experimentOverlayPreviewMeta");
+  const experimentOverlayPreviewStatus = document.getElementById("experimentOverlayPreviewStatus");
+  const experimentOverlayPreviewStage = document.getElementById("experimentOverlayPreviewStage");
+  const experimentOverlayPreviewFrame = document.getElementById("experimentOverlayPreviewFrame");
+  const experimentOverlayPreviewLayer = document.getElementById("experimentOverlayPreviewLayer");
 
   const uxTotalSessions = document.getElementById("uxTotalSessions");
   const uxTopLabel = document.getElementById("uxTopLabel");
@@ -133,6 +152,25 @@
     customToDate: "",
     selectedExperimentMetrics: null,
     lastEventSummary: null,
+    personas: [],
+    overlayRecords: [],
+    selectedExperimentAudience: "all",
+    selectedExperimentPersonaId: "",
+    selectedOverlayAgeGroup: "",
+    selectedOverlayStyleKey: "",
+    selectedOverlayPersonaId: "",
+    overlayGenerationPending: false,
+    overlayPreviewReady: false,
+  };
+
+  const AGE_GROUP_LABELS = {
+    teens: "10대",
+    "20s": "20대",
+    "30s": "30대",
+    "40s": "40대",
+    "50s": "50대",
+    "60plus": "60대+",
+    unknown: "연령 미상",
   };
 
   // ─── 한국어 라벨 매핑 ───
@@ -585,10 +623,45 @@
 
   async function fetchMetrics(key) {
     const { query } = buildPeriodQuery();
-    const suffix = query ? `&${query}` : "";
-    const r = await fetch(`/api/metrics?site_id=${encodeURIComponent(getCurrentSiteId())}&key=${encodeURIComponent(key)}${suffix}`);
+    const params = new URLSearchParams(query);
+    params.set("site_id", getCurrentSiteId());
+    params.set("key", key);
+    if (state.selectedExperimentAudience !== "all") params.set("actor_type", state.selectedExperimentAudience);
+    if (state.selectedExperimentAudience === "synthetic_agent" && state.selectedExperimentPersonaId) {
+      params.set("persona_id", state.selectedExperimentPersonaId);
+    }
+    const r = await fetch(`/api/metrics?${params.toString()}`);
     const j = await r.json();
     if (!j?.ok) throw new Error(j?.reason || "metrics failed");
+    return j;
+  }
+
+  async function fetchPersonas() {
+    const r = await fetch(`/api/personas?site_id=${encodeURIComponent(getCurrentSiteId())}`);
+    const j = await r.json();
+    if (!j?.ok) throw new Error(j?.reason || "personas fetch failed");
+    return Array.isArray(j.personas) ? j.personas : [];
+  }
+
+  async function fetchPersonaOverlays() {
+    const r = await fetch(`/api/persona-overlays?site_id=${encodeURIComponent(getCurrentSiteId())}`);
+    const j = await r.json();
+    if (!j?.ok) throw new Error(j?.reason || "persona overlays fetch failed");
+    return Array.isArray(j.overlays) ? j.overlays : [];
+  }
+
+  async function generatePersonaOverlay(experimentKey, personaId) {
+    const r = await fetch("/api/persona-overlays/generate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        site_id: getCurrentSiteId(),
+        experiment_key: experimentKey,
+        persona_id: personaId,
+      }),
+    });
+    const j = await r.json();
+    if (!j?.ok) throw new Error(j?.reason || "persona overlay generation failed");
     return j;
   }
 
@@ -673,8 +746,14 @@
       return;
     }
     quickTestLinks.innerHTML = targets.map((t) =>
-      `<a class="btnPrimary" href="${escapeHtml(t.live_url || t.preview_url || "/")}" target="_blank" rel="noopener">${escapeHtml(t.label || t.url_prefix || "열기")}</a>`
+      `<a class="btnPrimary" href="${escapeHtml(appendAbForceToUrl(t.live_url || t.preview_url || "/", "B"))}" target="_blank" rel="noopener">${escapeHtml(t.label || t.url_prefix || "열기")}</a>`
     ).join("");
+  }
+
+  function appendAbForceToUrl(urlString, forceVariant) {
+    const url = new URL(urlString, location.origin);
+    if (forceVariant) url.searchParams.set("__ab_force", forceVariant);
+    return url.toString();
   }
 
   function getEditorUrl(extraParams) {
@@ -882,7 +961,7 @@
 
   function stageExperimentForEditor(exp) {
     const payload = {
-      draft: { key: exp.key, target_page: exp.url_prefix, hypothesis: exp.hypothesis || "" },
+      draft: { key: exp.key, version: exp.version || null, target_page: exp.url_prefix, hypothesis: exp.hypothesis || "" },
       changesB: Array.isArray(exp?.variants?.B) ? exp.variants.B : [],
       selectedExperimentKey: exp.parent_key || exp.key || null,
       savedAt: Date.now(),
@@ -947,7 +1026,7 @@
       <td class="mono">${escapeHtml(urlPrefix)}</td>
       <td class="mono">v${version}</td>
       <td>${fmtDate(exp.updated_at)}</td>
-      <td><div style="display:flex;gap:6px;flex-wrap:wrap;">${metricsBtn}${btnToggle}${archiveBtn}<a class="btn" href="${getEditorUrl()}" target="_blank" rel="noopener">편집기</a><button class="btn danger" data-act="del" data-id="${exp.id}">삭제</button></div></td>
+      <td><div style="display:flex;gap:6px;flex-wrap:wrap;">${metricsBtn}${btnToggle}${archiveBtn}<a class="btn" href="${getEditorUrl({ experiment_key: key, experiment_version: version })}" target="_blank" rel="noopener">편집기</a><button class="btn danger" data-act="del" data-id="${exp.id}">삭제</button></div></td>
     </tr>`;
   }
 
@@ -983,6 +1062,377 @@
       state.selectedExperimentMetrics = { ok: false, reason: String(error) };
       return state.selectedExperimentMetrics;
     }
+  }
+
+  function renderExperimentAudienceControls() {
+    if (experimentAudienceSelect) experimentAudienceSelect.value = state.selectedExperimentAudience;
+    if (!experimentPersonaSelect) return;
+    const personas = Array.isArray(state.personas) ? state.personas : [];
+    experimentPersonaSelect.innerHTML = '<option value="">전체 에이전트</option>';
+    personas.forEach((persona) => {
+      const option = document.createElement("option");
+      option.value = persona.id || "";
+      option.textContent = persona.group_label || persona.description || persona.id || "페르소나";
+      experimentPersonaSelect.appendChild(option);
+    });
+    experimentPersonaSelect.value = state.selectedExperimentPersonaId || "";
+    const syntheticSelected = state.selectedExperimentAudience === "synthetic_agent";
+    experimentPersonaSelect.disabled = !syntheticSelected;
+    if (experimentAudienceHint) {
+      if (state.selectedExperimentAudience === "real_user") {
+        experimentAudienceHint.textContent = "실제 사용자 이벤트만 대상으로 UI/UX 변경 반응을 비교합니다.";
+      } else if (syntheticSelected && state.selectedExperimentPersonaId) {
+        const persona = personas.find((item) => item.id === state.selectedExperimentPersonaId);
+        experimentAudienceHint.textContent = `${persona?.group_label || persona?.description || state.selectedExperimentPersonaId} 에이전트만 대상으로 UI/UX 변경 반응을 비교합니다.`;
+      } else if (syntheticSelected) {
+        experimentAudienceHint.textContent = "모든 시뮬레이션 에이전트를 대상으로 UI/UX 변경 반응을 비교합니다.";
+      } else {
+        experimentAudienceHint.textContent = "전체 트래픽 기준으로 UI/UX 변경 반응을 비교합니다.";
+      }
+    }
+  }
+
+  function getSelectedOverlayPersona() {
+    return state.personas.find((item) => item.id === state.selectedOverlayPersonaId) || null;
+  }
+
+  function getFilteredOverlayPersonas() {
+    return state.personas.filter((persona) => {
+      if (state.selectedOverlayAgeGroup && persona.age_group !== state.selectedOverlayAgeGroup) return false;
+      if (state.selectedOverlayStyleKey && persona.style_key !== state.selectedOverlayStyleKey) return false;
+      return true;
+    });
+  }
+
+  function getSelectedOverlayRecord() {
+    if (!state.selectedExperimentKey || !state.selectedOverlayPersonaId) return null;
+    return state.overlayRecords.find((item) => item.experiment_key === state.selectedExperimentKey && item.persona_id === state.selectedOverlayPersonaId && item.variant === "B") || null;
+  }
+
+  function getOverlayPersonaLabel(persona) {
+    if (!persona) return "전체";
+    const age = AGE_GROUP_LABELS[persona.age_group] || persona.age_group || "전체";
+    const style = persona.style_label || persona.style_key || "유형";
+    return `${age} ${style}`.trim();
+  }
+
+  function estimateUiChangeImpact(change) {
+    if (!change || typeof change !== "object") {
+      return { impact_pct: 0, impact_direction: "neutral", impact_label: "변화 없음" };
+    }
+
+    const actions = Array.isArray(change.actions) ? change.actions : [];
+    const action = actions[0] || null;
+
+    if (change.type === "inject_css") {
+      const css = String(change.css || "").toLowerCase();
+      if (/display\s*:\s*none|visibility\s*:\s*hidden/.test(css)) return { impact_pct: -8, impact_direction: "negative", impact_label: "노출 감소" };
+      if (/color|background|border|outline|font|padding|margin|grid|flex/.test(css)) return { impact_pct: 10, impact_direction: "positive", impact_label: "시각 변화" };
+      return { impact_pct: 4, impact_direction: "positive", impact_label: "CSS 반응" };
+    }
+
+    if (action?.type === "hide") return { impact_pct: -7, impact_direction: "negative", impact_label: "숨김 반응" };
+    if (action?.type === "show") return { impact_pct: 5, impact_direction: "positive", impact_label: "노출 확대" };
+    if (action?.type === "set_text") return { impact_pct: 8, impact_direction: "positive", impact_label: "문구 반응" };
+    if (action?.type === "set_attr" && String(action.name || "").toLowerCase() === "href") return { impact_pct: 11, impact_direction: "positive", impact_label: "링크 이동" };
+    if (action?.type === "set_style") {
+      const styles = action.styles && typeof action.styles === "object" ? action.styles : {};
+      if (Object.keys(styles).some((key) => /display|visibility/i.test(key))) return { impact_pct: -7, impact_direction: "negative", impact_label: "노출 변화" };
+      if (Object.keys(styles).some((key) => /color|background|border|outline/i.test(key))) return { impact_pct: 12, impact_direction: "positive", impact_label: "색/강조 반응" };
+      return { impact_pct: 6, impact_direction: "positive", impact_label: "스타일 반응" };
+    }
+    if (action?.type === "add_class" || action?.type === "remove_class") return { impact_pct: 5, impact_direction: "positive", impact_label: "클래스 변화" };
+
+    return { impact_pct: 4, impact_direction: "positive", impact_label: "반응" };
+  }
+
+  function buildOverlaySummary(experiment, persona) {
+    const changes = Array.isArray(experiment?.variants?.B) ? experiment.variants.B : [];
+    const impacts = changes.map((change) => estimateUiChangeImpact(change)).filter((item) => item.impact_pct !== 0);
+    const avg = impacts.length ? (impacts.reduce((sum, item) => sum + item.impact_pct, 0) / impacts.length) : 0;
+    const rounded = Math.round(avg);
+    const direction = rounded >= 0 ? "positive" : "negative";
+    const personaLabel = getOverlayPersonaLabel(persona);
+    const countLabel = impacts.length ? `변경 요소 ${impacts.length}개 평균` : "변경 요소 없음";
+    const sign = rounded > 0 ? "+" : "";
+    const verb = rounded >= 0 ? "증가하였습니다" : "감소하였습니다";
+
+    return {
+      sentence: `${personaLabel} 고객의 클릭 전환율이 평균 ${sign}${rounded}% ${verb}.`,
+      detail: countLabel,
+      direction,
+      avg,
+    };
+  }
+
+  function getExperimentPreviewTarget(experiment) {
+    const site = getCurrentSiteConfig();
+    const targets = Array.isArray(site?.preview_targets) ? site.preview_targets : [];
+    if (!experiment) return targets[0] || null;
+
+    const experimentPath = String(experiment.url_prefix || "").trim();
+    const exact = targets.find((target) => target.experiment_key === experiment.key);
+    if (exact) return exact;
+
+    const byPath = targets.find((target) => String(target.url_prefix || "").trim() === experimentPath)
+      || targets.filter((target) => experimentPath && (experimentPath.startsWith(String(target.url_prefix || "").trim()) || String(target.url_prefix || "").trim().startsWith(experimentPath)))
+        .sort((a, b) => String(b.url_prefix || "").length - String(a.url_prefix || "").length)[0];
+
+    return byPath || targets[0] || null;
+  }
+
+  function clearExperimentOverlayPreview() {
+    if (experimentOverlayPreviewTarget) experimentOverlayPreviewTarget.textContent = "미리보기 대상을 불러오는 중입니다.";
+    if (experimentOverlayPreviewSentence) {
+      experimentOverlayPreviewSentence.textContent = "오버레이 요약을 불러오는 중입니다.";
+      experimentOverlayPreviewSentence.className = "experimentOverlayPreviewSentence";
+    }
+    if (experimentOverlayPreviewMeta) experimentOverlayPreviewMeta.innerHTML = "";
+    if (experimentOverlayPreviewLayer) experimentOverlayPreviewLayer.innerHTML = "";
+    if (experimentOverlayPreviewStage) experimentOverlayPreviewStage.style.height = "auto";
+    if (experimentOverlayPreviewFrame) experimentOverlayPreviewFrame.removeAttribute("src");
+  }
+
+  function renderExperimentOverlayPreview(experiment) {
+    if (!experimentOverlayPreviewPanel || !experimentOverlayPreviewFrame || !experimentOverlayPreviewLayer || !experimentOverlayPreviewStage) return;
+    if (experimentOverlayPreviewPanel.hidden) return;
+
+    const target = getExperimentPreviewTarget(experiment);
+    const changes = Array.isArray(experiment?.variants?.B) ? experiment.variants.B : [];
+    const root = experimentOverlayPreviewMeta;
+    const persona = getSelectedOverlayPersona() || state.personas[0] || null;
+    const summary = buildOverlaySummary(experiment, persona);
+
+    if (experimentOverlayPreviewTarget) {
+      experimentOverlayPreviewTarget.textContent = target
+        ? `${target.label || target.url_prefix || target.id || "preview"} · ${target.preview_url || target.live_url || "/"}`
+        : "미리보기 대상을 찾지 못했습니다.";
+    }
+    if (experimentOverlayPreviewSentence) {
+      experimentOverlayPreviewSentence.textContent = summary.sentence;
+      experimentOverlayPreviewSentence.className = `experimentOverlayPreviewSentence ${summary.direction === "positive" ? "impactPositive" : summary.direction === "negative" ? "impactNegative" : ""}`;
+    }
+    if (experimentOverlayPreviewStatus) {
+      experimentOverlayPreviewStatus.textContent = changes.length ? `오버레이 ${changes.length}개` : "변경 없음";
+    }
+    if (root) {
+      const items = changes.slice(0, 6).map((change) => {
+        const impact = estimateUiChangeImpact(change);
+        const action = Array.isArray(change.actions) ? change.actions[0] : null;
+        const label = change.label || (change.type === "inject_css" ? "고급 CSS" : action?.type || "변경");
+        const pct = impact.impact_pct > 0 ? `+${impact.impact_pct}%` : `${impact.impact_pct}%`;
+        const className = impact.impact_direction === "positive" ? "impactPos" : impact.impact_direction === "negative" ? "impactNeg" : "label";
+        return `<span class="badge ${className}">${escapeHtml(label)} ${escapeHtml(pct)}</span>`;
+      });
+      root.innerHTML = [
+        `<span class="badge label">${escapeHtml(summary.detail)}</span>`,
+        ...items,
+      ].join("");
+    }
+
+    if (!target || !(target.preview_url || target.live_url)) {
+      clearExperimentOverlayPreview();
+      if (experimentOverlayPreviewStatus) experimentOverlayPreviewStatus.textContent = "미리보기 URL 없음";
+      if (experimentOverlayPreviewTarget) experimentOverlayPreviewTarget.textContent = "사이트 설정에 preview/live URL이 없습니다.";
+      return;
+    }
+
+    const src = appendAbForceToUrl(target.preview_url || target.live_url, "B");
+    const overlayStage = experimentOverlayPreviewStage;
+    const overlayFrame = experimentOverlayPreviewFrame;
+    const overlayLayer = experimentOverlayPreviewLayer;
+
+    const draw = () => {
+      let doc = null;
+      try {
+        doc = overlayFrame.contentDocument;
+      } catch {
+        doc = null;
+      }
+      if (!doc) {
+        if (experimentOverlayPreviewStatus) experimentOverlayPreviewStatus.textContent = "iframe 접근 불가";
+        return;
+      }
+
+      let height = 0;
+      try {
+        height = Math.max(doc.documentElement?.scrollHeight || 0, doc.body?.scrollHeight || 0, doc.documentElement?.offsetHeight || 0, doc.body?.offsetHeight || 0, 1200);
+      } catch {
+        height = 1200;
+      }
+      overlayFrame.style.height = `${height}px`;
+      overlayStage.style.height = `${height}px`;
+      overlayLayer.style.height = `${height}px`;
+      overlayLayer.innerHTML = "";
+
+      changes.forEach((change) => {
+        const impact = estimateUiChangeImpact(change);
+        if (!impact.impact_pct) return;
+
+        if (change.type === "inject_css") {
+          const marker = document.createElement("div");
+          marker.className = "experimentOverlayMarker";
+          marker.dataset.direction = impact.impact_direction;
+          marker.style.left = "16px";
+          marker.style.top = `${16 + (overlayLayer.children.length * 90)}px`;
+          marker.style.width = "min(420px, calc(100% - 32px))";
+          marker.style.height = "72px";
+          marker.style.opacity = String(Math.max(0.18, Math.min(0.55, Math.abs(impact.impact_pct) / 24)));
+          marker.innerHTML = `<div class="experimentOverlayMarkerInner"><span class="experimentOverlayMarkerPct">${impact.impact_pct > 0 ? "+" : ""}${impact.impact_pct}%</span><span>${escapeHtml(change.label || "고급 CSS")}</span></div>`;
+          overlayLayer.appendChild(marker);
+          return;
+        }
+
+        const selector = String(change.selector || "").trim();
+        if (!selector) return;
+        let elements = [];
+        try {
+          elements = Array.from(doc.querySelectorAll(selector));
+        } catch {
+          elements = [];
+        }
+        const el = elements[0];
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        if (!rect || rect.width <= 0 || rect.height <= 0) return;
+
+        const marker = document.createElement("div");
+        marker.className = "experimentOverlayMarker";
+        marker.dataset.direction = impact.impact_direction;
+        marker.style.left = `${Math.max(0, Math.round(rect.left))}px`;
+        marker.style.top = `${Math.max(0, Math.round(rect.top))}px`;
+        marker.style.width = `${Math.max(64, Math.round(rect.width))}px`;
+        marker.style.height = `${Math.max(30, Math.round(rect.height))}px`;
+        marker.style.opacity = String(Math.max(0.18, Math.min(0.6, Math.abs(impact.impact_pct) / 24)));
+        marker.innerHTML = `<div class="experimentOverlayMarkerInner"><span class="experimentOverlayMarkerPct">${impact.impact_pct > 0 ? "+" : ""}${impact.impact_pct}%</span><span>${escapeHtml(change.label || selector)}</span></div>`;
+        overlayLayer.appendChild(marker);
+      });
+    };
+
+    overlayFrame.onload = () => {
+      try {
+        draw();
+      } catch (error) {
+        if (experimentOverlayPreviewStatus) experimentOverlayPreviewStatus.textContent = String(error);
+      }
+    };
+
+    overlayFrame.src = src;
+    if (experimentOverlayPreviewStatus) experimentOverlayPreviewStatus.textContent = "페이지 로딩 중";
+  }
+
+  function summarizeVariantUiChanges(experiment) {
+    const changes = Array.isArray(experiment?.variants?.B) ? experiment.variants.B : [];
+    if (!changes.length) return "B안의 UI 변경 사항이 아직 없습니다.";
+
+    const counts = new Map();
+    changes.forEach((change) => {
+      let label = "기타 변경";
+      const actions = Array.isArray(change?.actions) ? change.actions : [];
+      const action = actions[0] || null;
+
+      if (change?.type === "inject_css") {
+        label = "고급 CSS";
+      } else if (action?.type === "set_text") {
+        label = "문구 변경";
+      } else if (action?.type === "set_style") {
+        const styles = action?.styles && typeof action.styles === "object" ? Object.keys(action.styles) : [];
+        label = styles.some((key) => /color|background|border|outline/i.test(key)) ? "색/스타일 변경" : "스타일 변경";
+      } else if (action?.type === "hide") {
+        label = "숨기기";
+      } else if (action?.type === "show") {
+        label = "보이기";
+      } else if (action?.type === "set_attr" && String(action.name || "").toLowerCase() === "href") {
+        label = "링크 변경";
+      } else if (action?.type === "set_attr") {
+        label = "속성 변경";
+      }
+
+      counts.set(label, (counts.get(label) || 0) + 1);
+    });
+
+    return Array.from(counts.entries()).map(([label, count]) => `${label} ${count}건`).join(" · ");
+  }
+
+  function renderOverlayBuilder(experiment) {
+    if (!overlayPersonaSelect || !overlayBuilderPreview || !overlayBuilderStatus || !generateOverlayBtn || !overlayAgeGroupSelect || !overlayStyleSelect) return;
+    const personas = Array.isArray(state.personas) ? state.personas : [];
+    const ageOptions = Array.from(new Set(personas.map((persona) => persona.age_group).filter(Boolean)));
+    const styleOptions = Array.from(new Set(personas.map((persona) => persona.style_key).filter(Boolean)));
+
+    overlayAgeGroupSelect.innerHTML = '<option value="">전체 나이대</option>';
+    ageOptions.forEach((ageGroup) => {
+      const option = document.createElement("option");
+      option.value = ageGroup;
+      option.textContent = AGE_GROUP_LABELS[ageGroup] || ageGroup;
+      overlayAgeGroupSelect.appendChild(option);
+    });
+    overlayAgeGroupSelect.value = state.selectedOverlayAgeGroup || "";
+
+    overlayStyleSelect.innerHTML = '<option value="">전체 유형</option>';
+    styleOptions.forEach((styleKey) => {
+      const persona = personas.find((item) => item.style_key === styleKey);
+      const option = document.createElement("option");
+      option.value = styleKey;
+      option.textContent = persona?.style_label || styleKey;
+      overlayStyleSelect.appendChild(option);
+    });
+    overlayStyleSelect.value = state.selectedOverlayStyleKey || "";
+
+    const filteredPersonas = getFilteredOverlayPersonas();
+    overlayPersonaSelect.innerHTML = '<option value="">페르소나를 선택하세요</option>';
+    filteredPersonas.forEach((persona) => {
+      const option = document.createElement("option");
+      option.value = persona.id || "";
+      option.textContent = persona.group_label || persona.description || persona.id || "페르소나";
+      overlayPersonaSelect.appendChild(option);
+    });
+
+    if (!filteredPersonas.some((persona) => persona.id === state.selectedOverlayPersonaId)) {
+      state.selectedOverlayPersonaId = filteredPersonas[0]?.id || "";
+    }
+    overlayPersonaSelect.value = state.selectedOverlayPersonaId || "";
+    generateOverlayBtn.disabled = !experiment || !state.selectedOverlayPersonaId || state.overlayGenerationPending;
+
+    const selectedPersona = getSelectedOverlayPersona();
+    if (state.overlayGenerationPending) {
+      overlayBuilderStatus.textContent = "UI/UX 반응 오버레이를 생성하고 있습니다...";
+    } else if (!experiment) {
+      overlayBuilderStatus.textContent = "실험을 먼저 선택하면 UI/UX 반응 오버레이를 만들 수 있습니다.";
+    } else if (!selectedPersona) {
+      overlayBuilderStatus.textContent = "페르소나를 선택하면 variant B 반응 보정안을 생성할 수 있습니다.";
+    } else {
+      overlayBuilderStatus.textContent = state.overlayPreviewReady
+        ? `${selectedPersona.group_label || selectedPersona.description || selectedPersona.id} 기준 반응 오버레이를 확인할 수 있습니다.`
+        : `${selectedPersona.group_label || selectedPersona.description || selectedPersona.id} 기준 반응 오버레이는 생성 버튼을 눌러야 표시됩니다.`;
+    }
+
+    if (!state.overlayPreviewReady) {
+      overlayBuilderPreview.innerHTML = '<div class="emptyState compactEmpty">아직 생성된 UI/UX 반응 오버레이가 없습니다.</div>';
+      return;
+    }
+
+    const overlayRecord = getSelectedOverlayRecord();
+    if (!overlayRecord) {
+      overlayBuilderPreview.innerHTML = '<div class="emptyState compactEmpty">아직 생성된 UI/UX 반응 오버레이가 없습니다.</div>';
+      return;
+    }
+
+    const multiplierEntries = Object.entries(overlayRecord.edge_weight_multipliers || {});
+    overlayBuilderPreview.innerHTML = `
+      <div class="overlayPreviewMeta">
+        <span class="badge running">variant ${escapeHtml(overlayRecord.variant || "B")}</span>
+        <span class="badge label">provider ${escapeHtml(overlayRecord.provider || "unknown")}</span>
+        <span class="badge label">${escapeHtml(selectedPersona.group_label || selectedPersona.description || selectedPersona.id)}</span>
+      </div>
+      <div class="overlayPreviewReason">${escapeHtml(overlayRecord.reason_summary || "설명 없음")}</div>
+      <div class="overlayPreviewList">
+        ${multiplierEntries.length ? multiplierEntries.map(([edgeId, multiplier]) => `
+          <div class="overlayPreviewRow">
+            <span class="mono">${escapeHtml(edgeId)}</span>
+            <strong class="mono">x${escapeHtml(String(multiplier))}</strong>
+          </div>`).join("") : '<div class="emptyState compactEmpty">조정된 전이가 없습니다.</div>'}
+      </div>`;
   }
 
   function renderExperimentSummary(experiment, metrics) {
@@ -1022,11 +1472,189 @@
     }
 
     if (experimentSummaryHint) {
+      const uiChangeSummary = summarizeVariantUiChanges(experiment);
+      const rationaleSummary = summarizeChangeRationale(Array.isArray(experiment?.variants?.B) ? experiment.variants.B : []);
       experimentSummaryHint.textContent = !isExperimentInPeriod(experiment)
-        ? "선택한 기간이 실험 기간과 겹치지 않아 데이터가 비어 있을 수 있습니다."
-        : "전환율, 이탈률, 체류 시간, 방문 깊이, 클릭 요소를 비교합니다.";
+        ? `선택한 기간이 실험 기간과 겹치지 않아 데이터가 비어 있을 수 있습니다. ${uiChangeSummary}${rationaleSummary !== "설명 없음" ? ` · ${rationaleSummary}` : ""}`
+        : `${uiChangeSummary} 기준으로 전환율, 이탈률, 체류 시간, 방문 깊이, 클릭 요소를 비교합니다.${rationaleSummary !== "설명 없음" ? ` · 이유: ${rationaleSummary}` : ""}`;
     }
     if (openExperimentResultsBtn) openExperimentResultsBtn.disabled = !metrics?.ok;
+  }
+
+  function formatHistoryLabel(item, index, currentVersion) {
+    const version = Number(item?.version || 0);
+    const title = version ? `v${version}` : `이전 ${index + 1}`;
+    const when = item?.updated_at ? fmtDate(item.updated_at) : "시간 정보 없음";
+    const status = statusName(item?.status || "draft");
+    const isCurrent = version === currentVersion;
+    return { title, when, status, isCurrent };
+  }
+
+  function summarizeChangeList(changes) {
+    const list = Array.isArray(changes) ? changes : [];
+    if (!list.length) return "변경 없음";
+
+    const counts = new Map();
+    list.forEach((change) => {
+      let label = "기타 변경";
+      const actions = Array.isArray(change?.actions) ? change.actions : [];
+      const action = actions[0] || null;
+
+      if (change?.type === "inject_css") {
+        label = "고급 CSS";
+      } else if (action?.type === "set_text") {
+        label = "문구 변경";
+      } else if (action?.type === "set_style") {
+        const styles = action?.styles && typeof action.styles === "object" ? Object.keys(action.styles) : [];
+        label = styles.some((key) => /color|background|border|outline/i.test(key)) ? "색/스타일 변경" : "스타일 변경";
+      } else if (action?.type === "hide") {
+        label = "숨기기";
+      } else if (action?.type === "show") {
+        label = "보이기";
+      } else if (action?.type === "set_attr" && String(action.name || "").toLowerCase() === "href") {
+        label = "링크 변경";
+      } else if (action?.type === "set_attr") {
+        label = "속성 변경";
+      } else if (action?.type === "add_class") {
+        label = "클래스 추가";
+      } else if (action?.type === "remove_class") {
+        label = "클래스 제거";
+      }
+
+      counts.set(label, (counts.get(label) || 0) + 1);
+    });
+
+    return Array.from(counts.entries()).map(([label, count]) => `${label} ${count}건`).join(" · ");
+  }
+
+  function summarizeChangeRationale(changes) {
+    const list = Array.isArray(changes) ? changes : [];
+    if (!list.length) return "설명 없음";
+    const rationals = [];
+    list.forEach((change) => {
+      const rationale = change?.rationale || null;
+      if (!rationale) return;
+      const intent = rationale.intent || "";
+      const effect = rationale.expected_effect || "";
+      const metric = rationale.primary_metric || "";
+      const text = [intent, effect, metric].filter(Boolean).join(" / ");
+      if (text) rationals.push(text);
+    });
+    return rationals.length ? Array.from(new Set(rationals)).slice(0, 3).join(" · ") : "설명 없음";
+  }
+
+  function describeExperimentVersionDiff(current, previous) {
+    if (!previous) {
+      return {
+        label: "최초 버전",
+        items: ["이전 버전이 없어 직접 비교할 수 없습니다."],
+      };
+    }
+
+    const items = [];
+    if ((current?.url_prefix || "") !== (previous?.url_prefix || "")) {
+      items.push(`적용 경로: ${previous?.url_prefix || "/"} → ${current?.url_prefix || "/"}`);
+    }
+    if ((current?.status || "") !== (previous?.status || "")) {
+      items.push(`상태: ${statusName(previous?.status)} → ${statusName(current?.status)}`);
+    }
+    if ((current?.hypothesis || "") !== (previous?.hypothesis || "")) {
+      items.push(`가설: ${previous?.hypothesis || "없음"} → ${current?.hypothesis || "없음"}`);
+    }
+    if ((current?.source || "") !== (previous?.source || "")) {
+      items.push(`생성 방식: ${current?.source || "unknown"}`);
+    }
+
+    const currentGoals = JSON.stringify(Array.isArray(current?.goals) ? current.goals : []);
+    const previousGoals = JSON.stringify(Array.isArray(previous?.goals) ? previous.goals : []);
+    if (currentGoals !== previousGoals) {
+      items.push(`목표 지표: ${(previous?.goals || []).join(", ") || "없음"} → ${(current?.goals || []).join(", ") || "없음"}`);
+    }
+
+    const currentB = Array.isArray(current?.variants?.B) ? current.variants.B : [];
+    const previousB = Array.isArray(previous?.variants?.B) ? previous.variants.B : [];
+    const currentBLabel = summarizeChangeList(currentB);
+    const previousBLabel = summarizeChangeList(previousB);
+    if (currentBLabel !== previousBLabel) {
+      items.push(`변경안 B: ${previousBLabel} → ${currentBLabel}`);
+    }
+
+    const currentRationale = summarizeChangeRationale(currentB);
+    const previousRationale = summarizeChangeRationale(previousB);
+    if (currentRationale !== previousRationale) {
+      items.push(`설명: ${previousRationale} → ${currentRationale}`);
+    }
+
+    const added = currentB.length - previousB.length;
+    if (added > 0) items.push(`변경안 B ${added}개 추가`);
+    else if (added < 0) items.push(`변경안 B ${Math.abs(added)}개 감소`);
+
+    return {
+      label: items.length ? `변경점 ${items.length}개` : "변경점 없음",
+      items: items.length ? items : ["이전 버전과 차이가 없습니다."],
+    };
+  }
+
+  function renderExperimentHistory(experiment) {
+    if (!experimentHistoryList) return;
+    const currentVersion = Number(experiment?.version || 0);
+    const history = Array.isArray(experiment?.history) ? experiment.history : [];
+    const items = [experiment, ...history]
+      .filter(Boolean)
+      .filter((item, index, array) => array.findIndex((candidate) => Number(candidate?.version || 0) === Number(item?.version || 0)) === index)
+      .sort((a, b) => Number(b?.version || 0) - Number(a?.version || 0));
+
+    if (!items.length) {
+      experimentHistoryList.innerHTML = '<div class="emptyState compactEmpty">버전 히스토리가 없습니다.</div>';
+      return;
+    }
+
+    experimentHistoryList.innerHTML = items.map((item, index) => {
+      const meta = formatHistoryLabel(item, index, currentVersion);
+      const previous = items[index + 1] || null;
+      const diff = describeExperimentVersionDiff(item, previous);
+      const summary = [
+        item?.hypothesis ? `가설: ${String(item.hypothesis)}` : null,
+        item?.url_prefix ? `경로: ${String(item.url_prefix)}` : null,
+        item?.restored_from_version ? `복원됨 · v${String(item.restored_from_version)}` : null,
+      ].filter(Boolean).join(" · ");
+      const rollbackDisabled = meta.isCurrent || !item?.version || item.status === "archived" && item.version === currentVersion;
+      return `<div class="experimentHistoryItem ${meta.isCurrent ? "current" : ""}">
+        <div class="experimentHistoryMeta">
+          <div class="experimentHistoryTitle">
+            <span class="badge ${meta.isCurrent ? "running" : "label"}">${meta.isCurrent ? "현재" : "이전"}</span>
+            <strong class="mono">${escapeHtml(meta.title)}</strong>
+            <span class="badge label">${escapeHtml(meta.status)}</span>
+          </div>
+          <div class="experimentHistorySummary">${escapeHtml(meta.when)}${summary ? ` · ${escapeHtml(summary)}` : ""}</div>
+          <div class="experimentHistoryDiff">
+            <strong>${escapeHtml(diff.label)}</strong>
+            <div class="experimentHistoryDiffList">
+              ${diff.items.map((line) => `<span class="experimentHistoryDiffItem">${escapeHtml(line)}</span>`).join("")}
+            </div>
+          </div>
+        </div>
+        <div class="experimentHistoryActions">
+          ${meta.isCurrent ? '<span class="muted">현재 버전</span>' : `<button class="btnGhost" type="button" data-rollback-version="${escapeHtml(String(item.version || ""))}" ${rollbackDisabled ? "disabled" : ""}>이 버전으로 롤백</button>`}
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  async function rollbackExperimentVersion(experiment, version) {
+    if (!experiment || !Number.isFinite(Number(version))) return;
+    if (!confirm(`v${version}으로 되돌릴까요? 현재 버전은 새 버전으로 보존됩니다.`)) return;
+
+    const r = await fetch(`/api/experiments/${encodeURIComponent(experiment.id)}/rollback`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ site_id: getCurrentSiteId(), version: Number(version) })
+    });
+    const j = await r.json();
+    if (!j?.ok) throw new Error(j?.reason || "rollback failed");
+
+    await render();
+    await showMetrics(j.experiment?.key || experiment.key);
   }
 
   // ─── 렌더링: Metrics ───
@@ -1278,10 +1906,12 @@
 
     state.selectedExperimentKey = key;
     state.selectedExperimentMetrics = metrics;
+    state.overlayPreviewReady = false;
     if (experimentSelect) experimentSelect.value = key;
     metricKeyEl.textContent = key;
     updateCopilotExperimentUI();
     renderExperimentSummary(experiment, metrics);
+    renderOverlayBuilder(experiment);
 
     if (modalExperimentTitle) modalExperimentTitle.textContent = key;
     if (modalExperimentPeriod) modalExperimentPeriod.textContent = experiment ? `실험 기간 · ${formatExperimentWindow(experiment)}` : "실험 기간 정보 없음";
@@ -1302,6 +1932,8 @@
         ? (((Number(metrics?.A?.sessions) || 0) + (Number(metrics?.B?.sessions) || 0)) > 0 ? `${getPeriodRange().label} 결과` : "선택한 기간에 해당 실험 데이터가 없습니다.")
         : "결과를 불러오지 못했습니다.";
     }
+    renderExperimentAudienceControls();
+    renderExperimentHistory(experiment);
 
     cvrA.textContent = cvrB.textContent = "…";
     ctrA.textContent = ctrB.textContent = "…";
@@ -1338,6 +1970,7 @@
     ctrDelta.textContent = getMetricDeltaText(metrics.A?.ctr, metrics.B?.ctr, "percent", "higher");
 
     countsBox.textContent =
+      `대상 ${state.selectedExperimentAudience === "real_user" ? "실제 사용자" : state.selectedExperimentAudience === "synthetic_agent" ? (state.selectedExperimentPersonaId || "전체 에이전트") : "전체"}\n` +
       `A안 · 방문자 ${fmtInt(metrics.A?.users)}명 · 세션 ${fmtInt(metrics.A?.sessions)} · 화면 ${fmtInt(metrics.A?.page_views)} · 클릭 ${fmtInt(metrics.A?.clicks)} · 전환 ${fmtInt(metrics.A?.conversions)}\n` +
       `B안 · 방문자 ${fmtInt(metrics.B?.users)}명 · 세션 ${fmtInt(metrics.B?.sessions)} · 화면 ${fmtInt(metrics.B?.page_views)} · 클릭 ${fmtInt(metrics.B?.clicks)} · 전환 ${fmtInt(metrics.B?.conversions)}\n` +
       `이벤트 합계 ${fmtInt(metrics.totals?.events)}건 · 목표 ${(metrics.goals || []).join(", ") || "없음"}`;
@@ -1345,6 +1978,8 @@
     topA.textContent = renderTop(metrics.A?.top_clicked_elements);
     topB.textContent = renderTop(metrics.B?.top_clicked_elements);
     if (experimentInterpretation) experimentInterpretation.textContent = buildInterpretation(metrics);
+    renderOverlayBuilder(experiment);
+    renderExperimentOverlayPreview(experiment);
 
     if (experimentMetricsDialog && !experimentMetricsDialog.open) experimentMetricsDialog.showModal();
   }
@@ -1525,9 +2160,11 @@
     updatePeriodStatus();
     if (trendChartCard) trendChartCard.innerHTML = '<div class="chartState">불러오는 중…</div>';
 
-    const [sites, exps, sessions, labelSummary, insightData, opportunityData, eventSummary, usersResult] = await Promise.all([
+    const [sites, exps, personas, overlayRecords, sessions, labelSummary, insightData, opportunityData, eventSummary, usersResult] = await Promise.all([
       fetchSites(),
       fetchExperiments(),
+      fetchPersonas().catch(() => []),
+      fetchPersonaOverlays().catch(() => []),
       fetchSessions(),
       fetchLabelsSummary(),
       fetchInsights(true),
@@ -1541,6 +2178,8 @@
     state.sites = sites;
     state.siteConfig = getCurrentSiteConfig();
     state.experiments = exps;
+    state.personas = Array.isArray(personas) ? personas : [];
+    state.overlayRecords = Array.isArray(overlayRecords) ? overlayRecords : [];
     state.userFetchError = usersResult.error;
     state.lastEventSummary = eventSummary?.ok ? eventSummary : null;
     syncNewUserSiteIds();
@@ -1553,6 +2192,8 @@
     populateExperimentSelect(exps);
 
     const selectedExperiment = exps.find((exp) => exp.key === state.selectedExperimentKey) || exps[0] || null;
+    renderExperimentAudienceControls();
+    renderOverlayBuilder(selectedExperiment);
     if (selectedExperiment && selectedExperiment.key !== state.selectedExperimentKey) {
       state.selectedExperimentKey = selectedExperiment.key;
       updateCopilotExperimentUI();
@@ -1607,7 +2248,7 @@
         const exp = state.experiments.find((i) => i.id === btn.dataset.id);
         if (!exp) throw new Error("초안을 찾을 수 없습니다.");
         stageExperimentForEditor(exp);
-        window.open(getEditorUrl({ from: "copilot" }), "_blank", "noopener");
+        window.open(getEditorUrl({ from: "copilot", experiment_key: exp.key, experiment_version: exp.version || null }), "_blank", "noopener");
       }
       else if (act === "pause") { await setStatus(btn.dataset.id, "paused"); await render(); }
       else if (act === "run") { await setStatus(btn.dataset.id, "running"); await render(); }
@@ -1671,6 +2312,79 @@
       const experiment = state.experiments.find((item) => item.key === state.selectedExperimentKey) || null;
       const metrics = experiment ? await loadSelectedExperimentMetrics() : null;
       renderExperimentSummary(experiment, metrics);
+      renderOverlayBuilder(experiment);
+    });
+  }
+
+  if (experimentAudienceSelect) {
+    experimentAudienceSelect.addEventListener("change", async () => {
+      state.selectedExperimentAudience = String(experimentAudienceSelect.value || "all");
+      if (state.selectedExperimentAudience !== "synthetic_agent") {
+        state.selectedExperimentPersonaId = "";
+      }
+      renderExperimentAudienceControls();
+      if (experimentMetricsDialog?.open && state.selectedExperimentKey) {
+        await showMetrics(state.selectedExperimentKey);
+      }
+    });
+  }
+
+  if (experimentPersonaSelect) {
+    experimentPersonaSelect.addEventListener("change", async () => {
+      state.selectedExperimentPersonaId = String(experimentPersonaSelect.value || "");
+      renderExperimentAudienceControls();
+      if (experimentMetricsDialog?.open && state.selectedExperimentKey) {
+        await showMetrics(state.selectedExperimentKey);
+      }
+    });
+  }
+
+  if (overlayPersonaSelect) {
+    overlayPersonaSelect.addEventListener("change", () => {
+      state.selectedOverlayPersonaId = String(overlayPersonaSelect.value || "");
+      state.overlayPreviewReady = false;
+      const experiment = state.experiments.find((item) => item.key === state.selectedExperimentKey) || null;
+      renderOverlayBuilder(experiment);
+    });
+  }
+
+  if (overlayAgeGroupSelect) {
+    overlayAgeGroupSelect.addEventListener("change", () => {
+      state.selectedOverlayAgeGroup = String(overlayAgeGroupSelect.value || "");
+      state.overlayPreviewReady = false;
+      const experiment = state.experiments.find((item) => item.key === state.selectedExperimentKey) || null;
+      renderOverlayBuilder(experiment);
+    });
+  }
+
+  if (overlayStyleSelect) {
+    overlayStyleSelect.addEventListener("change", () => {
+      state.selectedOverlayStyleKey = String(overlayStyleSelect.value || "");
+      state.overlayPreviewReady = false;
+      const experiment = state.experiments.find((item) => item.key === state.selectedExperimentKey) || null;
+      renderOverlayBuilder(experiment);
+    });
+  }
+
+  if (generateOverlayBtn) {
+    generateOverlayBtn.addEventListener("click", async () => {
+      const experiment = state.experiments.find((item) => item.key === state.selectedExperimentKey) || null;
+      if (!experiment || !state.selectedOverlayPersonaId) return;
+      try {
+        state.overlayGenerationPending = true;
+        renderOverlayBuilder(experiment);
+        const result = await generatePersonaOverlay(experiment.key, state.selectedOverlayPersonaId);
+        const next = state.overlayRecords.filter((item) => item.overlay_id !== result.overlay.overlay_id);
+        next.push(result.overlay);
+        state.overlayRecords = next;
+        state.overlayPreviewReady = true;
+        renderOverlayBuilder(experiment);
+      } catch (error) {
+        if (overlayBuilderStatus) overlayBuilderStatus.textContent = String(error);
+      } finally {
+        state.overlayGenerationPending = false;
+        renderOverlayBuilder(experiment);
+      }
     });
   }
 
@@ -1906,7 +2620,9 @@
   if (openDraftInEditorBtn) {
     openDraftInEditorBtn.addEventListener("click", () => {
       if (!state.latestDraft) return;
-      window.open(getEditorUrl({ from: "copilot" }), "_blank", "noopener");
+      const draftKey = state.latestDraft?.draft?.key || state.selectedExperimentKey || "";
+      const draftVersion = state.latestDraft?.draft?.version || null;
+      window.open(getEditorUrl({ from: "copilot", experiment_key: draftKey, experiment_version: draftVersion }), "_blank", "noopener");
     });
   }
 
@@ -1914,6 +2630,37 @@
     openExperimentResultsBtn.addEventListener("click", async () => {
       if (!state.selectedExperimentKey) return;
       await showMetrics(state.selectedExperimentKey);
+    });
+  }
+
+  if (experimentHistoryList) {
+    experimentHistoryList.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-rollback-version]");
+      if (!btn || !state.selectedExperimentKey) return;
+      const experiment = state.experiments.find((item) => item.key === state.selectedExperimentKey) || null;
+      if (!experiment) return;
+      const version = Number(btn.dataset.rollbackVersion);
+      btn.disabled = true;
+      try {
+        await rollbackExperimentVersion(experiment, version);
+      } catch (error) {
+        alert(String(error));
+        btn.disabled = false;
+      }
+    });
+  }
+
+  if (toggleExperimentOverlayPreviewBtn) {
+    toggleExperimentOverlayPreviewBtn.addEventListener("click", () => {
+      if (!experimentOverlayPreviewPanel) return;
+      experimentOverlayPreviewPanel.hidden = !experimentOverlayPreviewPanel.hidden;
+      toggleExperimentOverlayPreviewBtn.textContent = experimentOverlayPreviewPanel.hidden ? "전체 페이지 + 오버레이 보기" : "오버레이 숨기기";
+      if (!experimentOverlayPreviewPanel.hidden) {
+        const experiment = state.experiments.find((item) => item.key === state.selectedExperimentKey) || null;
+        renderExperimentOverlayPreview(experiment);
+      } else {
+        clearExperimentOverlayPreview();
+      }
     });
   }
 

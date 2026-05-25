@@ -12,6 +12,7 @@
   const variantBBtn = document.getElementById("variantBBtn");
 
   const expKeyInput = document.getElementById("expKey");
+  const experimentVersionText = document.getElementById("experimentVersionText");
   const urlPrefixInput = document.getElementById("urlPrefix");
 
   const elementNameText = document.getElementById("elementNameText");
@@ -125,6 +126,21 @@
     return `${url.pathname}${url.search}`;
   }
 
+  function appendAbForce(urlString, forceVariant) {
+    const url = new URL(urlString, location.origin);
+    if (forceVariant) url.searchParams.set("__ab_force", forceVariant);
+    return url.toString();
+  }
+
+  function setExperimentVersion(version) {
+    const n = Number(version);
+    const next = Number.isFinite(n) && n > 0 ? n : null;
+    currentExperimentVersion = next;
+    if (experimentVersionText) {
+      experimentVersionText.textContent = next ? `v${next}` : "—";
+    }
+  }
+
   if (openDashboardLink) {
     openDashboardLink.href = getDashboardUrl();
   }
@@ -141,6 +157,7 @@
   let currentSiteConfig = null;
   let currentTarget = null;
   let lastSelected = null;
+  let currentExperimentVersion = null;
   let changesB = [];
   let latestImportedDraft = null;
   let copilot = null;
@@ -169,10 +186,15 @@
     log(`pickMode -> ${on}`);
   }
 
-  function setVariant(v) {
+  function setVariant(v, options) {
     currentVariant = v;
     variantABtn.classList.toggle("active", v === "A");
     variantBBtn.classList.toggle("active", v === "B");
+
+    if (options?.refreshFrame && currentTarget) {
+      applyTarget(currentTarget, { preserveExpKey: true, forceVariant: v });
+      return;
+    }
 
     if (v === "A") {
       postToFrame("EDITOR_PREVIEW_SET_VARIANT", { variant: "A", changes: [] });
@@ -206,7 +228,7 @@
         statusText.textContent = "오버레이 활성화됨";
         log("overlay injected");
         setPickMode(pickMode);
-        setVariant(currentVariant);
+        setVariant(currentVariant, { refreshFrame: false });
       };
 
       script.onerror = () => {
@@ -378,6 +400,66 @@
     return action.type;
   }
 
+  function buildChangeRationale(change) {
+    const action = Array.isArray(change?.actions) ? change.actions[0] : null;
+    const isCss = change?.type === "inject_css";
+    if (isCss) {
+      return {
+        intent: "시각적 주목도 조정",
+        expected_effect: "페이지 가독성이나 노출량이 바뀌어 반응 차이가 생길 수 있어요.",
+        primary_metric: "노출률 / 클릭률",
+      };
+    }
+
+    if (action?.type === "set_text") {
+      return {
+        intent: "문구를 더 명확하게 만듦",
+        expected_effect: "버튼과 안내 문구의 이해도가 올라 클릭이 늘어날 수 있어요.",
+        primary_metric: "클릭률",
+      };
+    }
+
+    if (action?.type === "set_style") {
+      const styles = action?.styles && typeof action.styles === "object" ? Object.keys(action.styles) : [];
+      const isVisual = styles.some((key) => /color|background|border|outline/i.test(key));
+      return {
+        intent: isVisual ? "시각적 강조 강화" : "레이아웃 미세 조정",
+        expected_effect: isVisual ? "버튼/영역이 더 눈에 띄어 반응이 달라질 수 있어요." : "배치 감이 바뀌어 시선 이동과 체류가 달라질 수 있어요.",
+        primary_metric: isVisual ? "클릭률 / 전환율" : "체류시간 / 페이지 깊이",
+      };
+    }
+
+    if (action?.type === "hide") {
+      return {
+        intent: "불필요한 요소 제거",
+        expected_effect: "주의 분산을 줄여 핵심 행동으로 더 빨리 이동하게 만들 수 있어요.",
+        primary_metric: "전환율 / 이탈률",
+      };
+    }
+
+    if (action?.type === "show") {
+      return {
+        intent: "정보 노출 확대",
+        expected_effect: "안내가 늘어나 사용자의 이해와 신뢰가 높아질 수 있어요.",
+        primary_metric: "전환율 / 체류시간",
+      };
+    }
+
+    if (action?.type === "set_attr" && String(action.name || "").toLowerCase() === "href") {
+      return {
+        intent: "진입 경로를 더 직접적으로 연결",
+        expected_effect: "클릭 후 이동 경로가 바뀌어 구매 흐름이 더 짧아질 수 있어요.",
+        primary_metric: "클릭률 / 전환율",
+      };
+    }
+
+    return {
+      intent: "행동 변화를 유도",
+      expected_effect: "페이지 상호작용 패턴이 바뀔 수 있어요.",
+      primary_metric: "클릭률 / 전환율",
+    };
+  }
+
   function buildChangeLabel(change) {
     if (change.type === "inject_css") return change.label || "고급 CSS 규칙 적용";
 
@@ -396,8 +478,84 @@
     return name;
   }
 
+  function estimateChangeImpact(change) {
+    if (!change || typeof change !== "object") {
+      return { impact_pct: 0, impact_direction: "neutral", impact_label: "영향 추정 불가" };
+    }
+
+    let impactPct = 0;
+    let direction = "neutral";
+    let label = "반응 변화 없음";
+
+    const actions = Array.isArray(change.actions) ? change.actions : [];
+    const action = actions[0] || null;
+
+    if (change.type === "inject_css") {
+      const css = String(change.css || "").toLowerCase();
+      if (/display\s*:\s*none|visibility\s*:\s*hidden/.test(css)) {
+        impactPct = -8;
+        direction = "negative";
+        label = "노출 감소 예상";
+      } else if (/color|background|border|outline|font|padding|margin|grid|flex/.test(css)) {
+        impactPct = 10;
+        direction = "positive";
+        label = "레이아웃/시각 변화 예상";
+      } else {
+        impactPct = 4;
+        direction = "positive";
+        label = "고급 CSS 반응 예상";
+      }
+    } else if (action?.type === "set_text") {
+      impactPct = 8;
+      direction = "positive";
+      label = "문구 반응 예상";
+    } else if (action?.type === "set_style") {
+      const styles = action?.styles && typeof action.styles === "object" ? action.styles : {};
+      if (Object.keys(styles).some((key) => /color|background|border|outline/i.test(key))) {
+        impactPct = 12;
+        direction = "positive";
+        label = "색상/강조 반응 예상";
+      } else if (Object.keys(styles).some((key) => /display|visibility/i.test(key))) {
+        impactPct = -7;
+        direction = "negative";
+        label = "노출 변화 예상";
+      } else {
+        impactPct = 6;
+        direction = "positive";
+        label = "스타일 반응 예상";
+      }
+    } else if (action?.type === "hide") {
+      impactPct = -7;
+      direction = "negative";
+      label = "숨김 반응 예상";
+    } else if (action?.type === "show") {
+      impactPct = 5;
+      direction = "positive";
+      label = "노출 확대 예상";
+    } else if (action?.type === "set_attr" && String(action.name || "").toLowerCase() === "href") {
+      impactPct = 11;
+      direction = "positive";
+      label = "링크 이동 반응 예상";
+    } else if (action?.type === "set_attr") {
+      impactPct = 4;
+      direction = "positive";
+      label = "속성 변화 예상";
+    } else if (action?.type === "add_class" || action?.type === "remove_class") {
+      impactPct = 5;
+      direction = "positive";
+      label = "클래스 기반 변화 예상";
+    }
+
+    return {
+      impact_pct: impactPct,
+      impact_direction: direction,
+      impact_label: label,
+    };
+  }
+
   function withChangeMeta(change, info) {
     const base = { ...change };
+    Object.assign(base, estimateChangeImpact(base));
     if (base.type === "inject_css") {
       base.label = base.label || "고급 CSS 규칙 적용";
       base.detail = base.detail || "고급 사용자를 위한 사용자 정의 규칙이에요.";
@@ -407,6 +565,7 @@
     base.element_name = getFriendlyElementName(info);
     base.label = buildChangeLabel(base);
     base.detail = buildFriendlyDetail(base);
+    base.rationale = base.rationale || buildChangeRationale(base);
     return base;
   }
 
@@ -600,11 +759,18 @@
         code = c.detail || buildFriendlyDetail(c);
       }
 
+      const rationale = c.rationale || buildChangeRationale(c);
+
       el.innerHTML = `
         <div class="changeTop">
           <div>
             <div class="changeMeta">${meta}</div>
             <div class="mono changeCode">${escapeHtml(code)}</div>
+            <div class="changeRationale">
+              <div><strong>의도</strong> · ${escapeHtml(rationale.intent || "—")}</div>
+              <div><strong>예상 효과</strong> · ${escapeHtml(rationale.expected_effect || "—")}</div>
+              <div><strong>근거 지표</strong> · ${escapeHtml(rationale.primary_metric || "—")}</div>
+            </div>
           </div>
           <div class="changeBtns">
             <button class="btn smallBtn" data-act="apply" data-idx="${idx}">프리뷰(B)</button>
@@ -646,6 +812,19 @@
     return j.site || null;
   }
 
+  async function fetchExperimentByKey(experimentKey) {
+    const key = String(experimentKey || "").trim();
+    if (!key) return null;
+
+    const r = await fetch(`/api/experiments?site_id=${encodeURIComponent(currentSiteId)}`);
+    const j = await r.json();
+    if (!j?.ok) throw new Error(j?.reason || "experiment fetch failed");
+
+    return Array.isArray(j.experiments)
+      ? j.experiments.find((item) => item && item.key === key) || null
+      : null;
+  }
+
   function getPreviewTargets() {
     return Array.isArray(currentSiteConfig?.preview_targets) ? currentSiteConfig.preview_targets : [];
   }
@@ -685,7 +864,7 @@
     if (!target) return;
     currentTarget = target;
     targetSelect.value = target.id;
-    frame.src = target.preview_url;
+    frame.src = appendAbForce(target.preview_url, options?.forceVariant || currentVariant || "A");
     if (!options?.preserveExpKey) {
       expKeyInput.value = target.experiment_key || getDefaultExpKey();
     }
@@ -709,6 +888,7 @@
     const imported = Array.isArray(payload?.changesB) ? payload.changesB.map(mergeImportedChange).filter(Boolean) : [];
     if (draft?.target_page) setTargetByPath(draft.target_page);
     if (draft?.key) expKeyInput.value = draft.key;
+    if (draft?.version !== undefined) setExperimentVersion(draft.version);
     if (draft?.target_page) urlPrefixInput.value = draft.target_page;
     if (imported.length > 0) {
       changesB = imported;
@@ -720,7 +900,7 @@
     latestImportedDraft = payload || null;
     applyImportedDraftBtn.disabled = !latestImportedDraft;
     editorImportedState.textContent = draft
-      ? `초안 가져옴 - ${draft.key || "draft"} / 변경 ${imported.length}개`
+      ? `초안 가져옴 - ${draft.key || "draft"}${currentExperimentVersion ? ` · v${currentExperimentVersion}` : ""} / 변경 ${imported.length}개`
       : imported.length > 0
         ? `변경 ${imported.length}개 가져옴`
         : "가져온 변경 없음";
@@ -841,12 +1021,11 @@
       }
 
       log(`✅ Real applied: ${expKey} (v${j.experiment.version}) url_prefix=${urlPrefix}`);
+      setExperimentVersion(j?.experiment?.version || null);
 
       // Real 적용 후: 실제 동작 확인을 위해 새 탭으로 열기
-      const liveUrl = currentTarget?.live_url || currentTarget?.preview_url || "/";
-      const realUrl = new URL(liveUrl, location.origin);
-      realUrl.searchParams.set("__real", "1"); // 표시용(필수 아님)
-      window.open(realUrl.toString(), "_blank", "noopener,noreferrer");
+      const liveUrl = appendAbForce(currentTarget?.live_url || currentTarget?.preview_url || "/", "B");
+      window.open(liveUrl, "_blank", "noopener,noreferrer");
 
       alert(`Real 적용 완료!\n이제 새 탭에서 SDK가 서버 설정을 받아 A/B를 자동 실행합니다.\n(유저마다 A/B가 다를 수 있음)`);
     } catch (e) {
@@ -919,10 +1098,8 @@
   realApplyBtn.addEventListener("click", () => realApplyToServer());
 
   openRealBtn.addEventListener("click", () => {
-    const liveUrl = currentTarget?.live_url || currentTarget?.preview_url || "/";
-    const u = new URL(liveUrl, location.origin);
-    u.searchParams.set("__real", "1");
-    window.open(u.toString(), "_blank", "noopener,noreferrer");
+    const liveUrl = appendAbForce(currentTarget?.live_url || currentTarget?.preview_url || "/", "B");
+    window.open(liveUrl, "_blank", "noopener,noreferrer");
   });
 
   clearChangesBtn.addEventListener("click", () => {
@@ -1154,7 +1331,10 @@
 
     const params = new URLSearchParams(location.search);
     const targetId = (params.get("target") || "").trim();
+    const experimentKey = (params.get("experiment_key") || "").trim();
     const initialTarget = getTargetById(targetId) || getDefaultTarget();
+    let restoredFromServer = false;
+    const queryVersion = (params.get("experiment_version") || "").trim();
 
     if (initialTarget) {
       applyTarget(initialTarget);
@@ -1163,14 +1343,29 @@
       urlPrefixInput.value = getDefaultUrlPrefix();
     }
 
+    if (experimentKey) {
+      try {
+        const experiment = await fetchExperimentByKey(experimentKey);
+        if (experiment) {
+          const draft = { key: experiment.key, version: experiment.version || null, target_page: experiment.url_prefix, hypothesis: experiment.hypothesis || "" };
+          applyDraftPayload({ draft, changesB: Array.isArray(experiment.variants?.B) ? experiment.variants.B : [] }, { keepStorage: true });
+          restoredFromServer = true;
+        }
+      } catch (error) {
+        log(`experiment restore failed: ${String(error)}`);
+      }
+    }
+
+    if (!restoredFromServer && queryVersion) setExperimentVersion(queryVersion);
+
     renderChangesList();
     initCopilot();
     setEditorCopilotCollapsed(true);
     setComposerMode("text");
     setPickMode(true);
-    setVariant("A");
+    if (!restoredFromServer) setVariant("A");
     updateEditorCopilotMeta();
-    loadPendingDraftFromStorage();
+    if (!restoredFromServer) loadPendingDraftFromStorage();
     log(`editor ready (${currentSiteId})`);
   }
 

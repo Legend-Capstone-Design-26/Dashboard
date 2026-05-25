@@ -1105,6 +1105,13 @@ app.all("/preview-api/:siteId/*", requireAuth, requireSiteAccess, proxyPreviewAp
 // ---------- Experiment API (MVP) ----------
 // experiment = { id, site_id, key, status:"draft"|"running"|"paused", url_prefix, traffic, variants, goals, updated_at, published_at, version }
 
+function snapshotExperiment(experiment) {
+  if (!experiment || typeof experiment !== "object") return null;
+  const copy = JSON.parse(JSON.stringify(experiment));
+  delete copy.history;
+  return copy;
+}
+
 app.post("/api/experiments/real-apply", requireAuth, requireSiteAccess, (req, res) => {
   const {
     site_id = "ab-sample",
@@ -1136,8 +1143,49 @@ app.post("/api/experiments/real-apply", requireAuth, requireSiteAccess, (req, re
     version: existing ? (existing.version || 0) + 1 : 1
   };
 
-  experimentStore.upsert(base, (item) => item.site_id === site_id && item.key === key);
-  return res.json({ ok: true, experiment: base });
+  const updated = experimentStore.upsert(base, (item) => item.site_id === site_id && item.key === key);
+  return res.json({ ok: true, experiment: updated });
+});
+
+app.post("/api/experiments/:id/rollback", requireAuth, requireSiteAccess, (req, res) => {
+  const { id } = req.params;
+  const site_id = String(req.body?.site_id || req.query.site_id || "").trim();
+  const targetVersion = Number(req.body?.version ?? req.body?.target_version ?? req.query.version);
+
+  if (!site_id) {
+    return res.status(400).json({ ok: false, reason: "missing site_id" });
+  }
+  if (!Number.isFinite(targetVersion)) {
+    return res.status(400).json({ ok: false, reason: "missing version" });
+  }
+
+  const current = experimentStore.getById(site_id, id);
+  if (!current) return res.status(404).json({ ok: false, reason: "not found" });
+
+  const history = Array.isArray(current.history) ? current.history : [];
+  const target = history.find((item) => item && Number(item.version) === targetVersion) || null;
+  if (!target) {
+    return res.status(404).json({ ok: false, reason: "target version not found" });
+  }
+
+  const nowTs = now();
+  const restored = {
+    ...target,
+    id: current.id,
+    site_id: current.site_id,
+    key: current.key,
+    status: current.status,
+    updated_at: nowTs,
+    published_at: current.status === "running" ? nowTs : (current.published_at || null),
+    archived_at: current.status === "archived" ? (current.archived_at || null) : null,
+    version: (current.version || 0) + 1,
+    restored_from_version: Number(target.version) || null,
+    restored_at: nowTs,
+    history: Array.isArray(target.history) ? target.history : [],
+  };
+
+  const updated = experimentStore.upsert(restored, (item) => item.id === current.id && item.site_id === site_id);
+  return res.json({ ok: true, experiment: updated, restored_from_version: restored.restored_from_version });
 });
 
 // list
