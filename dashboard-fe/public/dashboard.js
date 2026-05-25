@@ -2677,6 +2677,7 @@
       selectedExperimentId: "chatSelectedExperiment",
       storageKey: "dashboard",
       getSiteId: () => getCurrentSiteId(),
+      onAgentDraftCreated() { render().catch((error) => console.warn("draft refresh failed", error)); },
       onExperimentDraft(draft) { stageDraftForEditor(draft, draft?.variant_b_changes || []); },
       onEditorChanges(changes, draft) { stageDraftForEditor(draft, changes); },
     });

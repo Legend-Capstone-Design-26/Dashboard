@@ -1937,6 +1937,17 @@ details[open] > .detailsSummary::before {
   font-size: 12px;
 }
 
+.agentDraftMeta {
+  margin-top: 8px;
+  border: 1px solid rgba(20,184,166,.24);
+  border-radius: var(--radius-input);
+  padding: 6px 8px;
+  color: #0f766e;
+  background: rgba(240,253,250,.7);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .agentCardDetails {
   margin-top: 10px;
   color: var(--color-text-secondary);

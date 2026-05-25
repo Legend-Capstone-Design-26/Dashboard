@@ -26,7 +26,7 @@ function createAgentRoutes({ files, middlewares = {}, analytics = {} }) {
     buildInsightsInput: analytics.buildInsightsInput,
     generateInsights: analytics.generateInsights,
   });
-  const orchestrator = createAgentOrchestrator({ toolRegistry });
+  const orchestrator = createAgentOrchestrator({ toolRegistry, agentActionsFile: files.agentActionsFile });
 
   router.get("/status", requireAuth, requireSiteAccess, (req, res) => {
     return res.json(statusResponse({ siteId: req.authorizedSiteId }));
@@ -39,7 +39,9 @@ function createAgentRoutes({ files, middlewares = {}, analytics = {} }) {
     const result = await orchestrator.runAgentTurn({
       siteId: req.authorizedSiteId,
       message,
+      conversationId: body.conversation_id ? String(body.conversation_id) : "",
       selectedExperimentKey: body.selected_experiment_key ? String(body.selected_experiment_key) : "",
+      user: req.authUser || null,
     });
     return res.status(result.ok === false ? 400 : 200).json(result);
   });

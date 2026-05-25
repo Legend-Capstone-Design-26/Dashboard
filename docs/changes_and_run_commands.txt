@@ -1,0 +1,19 @@
+Changed folders:
+- Dashboard/dashboard-be
+- Dashboard/dashboard-fe
+
+Run commands:
+- cd Dashboard
+- npm install
+- npm run dev
+- npm test
+
+Overlay smoke test:
+- cd Dashboard/dashboard-be
+- node scripts/generate_persona_overlay.js --site legend-ecommerce --experiment-key exp_checkout_cta_v1 --persona-id 30대-직장인리뷰의존형 --experiment-file eval/sample-experiment.json
+
+Notes:
+- Dashboard runs on http://localhost:3001
+- Login page: /login
+- Dashboard page: /dashboard
+- Editor page: /editor

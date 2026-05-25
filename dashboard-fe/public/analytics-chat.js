@@ -38,7 +38,7 @@
     const agentControls = createEl("div", "agentModeControls");
     const agentToggle = createEl("button", "agentModeToggle", "Agent Mode OFF");
     const agentBadge = createEl("span", "agentModeBadge", "일반 챗봇");
-    const agentNotice = createEl("div", "agentModeNotice", "Agent Mode를 켜면 읽기 전용 UX Agent를 사용할 수 있습니다.");
+    const agentNotice = createEl("div", "agentModeNotice", "Agent Mode를 켜면 UX Agent와 실험 초안 생성을 사용할 수 있습니다.");
     agentToggle.type = "button";
     agentToggle.setAttribute("aria-pressed", "false");
     agentToggle.setAttribute("aria-label", "Agent Mode 끄기");
@@ -92,11 +92,11 @@
       agentToggle.textContent = state.agentMode ? "Agent Mode ON" : "Agent Mode OFF";
       agentToggle.setAttribute("aria-pressed", state.agentMode ? "true" : "false");
       agentToggle.setAttribute("aria-label", state.agentMode ? "Agent Mode 켜짐" : "Agent Mode 꺼짐");
-      agentBadge.textContent = state.agentMode ? "Read-only Agent" : "일반 챗봇";
+      agentBadge.textContent = state.agentMode ? "Draft Agent" : "일반 챗봇";
       agentBadge.classList.toggle("is-active", state.agentMode);
 
       if (!state.agentMode) {
-        agentNotice.textContent = "Agent Mode를 켜면 읽기 전용 UX Agent를 사용할 수 있습니다.";
+        agentNotice.textContent = "Agent Mode를 켜면 UX Agent와 실험 초안 생성을 사용할 수 있습니다.";
         return;
       }
 
@@ -120,13 +120,20 @@
         approval_required: "승인 필요",
         action_executed: "작업 완료",
         action_failed: "요청 실패",
-        safety_blocked: "Read-only 단계에서 차단됨",
+        safety_blocked: "승인 단계 전 차단됨",
       };
       card.appendChild(createEl("div", "agentCardTitle", titleMap[type] || "Agent 응답"));
       card.appendChild(createEl("div", "agentCardMessage", data?.message || data?.reason || "응답이 비어 있습니다."));
 
+      if (type === "draft_created" && data?.experiment) {
+        const exp = data.experiment;
+        card.appendChild(createEl("div", "agentDraftMeta", `key: ${exp.key || "-"}`));
+        card.appendChild(createEl("div", "agentDraftMeta", `status: ${exp.status || "draft"} · url: ${exp.url_prefix || "/"}`));
+        card.appendChild(createEl("div", "agentCardMeta", "아직 배포되지 않은 초안입니다. 실제 사용자는 이 변경을 보지 않습니다."));
+      }
+
       if (type === "safety_blocked") {
-        card.appendChild(createEl("div", "agentCardMeta", "현재 Read-only Agent 단계에서는 실행할 수 없는 작업입니다."));
+        card.appendChild(createEl("div", "agentCardMeta", "현재 MVP에서는 승인 gate가 필요한 작업을 실행하지 않습니다."));
       } else if (type === "action_failed" && data?.reason) {
         card.appendChild(createEl("div", "agentCardMeta", `reason: ${data.reason}`));
       } else if (data?.intent) {
@@ -215,7 +222,7 @@
         renderAgentCard({
           type: "analysis_summary",
           intent: "agent_mode_on",
-          message: "Agent Mode가 활성화되었습니다.\n현재는 Read-only Agent 단계입니다.\n실험 목록, 실험 결과, 인사이트, 이탈 유형, 미리보기 대상 조회를 도와드릴 수 있습니다.\n초안 생성과 배포 작업은 다음 단계에서 승인 흐름과 함께 제공됩니다.",
+          message: "Agent Mode가 활성화되었습니다.\n실험 목록, 실험 결과, 인사이트, 이탈 유형, 미리보기 대상 조회와 A/B 테스트 초안 생성을 도와드릴 수 있습니다.\n생성된 초안은 아직 배포되지 않으며, 실제 배포는 다음 단계의 승인 흐름에서 처리됩니다.",
           data: {},
           actions: [],
         });
@@ -256,6 +263,7 @@
           const data = await response.json().catch(() => null);
           if (!data) throw new Error("empty agent response");
           renderAgentCard(data);
+          if (data.type === "draft_created" && typeof options.onAgentDraftCreated === "function") options.onAgentDraftCreated(data);
           return;
         }
 
