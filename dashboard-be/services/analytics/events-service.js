@@ -1,5 +1,5 @@
 const { createFileEventStore } = require("../stores/event-store");
-const { inferStepFromEvent } = require("../../analytics/funnel");
+const { inferStepFromEvent, inferStepFromPath } = require("../../analytics/funnel");
 
 function createEventsService({ eventsFile, eventStore }) {
   const resolvedEventStore = eventStore || createFileEventStore({ eventsFile });
@@ -188,8 +188,9 @@ function createEventsService({ eventsFile, eventStore }) {
     for (const e of filtered) {
       if (e.event_name === "page_view") {
         pageViews.set(e.path || "/", (pageViews.get(e.path || "/") || 0) + 1);
-        if (e.path === "/checkout") checkoutPageViews += 1;
-        if (e.path === "/detail") detailPageViews += 1;
+        const step = inferStepFromPath(e.path, pathMappings);
+        if (step === "checkout") checkoutPageViews += 1;
+        if (step === "product") detailPageViews += 1;
       }
       if (e.event_name === "click") {
         const elementId = e.props?.element_id || "(unknown)";
