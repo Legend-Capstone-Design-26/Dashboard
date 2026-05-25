@@ -20,6 +20,12 @@ const { createKafkaRuntime } = require("./services/runtime/kafka");
 const { createRedisRuntime } = require("./services/runtime/redis");
 const { createRedisSessionStore } = require("./services/stores/redis-session-store");
 const { createRedisMetricsStore } = require("./services/stores/redis-metrics-store");
+const { listPersonas, getPersona } = require("./personas");
+const {
+  generateOverlay,
+  upsertOverlayRecord,
+  listOverlayRecords,
+} = require("./personas/overlay-generator");
 
 const {
   computeLabeledSessionSummaries,
@@ -68,9 +74,12 @@ app.use((req, res, next) => {
     "/login",
     "/editor",
     "/dashboard",
+    "/persona-lab",
     "/login.js",
     "/editor.js",
     "/dashboard.js",
+    "/persona-lab.js",
+    "/persona-lab.css",
     "/analytics-chat.js",
     "/api/sites",
   ];
@@ -96,6 +105,7 @@ app.get("/", (req, res) => {
 app.get("/login", (req, res) => res.sendFile(path.join(FRONTEND_PUBLIC_DIR, "login.html")));
 app.get("/editor", requireAuth, (req, res) => res.sendFile(path.join(FRONTEND_PUBLIC_DIR, "editor.html")));
 app.get("/dashboard", requireAuth, (req, res) => res.sendFile(path.join(FRONTEND_PUBLIC_DIR, "dashboard.html")));
+app.get("/persona-lab", requireAuth, (req, res) => res.sendFile(path.join(FRONTEND_PUBLIC_DIR, "persona-lab.html")));
 
 // data dir
 const DATA_DIR = path.join(__dirname, "data");
@@ -1023,6 +1033,54 @@ app.put("/api/sites/:siteId/preview-targets", requireAuth, requireSiteAccess, (r
 
   if (!next) return res.status(404).json({ ok: false, reason: "site not found" });
   return res.json({ ok: true, site: normalizeSite(next) });
+});
+
+function personaForApi(persona) {
+  const normalized = persona?.normalized_persona || {};
+  return {
+    id: persona?.id || "",
+    group_id: persona?.group_id || null,
+    group_label: persona?.group_label || persona?.description || persona?.id || "페르소나",
+    description: persona?.description || "",
+    weight: Number(persona?.weight) || 0,
+    runner_type: persona?.runner_type || "timeline",
+    age_group: persona?.age_group || normalized.age_group || null,
+    style_key: persona?.style_key || normalized.style_key || null,
+    style_label: persona?.style_label || normalized.style_label || normalized.style_key || null,
+    normalized_persona: normalized,
+    state_model: persona?.state_model || null,
+  };
+}
+
+app.get("/api/personas", requireAuth, requireSiteAccess, (req, res) => {
+  return res.json({ ok: true, site_id: req.authorizedSiteId, personas: listPersonas().map(personaForApi) });
+});
+
+app.get("/api/persona-overlays", requireAuth, requireSiteAccess, (req, res) => {
+  return res.json({ ok: true, site_id: req.authorizedSiteId, overlays: listOverlayRecords() });
+});
+
+app.post("/api/persona-overlays/generate", requireAuth, requireSiteAccess, async (req, res) => {
+  const siteId = req.authorizedSiteId;
+  const experimentKey = String(req.body?.experiment_key || req.body?.key || "").trim();
+  const personaId = String(req.body?.persona_id || "").trim();
+  if (!experimentKey || !personaId) {
+    return res.status(400).json({ ok: false, reason: "missing experiment_key/persona_id" });
+  }
+
+  const experiment = experimentStore.getByKey(siteId, experimentKey);
+  if (!experiment) return res.status(404).json({ ok: false, reason: "experiment not found" });
+
+  const persona = getPersona(personaId);
+  if (!persona) return res.status(404).json({ ok: false, reason: "persona not found" });
+
+  try {
+    const generated = await generateOverlay({ experiment, persona });
+    const overlay = upsertOverlayRecord({ experiment, persona, generated });
+    return res.json({ ok: true, site_id: siteId, overlay, generated: { provider: generated.provider, reason: generated.reason } });
+  } catch (error) {
+    return res.status(500).json({ ok: false, reason: `persona overlay generation failed: ${String(error)}` });
+  }
 });
 
 async function proxyPreviewRequest(req, res) {

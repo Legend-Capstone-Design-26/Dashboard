@@ -1911,7 +1911,6 @@
     metricKeyEl.textContent = key;
     updateCopilotExperimentUI();
     renderExperimentSummary(experiment, metrics);
-    renderOverlayBuilder(experiment);
 
     if (modalExperimentTitle) modalExperimentTitle.textContent = key;
     if (modalExperimentPeriod) modalExperimentPeriod.textContent = experiment ? `실험 기간 · ${formatExperimentWindow(experiment)}` : "실험 기간 정보 없음";
@@ -1932,7 +1931,6 @@
         ? (((Number(metrics?.A?.sessions) || 0) + (Number(metrics?.B?.sessions) || 0)) > 0 ? `${getPeriodRange().label} 결과` : "선택한 기간에 해당 실험 데이터가 없습니다.")
         : "결과를 불러오지 못했습니다.";
     }
-    renderExperimentAudienceControls();
     renderExperimentHistory(experiment);
 
     cvrA.textContent = cvrB.textContent = "…";
@@ -1978,8 +1976,6 @@
     topA.textContent = renderTop(metrics.A?.top_clicked_elements);
     topB.textContent = renderTop(metrics.B?.top_clicked_elements);
     if (experimentInterpretation) experimentInterpretation.textContent = buildInterpretation(metrics);
-    renderOverlayBuilder(experiment);
-    renderExperimentOverlayPreview(experiment);
 
     if (experimentMetricsDialog && !experimentMetricsDialog.open) experimentMetricsDialog.showModal();
   }
@@ -2160,11 +2156,9 @@
     updatePeriodStatus();
     if (trendChartCard) trendChartCard.innerHTML = '<div class="chartState">불러오는 중…</div>';
 
-    const [sites, exps, personas, overlayRecords, sessions, labelSummary, insightData, opportunityData, eventSummary, usersResult] = await Promise.all([
+    const [sites, exps, sessions, labelSummary, insightData, opportunityData, eventSummary, usersResult] = await Promise.all([
       fetchSites(),
       fetchExperiments(),
-      fetchPersonas().catch(() => []),
-      fetchPersonaOverlays().catch(() => []),
       fetchSessions(),
       fetchLabelsSummary(),
       fetchInsights(true),
@@ -2178,8 +2172,6 @@
     state.sites = sites;
     state.siteConfig = getCurrentSiteConfig();
     state.experiments = exps;
-    state.personas = Array.isArray(personas) ? personas : [];
-    state.overlayRecords = Array.isArray(overlayRecords) ? overlayRecords : [];
     state.userFetchError = usersResult.error;
     state.lastEventSummary = eventSummary?.ok ? eventSummary : null;
     syncNewUserSiteIds();
@@ -2192,8 +2184,6 @@
     populateExperimentSelect(exps);
 
     const selectedExperiment = exps.find((exp) => exp.key === state.selectedExperimentKey) || exps[0] || null;
-    renderExperimentAudienceControls();
-    renderOverlayBuilder(selectedExperiment);
     if (selectedExperiment && selectedExperiment.key !== state.selectedExperimentKey) {
       state.selectedExperimentKey = selectedExperiment.key;
       updateCopilotExperimentUI();
@@ -2312,7 +2302,6 @@
       const experiment = state.experiments.find((item) => item.key === state.selectedExperimentKey) || null;
       const metrics = experiment ? await loadSelectedExperimentMetrics() : null;
       renderExperimentSummary(experiment, metrics);
-      renderOverlayBuilder(experiment);
     });
   }
 
