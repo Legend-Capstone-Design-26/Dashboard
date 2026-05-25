@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { createRequire } = require("module");
 const { ensureJsonFile, ensureJsonlFile } = require("./services/data-store");
 const { createChatRoutes } = require("./routes/chat-routes");
+const { createAgentRoutes } = require("./routes/agent-routes");
 const { loadEnvFromFile } = require("./services/llm/config");
 const {
   createFileEventStore,
@@ -1473,6 +1474,27 @@ app.get("/api/insights", requireAuth, requireSiteAccess, async (req, res) => {
     return res.status(500).json({ ok: false, reason: String(e) });
   }
 });
+
+app.use(
+  "/api/agent",
+  createAgentRoutes({
+    files: {
+      experimentsFile: EXP_FILE,
+      eventsFile: EVENTS_FILE,
+      sitesFile: SITES_FILE,
+    },
+    middlewares: {
+      requireAuth,
+      requireSiteAccess,
+    },
+    analytics: {
+      computeLabeledSessionSummaries,
+      computeLabelsSummary,
+      buildInsightsInput,
+      generateInsights,
+    },
+  })
+);
 
 app.use(
   "/api",

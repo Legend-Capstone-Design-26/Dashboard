@@ -6,6 +6,13 @@
     return el;
   }
 
+  function createEl(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text != null) el.textContent = String(text);
+    return el;
+  }
+
   function initAnalyticsChatWidget(options) {
     const fab = document.getElementById(options.fabId);
     const panel = document.getElementById(options.panelId);
@@ -23,7 +30,23 @@
       isOpen: false,
       sessionId: `analytics_${Math.random().toString(16).slice(2, 10)}`,
       selectedExperimentKey: null,
+      agentMode: false,
+      agentStatus: null,
+      agentStatusLoaded: false,
     };
+
+    const agentControls = createEl("div", "agentModeControls");
+    const agentToggle = createEl("button", "agentModeToggle", "Agent Mode OFF");
+    const agentBadge = createEl("span", "agentModeBadge", "일반 챗봇");
+    const agentNotice = createEl("div", "agentModeNotice", "Agent Mode를 켜면 읽기 전용 UX Agent를 사용할 수 있습니다.");
+    agentToggle.type = "button";
+    agentToggle.setAttribute("aria-pressed", "false");
+    agentToggle.setAttribute("aria-label", "Agent Mode 끄기");
+    agentControls.appendChild(agentToggle);
+    agentControls.appendChild(agentBadge);
+    agentControls.appendChild(agentNotice);
+    const metaRow = panel.querySelector(".chatbotMetaRow");
+    if (metaRow && metaRow.parentNode) metaRow.parentNode.insertBefore(agentControls, metaRow.nextSibling);
 
     function scrollToBottom() {
       messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -31,6 +54,113 @@
 
     function renderMessage(role, text) {
       messagesEl.appendChild(createMessage(role, text));
+      scrollToBottom();
+    }
+
+    function currentSiteId() {
+      if (typeof options.getSiteId === "function") return String(options.getSiteId() || "").trim();
+      return String(options.siteId || "").trim();
+    }
+
+    function compactJson(value) {
+      if (!value || typeof value !== "object") return "";
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch {
+        return "";
+      }
+    }
+
+    function capabilityLabel(key) {
+      const labels = {
+        list_experiments: "실험 목록 조회",
+        summarize_experiment: "실험 결과 요약",
+        summarize_insights: "인사이트 요약",
+        summarize_labels: "이탈 유형 요약",
+        get_preview_targets: "미리보기 대상 조회",
+        create_experiment_draft: "초안 생성",
+        publish_experiment: "배포",
+        pause_experiment: "중지",
+        rollback_experiment: "롤백",
+        archive_experiment: "보관",
+      };
+      return labels[key] || key;
+    }
+
+    function renderAgentStatus() {
+      agentToggle.classList.toggle("is-active", state.agentMode);
+      agentToggle.textContent = state.agentMode ? "Agent Mode ON" : "Agent Mode OFF";
+      agentToggle.setAttribute("aria-pressed", state.agentMode ? "true" : "false");
+      agentToggle.setAttribute("aria-label", state.agentMode ? "Agent Mode 켜짐" : "Agent Mode 꺼짐");
+      agentBadge.textContent = state.agentMode ? "Read-only Agent" : "일반 챗봇";
+      agentBadge.classList.toggle("is-active", state.agentMode);
+
+      if (!state.agentMode) {
+        agentNotice.textContent = "Agent Mode를 켜면 읽기 전용 UX Agent를 사용할 수 있습니다.";
+        return;
+      }
+
+      if (!state.agentStatusLoaded) {
+        agentNotice.textContent = "Agent 상태를 불러오는 중입니다.";
+        return;
+      }
+
+      const caps = Array.isArray(state.agentStatus?.capabilities) ? state.agentStatus.capabilities.slice(0, 3).map(capabilityLabel).join(", ") : "읽기 기능";
+      const disabled = Array.isArray(state.agentStatus?.disabled_capabilities) ? state.agentStatus.disabled_capabilities.slice(0, 3).map(capabilityLabel).join(", ") : "쓰기 기능";
+      agentNotice.textContent = `phase: ${state.agentStatus?.phase || "read_only"} · 가능: ${caps} · 비활성: ${disabled}`;
+    }
+
+    function renderAgentCard(data) {
+      const type = data?.type || (data?.ok === false ? "action_failed" : "analysis_summary");
+      const card = createEl("article", `agentCard ${type === "safety_blocked" ? "blocked" : type === "action_failed" ? "failed" : type === "approval_required" ? "approval" : type === "draft_created" ? "draft" : "analysis"}`);
+      const titleMap = {
+        analysis_summary: "Agent 분석 요약",
+        action_plan: "Agent 실행 계획",
+        draft_created: "실험 초안",
+        approval_required: "승인 필요",
+        action_executed: "작업 완료",
+        action_failed: "요청 실패",
+        safety_blocked: "Read-only 단계에서 차단됨",
+      };
+      card.appendChild(createEl("div", "agentCardTitle", titleMap[type] || "Agent 응답"));
+      card.appendChild(createEl("div", "agentCardMessage", data?.message || data?.reason || "응답이 비어 있습니다."));
+
+      if (type === "safety_blocked") {
+        card.appendChild(createEl("div", "agentCardMeta", "현재 Read-only Agent 단계에서는 실행할 수 없는 작업입니다."));
+      } else if (type === "action_failed" && data?.reason) {
+        card.appendChild(createEl("div", "agentCardMeta", `reason: ${data.reason}`));
+      } else if (data?.intent) {
+        card.appendChild(createEl("div", "agentCardMeta", `intent: ${data.intent}`));
+      }
+
+      const dataText = compactJson(data?.data);
+      if (dataText && dataText !== "{}") {
+        const details = createEl("details", "agentCardDetails");
+        const summary = createEl("summary", "", "데이터 보기");
+        const pre = createEl("pre", "agentCardJson", dataText);
+        details.appendChild(summary);
+        details.appendChild(pre);
+        card.appendChild(details);
+      }
+
+      const actions = Array.isArray(data?.actions) ? data.actions : [];
+      if (actions.length) {
+        const row = createEl("div", "agentActionRow");
+        actions.forEach((action) => {
+          const btn = createEl("button", "agentActionButton", action.label || action.type || "action");
+          btn.type = "button";
+          if (action.type === "open_editor" || action.type === "open_preview") {
+            btn.addEventListener("click", () => { if (action.url) window.open(action.url, "_blank", "noopener"); });
+          } else {
+            btn.disabled = true;
+            btn.title = "다음 단계에서 지원됩니다.";
+          }
+          row.appendChild(btn);
+        });
+        card.appendChild(row);
+      }
+
+      messagesEl.appendChild(card);
       scrollToBottom();
     }
 
@@ -52,6 +182,47 @@
       inputEl.disabled = busy;
     }
 
+    async function loadAgentStatus() {
+      const siteId = currentSiteId();
+      if (!siteId) {
+        state.agentStatusLoaded = true;
+        state.agentStatus = { phase: "read_only", capabilities: [], disabled_capabilities: [] };
+        renderAgentStatus();
+        return;
+      }
+      state.agentStatusLoaded = false;
+      renderAgentStatus();
+      try {
+        const response = await fetch(`/api/agent/status?site_id=${encodeURIComponent(siteId)}`, { credentials: "same-origin" });
+        const data = await response.json();
+        if (!data?.ok) throw new Error(data?.reason || "agent status failed");
+        state.agentStatus = data;
+      } catch (error) {
+        console.warn("Agent status failed", error);
+        state.agentStatus = { phase: "read_only", capabilities: [], disabled_capabilities: [], error: String(error) };
+      } finally {
+        state.agentStatusLoaded = true;
+        renderAgentStatus();
+      }
+    }
+
+    function setAgentMode(nextMode) {
+      const enabled = !!nextMode;
+      if (state.agentMode === enabled) return;
+      state.agentMode = enabled;
+      renderAgentStatus();
+      if (enabled) {
+        renderAgentCard({
+          type: "analysis_summary",
+          intent: "agent_mode_on",
+          message: "Agent Mode가 활성화되었습니다.\n현재는 Read-only Agent 단계입니다.\n실험 목록, 실험 결과, 인사이트, 이탈 유형, 미리보기 대상 조회를 도와드릴 수 있습니다.\n초안 생성과 배포 작업은 다음 단계에서 승인 흐름과 함께 제공됩니다.",
+          data: {},
+          actions: [],
+        });
+        loadAgentStatus();
+      }
+    }
+
     function setSelectedExperimentKey(key) {
       state.selectedExperimentKey = key || null;
       if (!selectedExperimentEl) return;
@@ -69,6 +240,25 @@
       setBusy(true);
 
       try {
+        if (state.agentMode) {
+          const response = await fetch("/api/agent/message", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({
+              site_id: currentSiteId(),
+              conversation_id: state.sessionId,
+              message: content,
+              selected_experiment_key: state.selectedExperimentKey || "",
+              agent_mode: true,
+            }),
+          });
+          const data = await response.json().catch(() => null);
+          if (!data) throw new Error("empty agent response");
+          renderAgentCard(data);
+          return;
+        }
+
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -98,7 +288,18 @@
           options.onEditorChanges(changesAction.changesB || [], draftAction?.draft || null);
         }
       } catch (error) {
-        renderMessage("assistant", `오류: ${String(error)}`);
+        if (state.agentMode) {
+          console.warn("Agent Mode request failed", error);
+          renderAgentCard({
+            ok: false,
+            type: "action_failed",
+            intent: "unknown",
+            message: "Agent Mode 요청을 처리하지 못했습니다.\n잠시 후 다시 시도하거나 Agent Mode를 끄고 일반 챗봇을 사용해 주세요.",
+            reason: String(error),
+          });
+        } else {
+          renderMessage("assistant", `오류: ${String(error)}`);
+        }
       } finally {
         setBusy(false);
       }
@@ -106,6 +307,7 @@
 
     fab.addEventListener("click", () => setOpen(!state.isOpen));
     if (closeBtn) closeBtn.addEventListener("click", () => setOpen(false));
+    agentToggle.addEventListener("click", () => setAgentMode(!state.agentMode));
     document.addEventListener("pointerdown", (event) => {
       if (!state.isOpen) return;
       const target = event.target;
@@ -134,6 +336,10 @@
 
     return {
       setSelectedExperimentKey,
+      setSiteId(siteId) {
+        options.siteId = siteId || "";
+        if (state.agentMode) loadAgentStatus();
+      },
       open() {
         setOpen(true);
       },

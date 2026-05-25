@@ -945,7 +945,10 @@
   // ─── Copilot / Draft ───
   function updateCopilotExperimentUI() {
     if (copilotExperimentKey) copilotExperimentKey.textContent = state.selectedExperimentKey || "미선택";
-    if (state.chatWidget) state.chatWidget.setSelectedExperimentKey(state.selectedExperimentKey);
+    if (state.chatWidget) {
+      state.chatWidget.setSelectedExperimentKey(state.selectedExperimentKey);
+      if (typeof state.chatWidget.setSiteId === "function") state.chatWidget.setSiteId(getCurrentSiteId());
+    }
   }
 
   function stageDraftForEditor(draft, changes) {
@@ -2673,6 +2676,7 @@
       sendBtnId: "chatSendBtn",
       selectedExperimentId: "chatSelectedExperiment",
       storageKey: "dashboard",
+      getSiteId: () => getCurrentSiteId(),
       onExperimentDraft(draft) { stageDraftForEditor(draft, draft?.variant_b_changes || []); },
       onEditorChanges(changes, draft) { stageDraftForEditor(draft, changes); },
     });

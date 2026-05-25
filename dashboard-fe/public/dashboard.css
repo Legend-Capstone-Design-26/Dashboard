@@ -1790,6 +1790,58 @@ details[open] > .detailsSummary::before {
 
 .chatbotActionsRow { padding-bottom: var(--space-2); }
 
+.agentModeControls {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+  align-items: center;
+  padding: 10px var(--space-4);
+  border-bottom: 1px solid var(--color-border-input);
+  background: #ffffff;
+}
+
+.agentModeToggle {
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text);
+  border-radius: var(--radius-pill);
+  padding: 6px 10px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.agentModeToggle.is-active {
+  color: #312e81;
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.agentModeBadge {
+  justify-self: start;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 4px 9px;
+  color: var(--color-text-secondary);
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.agentModeBadge.is-active {
+  color: #4f46e5;
+  border-color: #c7d2fe;
+  background: #f5f7ff;
+}
+
+.agentModeNotice {
+  grid-column: 1 / -1;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .chatbotQuickActions {
   flex: 0 0 auto;
   display: flex;
@@ -1845,6 +1897,87 @@ details[open] > .detailsSummary::before {
 .chatbotMessage.assistant {
   align-self: flex-start;
   background: #fafbfc;
+}
+
+.agentCard {
+  align-self: flex-start;
+  width: min(100%, 340px);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.agentCard.analysis { border-color: rgba(91,118,254,.24); background: #fbfcff; }
+.agentCard.blocked { border-color: rgba(245,158,11,.36); background: #fffbeb; }
+.agentCard.failed { border-color: rgba(239,68,68,.34); background: #fff5f5; }
+.agentCard.approval { border-color: rgba(124,58,237,.32); background: #faf5ff; }
+.agentCard.draft { border-color: rgba(20,184,166,.32); background: #f0fdfa; }
+
+.agentCardTitle {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.agentCardMessage {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.agentCardMeta {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.agentCardDetails {
+  margin-top: 10px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.agentCardDetails summary { cursor: pointer; font-weight: 700; }
+
+.agentCardJson {
+  max-height: 180px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: var(--radius-input);
+  background: rgba(15, 23, 42, 0.04);
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+
+.agentActionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.agentActionButton {
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  background: #ffffff;
+  color: var(--color-text);
+  padding: 6px 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.agentActionButton:disabled {
+  opacity: .55;
+  cursor: not-allowed;
 }
 
 .chatbotComposer {
