@@ -16,6 +16,8 @@ dashboard-be/data/support_tickets.json
 dashboard-be/data/chat_sessions.json
 dashboard-be/data/chat_events.jsonl
 dashboard-be/data/chat_feedback.json
+dashboard-be/data/agent_actions.jsonl
+dashboard-be/data/agent_approvals.json
 dashboard-be/data/users.json
 dashboard-be/data/user_site_access.json
 

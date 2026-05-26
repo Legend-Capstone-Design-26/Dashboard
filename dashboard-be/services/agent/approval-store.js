@@ -4,7 +4,9 @@ function createFileApprovalStore({ approvalsFile }) {
   ensureJsonFile(approvalsFile, { approvals: [] });
 
   function load() {
-    return readJson(approvalsFile, { approvals: [] }) || { approvals: [] };
+    const db = readJson(approvalsFile, { approvals: [] }) || { approvals: [] };
+    if (!Array.isArray(db.approvals)) return { approvals: [] };
+    return db;
   }
 
   function save(db) {
@@ -35,6 +37,7 @@ function createFileApprovalStore({ approvalsFile }) {
     if (index < 0) return null;
     const current = db.approvals[index];
     const next = typeof updater === "function" ? updater(current) : current;
+    if (!next) return null;
     db.approvals[index] = { ...next, updated_at: Date.now() };
     save(db);
     return db.approvals[index];

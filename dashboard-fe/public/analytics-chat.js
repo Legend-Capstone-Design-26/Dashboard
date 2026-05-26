@@ -33,6 +33,8 @@
       agentMode: false,
       agentStatus: null,
       agentStatusLoaded: false,
+      pendingApprovalActions: new Set(),
+      completedApprovalActions: new Set(),
     };
 
     const agentControls = createEl("div", "agentModeControls");
@@ -145,6 +147,12 @@
         card.appendChild(createEl("div", "agentApprovalWarning", "승인하면 이 실험은 실제 사용자에게 노출될 수 있습니다."));
       }
 
+      if (type === "action_executed") {
+        card.appendChild(createEl("div", "agentCardMeta", "배포 완료: 새로고침하면 실험 상태를 확인할 수 있습니다."));
+      } else if (type === "action_cancelled") {
+        card.appendChild(createEl("div", "agentCardMeta", "요청 취소됨: 실험은 draft 상태로 유지됩니다."));
+      }
+
       if (type === "safety_blocked") {
         card.appendChild(createEl("div", "agentCardMeta", "현재 MVP에서는 승인 gate가 필요한 작업을 실행하지 않습니다."));
       } else if (type === "action_failed" && data?.reason) {
@@ -192,6 +200,9 @@
       if (!state.agentMode) return;
       const approvalId = action.approval_id || action.approvalId;
       if (!approvalId) return;
+      const actionKey = `${action.type}:${approvalId}`;
+      if (state.pendingApprovalActions.has(actionKey) || state.completedApprovalActions.has(approvalId)) return;
+      state.pendingApprovalActions.add(actionKey);
       Array.from(row.querySelectorAll("button")).forEach((btn) => { btn.disabled = true; });
       const endpoint = action.type === "approve_agent_action" ? "approve" : "cancel";
       try {
@@ -203,7 +214,9 @@
         });
         const data = await response.json().catch(() => null);
         if (!data) throw new Error("empty approval response");
+        state.completedApprovalActions.add(approvalId);
         renderAgentCard(data);
+        if (data.type === "action_executed" || data.type === "action_cancelled") dispatchExperimentUpdated(data, data.type);
         if (data.type === "action_executed" && typeof options.onAgentActionExecuted === "function") options.onAgentActionExecuted(data);
       } catch (error) {
         renderAgentCard({
@@ -213,7 +226,21 @@
           message: "승인 작업을 처리하지 못했습니다.",
           reason: String(error),
         });
+      } finally {
+        state.pendingApprovalActions.delete(actionKey);
       }
+    }
+
+    function dispatchExperimentUpdated(data, action) {
+      try {
+        window.dispatchEvent(new CustomEvent("uxsdk:agent:experiment-updated", {
+          detail: {
+            site_id: currentSiteId(),
+            experiment_key: data?.experiment?.key || data?.data?.experiment?.key || data?.data?.experiment_key || "",
+            action,
+          },
+        }));
+      } catch {}
     }
 
     function setOpen(nextOpen) {
@@ -308,6 +335,7 @@
           const data = await response.json().catch(() => null);
           if (!data) throw new Error("empty agent response");
           renderAgentCard(data);
+          if (data.type === "draft_created") dispatchExperimentUpdated(data, "draft_created");
           if (data.type === "draft_created" && typeof options.onAgentDraftCreated === "function") options.onAgentDraftCreated(data);
           return;
         }
@@ -391,6 +419,11 @@
       setSelectedExperimentKey,
       setSiteId(siteId) {
         options.siteId = siteId || "";
+        if (state.agentMode) loadAgentStatus();
+      },
+      setContext(context) {
+        if (context && Object.prototype.hasOwnProperty.call(context, "siteId")) options.siteId = context.siteId || "";
+        if (context && Object.prototype.hasOwnProperty.call(context, "selectedExperimentKey")) setSelectedExperimentKey(context.selectedExperimentKey || null);
         if (state.agentMode) loadAgentStatus();
       },
       open() {

@@ -35,6 +35,8 @@ function failedResponse({ siteId, intent, message, reason }) {
     site_id: siteId,
     intent: intent || "unknown",
     message: message || "Agent 요청을 처리하지 못했습니다.",
+    data: {},
+    actions: [],
     reason: reason || message || "unknown_error",
   };
 }
@@ -77,6 +79,7 @@ function approvalRequiredResponse({ siteId, approval, experiment }) {
     intent: "publish_experiment",
     message: "이 작업은 실제 사용자에게 영향을 줄 수 있으므로 승인 후 진행됩니다. 승인 전까지 실험은 draft 상태로 유지됩니다.",
     approval: {
+      id: approval.id,
       approval_id: approval.id,
       intent: approval.intent,
       summary: approval.summary,

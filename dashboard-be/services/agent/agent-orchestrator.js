@@ -22,6 +22,19 @@ function previewUrl(siteId, urlPrefix) {
   return `/preview/${encodeURIComponent(siteId)}${cleanPath}?__ab_force=B`;
 }
 
+function approvalFailureMessage(reason) {
+  if (reason === "approval_not_found") return "승인 요청을 찾을 수 없습니다.";
+  if (reason === "approval_expired") return "승인 요청이 만료되었습니다. 다시 배포 요청을 생성해 주세요.";
+  if (reason === "payload_hash_mismatch") return "승인 요청 내용과 현재 실행 대상이 일치하지 않습니다. 다시 요청해 주세요.";
+  if (reason === "experiment_status_mismatch" || reason === "experiment_not_draft") return "실험 상태가 변경되어 이 승인 요청을 실행할 수 없습니다. 최신 상태를 확인한 뒤 다시 요청해 주세요.";
+  if (reason === "experiment_version_mismatch") return "실험 버전이 변경되어 이 승인 요청을 실행할 수 없습니다.";
+  if (reason === "approval_not_pending:cancelled") return "이미 취소된 승인 요청입니다.";
+  if (reason === "approval_not_pending:executed") return "이미 실행된 승인 요청입니다.";
+  if (reason === "approval_not_pending:expired") return "만료된 승인 요청입니다. 다시 배포 요청을 생성해 주세요.";
+  if (String(reason || "").startsWith("approval_not_pending:")) return "이미 처리된 승인 요청입니다.";
+  return "승인된 작업을 실행할 수 없습니다.";
+}
+
 function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile }) {
   async function runDraftFlow({ siteId, message, user, conversationId }) {
     let logBase = {
@@ -141,9 +154,10 @@ function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile
 
   function approveApproval({ siteId, approvalId, user }) {
     const approval = approvalStore.getById(siteId, approvalId);
-    if (!approval) return failedResponse({ siteId, intent: "publish_experiment", message: "승인 요청을 찾지 못했습니다.", reason: "approval_not_found" });
+    if (!approval) return failedResponse({ siteId, intent: "publish_experiment", message: approvalFailureMessage("approval_not_found"), reason: "approval_not_found" });
 
-    const current = toolRegistry.findExperimentByKeyOrHint({ siteId, key: approval.expected_experiment_key }).rawExperiment;
+    const found = toolRegistry.findExperimentByKeyOrHint({ siteId, key: approval.expected_experiment_key });
+    const current = found?.rawExperiment || null;
     const validation = validateApprovalBeforeExecute(approval, { currentExperiment: current, user });
     if (!validation.ok) {
       const status = validation.reason === "approval_expired" ? "expired" : approval.status;
@@ -160,7 +174,7 @@ function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile
           result_ref: { approval_id: approvalId, approval_status: status },
         },
       });
-      return failedResponse({ siteId, intent: "publish_experiment", message: "승인된 작업을 실행할 수 없습니다.", reason: validation.reason });
+      return failedResponse({ siteId, intent: "publish_experiment", message: approvalFailureMessage(validation.reason), reason: validation.reason });
     }
 
     const published = toolRegistry.publishDraftExperiment({ siteId, approval });
@@ -178,7 +192,7 @@ function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile
           result_ref: { approval_id: approvalId, experiment_key: approval.expected_experiment_key },
         },
       });
-      return failedResponse({ siteId, intent: "publish_experiment", message: "draft 실험을 running으로 전환하지 못했습니다.", reason: published.reason });
+      return failedResponse({ siteId, intent: "publish_experiment", message: approvalFailureMessage(published.reason), reason: published.reason });
     }
 
     const now = Date.now();
@@ -211,8 +225,11 @@ function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile
 
   function cancelApproval({ siteId, approvalId, user }) {
     const approval = approvalStore.getById(siteId, approvalId);
-    if (!approval) return failedResponse({ siteId, intent: "publish_experiment", message: "승인 요청을 찾지 못했습니다.", reason: "approval_not_found" });
-    if (approval.status !== "pending") return failedResponse({ siteId, intent: approval.intent, message: "이미 처리된 승인 요청입니다.", reason: `approval_not_pending:${approval.status}` });
+    if (!approval) return failedResponse({ siteId, intent: "publish_experiment", message: approvalFailureMessage("approval_not_found"), reason: "approval_not_found" });
+    if (approval.status !== "pending") {
+      const reason = `approval_not_pending:${approval.status}`;
+      return failedResponse({ siteId, intent: approval.intent, message: approvalFailureMessage(reason), reason });
+    }
     const now = Date.now();
     const cancelled = approvalStore.update(siteId, approvalId, (item) => ({
       ...item,

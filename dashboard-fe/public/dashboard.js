@@ -946,8 +946,12 @@
   function updateCopilotExperimentUI() {
     if (copilotExperimentKey) copilotExperimentKey.textContent = state.selectedExperimentKey || "미선택";
     if (state.chatWidget) {
-      state.chatWidget.setSelectedExperimentKey(state.selectedExperimentKey);
-      if (typeof state.chatWidget.setSiteId === "function") state.chatWidget.setSiteId(getCurrentSiteId());
+      if (typeof state.chatWidget.setContext === "function") {
+        state.chatWidget.setContext({ siteId: getCurrentSiteId(), selectedExperimentKey: state.selectedExperimentKey });
+      } else {
+        state.chatWidget.setSelectedExperimentKey(state.selectedExperimentKey);
+        if (typeof state.chatWidget.setSiteId === "function") state.chatWidget.setSiteId(getCurrentSiteId());
+      }
     }
   }
 
@@ -2294,9 +2298,16 @@
       localStorage.setItem(SITE_STORAGE_KEY, next);
       setSiteInUrl(next);
       updateSiteContextUI();
+      updateCopilotExperimentUI();
       render().catch((e) => alert(String(e)));
     });
   }
+
+  window.addEventListener("uxsdk:agent:experiment-updated", (event) => {
+    const detail = event.detail || {};
+    if (detail.site_id && detail.site_id !== getCurrentSiteId()) return;
+    render().catch((error) => console.warn("agent experiment refresh failed", error));
+  });
 
   if (experimentSelect) {
     experimentSelect.addEventListener("change", async () => {
@@ -2677,8 +2688,6 @@
       selectedExperimentId: "chatSelectedExperiment",
       storageKey: "dashboard",
       getSiteId: () => getCurrentSiteId(),
-      onAgentDraftCreated() { render().catch((error) => console.warn("draft refresh failed", error)); },
-      onAgentActionExecuted() { render().catch((error) => console.warn("agent action refresh failed", error)); },
       onExperimentDraft(draft) { stageDraftForEditor(draft, draft?.variant_b_changes || []); },
       onEditorChanges(changes, draft) { stageDraftForEditor(draft, changes); },
     });

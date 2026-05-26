@@ -78,6 +78,8 @@ test("agent returns approval_required for publish intent", async () => {
   assert.equal(result.ok, true);
   assert.equal(result.type, "approval_required");
   assert.equal(result.intent, "publish_experiment");
+  assert.equal(result.approval.approval_id, approvals[0].id);
+  assert.equal(result.approval.id, approvals[0].id);
   assert.equal(approvals.length, 1);
   assert.equal(approvals[0].status, "pending");
 });
@@ -162,6 +164,38 @@ test("cancelled approval cannot be approved", () => {
   const approve = orchestrator.approveApproval({ siteId: "legend-ecommerce", approvalId: "apv_1", user: { id: "user_1" } });
   assert.equal(approve.ok, false);
   assert.match(approve.reason, /approval_not_pending/);
+  assert.equal(approve.message, "이미 취소된 승인 요청입니다.");
+});
+
+test("approval status mismatch returns friendly message", () => {
+  const approval = {
+    id: "apv_1",
+    site_id: "legend-ecommerce",
+    intent: "publish_experiment",
+    status: "pending",
+    payload: { experiment_id: "exp_1", experiment_key: "exp_checkout_cta_v2", target_status: "running" },
+    payload_hash: require("../services/agent/approval-gate").buildPayloadHash({ experiment_id: "exp_1", experiment_key: "exp_checkout_cta_v2", target_status: "running" }),
+    expected_experiment_id: "exp_1",
+    expected_experiment_key: "exp_checkout_cta_v2",
+    expected_experiment_version: 1,
+    expected_status: "draft",
+    expires_at: Date.now() + 10000,
+    summary: "publish draft",
+  };
+  const orchestrator = createAgentOrchestrator({
+    agentActionsFile: "",
+    approvalStore: {
+      getById() { return approval; },
+      update(_siteId, _approvalId, updater) { return updater(approval); },
+    },
+    toolRegistry: {
+      findExperimentByKeyOrHint() { return { ok: true, rawExperiment: { id: "exp_1", key: "exp_checkout_cta_v2", status: "running", version: 1 } }; },
+    },
+  });
+  const result = orchestrator.approveApproval({ siteId: "legend-ecommerce", approvalId: "apv_1", user: { id: "user_1" } });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "experiment_status_mismatch");
+  assert.equal(result.message, "실험 상태가 변경되어 이 승인 요청을 실행할 수 없습니다. 최신 상태를 확인한 뒤 다시 요청해 주세요.");
 });
 
 test("agent lists experiments with read-only tool", async () => {
