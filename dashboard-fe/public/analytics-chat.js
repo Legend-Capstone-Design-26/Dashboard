@@ -319,13 +319,18 @@
       setBusy(true);
 
       try {
+        const siteId = currentSiteId();
+        if (!siteId) {
+          renderMessage("assistant", "현재 사이트 정보를 찾을 수 없습니다. 사이트를 다시 선택한 뒤 시도해 주세요.");
+          return;
+        }
         if (state.agentMode) {
           const response = await fetch("/api/agent/message", {
             method: "POST",
             headers: { "content-type": "application/json" },
             credentials: "same-origin",
             body: JSON.stringify({
-              site_id: currentSiteId(),
+              site_id: siteId,
               conversation_id: state.sessionId,
               message: content,
               selected_experiment_key: state.selectedExperimentKey || "",
@@ -343,11 +348,14 @@
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "content-type": "application/json" },
+          credentials: "same-origin",
           body: JSON.stringify({
+            site_id: siteId,
             agent: "analytics_copilot",
             messages: [{ role: "user", content }],
             context: {
               page: "dashboard",
+              site_id: siteId,
               selectedExperimentKey: state.selectedExperimentKey,
               sessionId: state.sessionId,
             },
