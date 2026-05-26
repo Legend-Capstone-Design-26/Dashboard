@@ -58,12 +58,110 @@ test("agent creates draft for create_experiment_draft intent and appends action 
   assert.equal(logs[0].result_ref.experiment_key, "exp_checkout_cta_v2");
 });
 
-test("agent blocks publish intent after draft creation phase", async () => {
-  const orchestrator = createAgentOrchestrator({ toolRegistry: {}, agentActionsFile: "" });
+test("agent returns approval_required for publish intent", async () => {
+  const approvals = [];
+  const orchestrator = createAgentOrchestrator({
+    toolRegistry: {
+      findLatestDraftExperiment() {
+        return {
+          ok: true,
+          experiment: { id: "exp_1", key: "exp_checkout_cta_v2", status: "draft", version: 1, traffic: { A: 50, B: 50 }, goals: ["checkout_complete"] },
+        };
+      },
+    },
+    approvalStore: {
+      create(approval) { approvals.push(approval); return approval; },
+    },
+    agentActionsFile: "",
+  });
   const result = await orchestrator.runAgentTurn({ siteId: "legend-ecommerce", message: "방금 만든 초안을 배포해줘" });
   assert.equal(result.ok, true);
-  assert.equal(result.type, "safety_blocked");
+  assert.equal(result.type, "approval_required");
   assert.equal(result.intent, "publish_experiment");
+  assert.equal(approvals.length, 1);
+  assert.equal(approvals[0].status, "pending");
+});
+
+test("agent still blocks rollback intent", async () => {
+  const orchestrator = createAgentOrchestrator({ toolRegistry: {}, agentActionsFile: "" });
+  const result = await orchestrator.runAgentTurn({ siteId: "legend-ecommerce", message: "이전 버전으로 롤백해줘" });
+  assert.equal(result.ok, true);
+  assert.equal(result.type, "safety_blocked");
+  assert.equal(result.intent, "rollback_experiment");
+});
+
+test("approve executes draft publish once and blocks duplicate", () => {
+  let approval = {
+    id: "apv_1",
+    site_id: "legend-ecommerce",
+    intent: "publish_experiment",
+    status: "pending",
+    payload: { experiment_id: "exp_1", experiment_key: "exp_checkout_cta_v2", target_status: "running" },
+    payload_hash: require("../services/agent/approval-gate").buildPayloadHash({ experiment_id: "exp_1", experiment_key: "exp_checkout_cta_v2", target_status: "running" }),
+    expected_experiment_id: "exp_1",
+    expected_experiment_key: "exp_checkout_cta_v2",
+    expected_experiment_version: 1,
+    expected_status: "draft",
+    expires_at: Date.now() + 10000,
+    summary: "publish draft",
+  };
+  let currentExperiment = { id: "exp_1", key: "exp_checkout_cta_v2", status: "draft", version: 1 };
+  const orchestrator = createAgentOrchestrator({
+    agentActionsFile: "",
+    approvalStore: {
+      getById() { return approval; },
+      update(_siteId, _approvalId, updater) { approval = updater(approval); return approval; },
+    },
+    toolRegistry: {
+      findExperimentByKeyOrHint() { return { ok: true, rawExperiment: currentExperiment }; },
+      publishDraftExperiment() {
+        currentExperiment = { ...currentExperiment, status: "running", published_at: Date.now() };
+        return { ok: true, experiment: currentExperiment };
+      },
+    },
+  });
+
+  const first = orchestrator.approveApproval({ siteId: "legend-ecommerce", approvalId: "apv_1", user: { id: "user_1" } });
+  assert.equal(first.ok, true);
+  assert.equal(first.type, "action_executed");
+  assert.equal(approval.status, "executed");
+  const second = orchestrator.approveApproval({ siteId: "legend-ecommerce", approvalId: "apv_1", user: { id: "user_1" } });
+  assert.equal(second.ok, false);
+  assert.match(second.reason, /approval_not_pending/);
+});
+
+test("cancelled approval cannot be approved", () => {
+  let approval = {
+    id: "apv_1",
+    site_id: "legend-ecommerce",
+    intent: "publish_experiment",
+    status: "pending",
+    payload: { experiment_id: "exp_1", experiment_key: "exp_checkout_cta_v2", target_status: "running" },
+    payload_hash: require("../services/agent/approval-gate").buildPayloadHash({ experiment_id: "exp_1", experiment_key: "exp_checkout_cta_v2", target_status: "running" }),
+    expected_experiment_id: "exp_1",
+    expected_experiment_key: "exp_checkout_cta_v2",
+    expected_experiment_version: 1,
+    expected_status: "draft",
+    expires_at: Date.now() + 10000,
+    summary: "publish draft",
+  };
+  const orchestrator = createAgentOrchestrator({
+    agentActionsFile: "",
+    approvalStore: {
+      getById() { return approval; },
+      update(_siteId, _approvalId, updater) { approval = updater(approval); return approval; },
+    },
+    toolRegistry: {
+      findExperimentByKeyOrHint() { return { ok: true, rawExperiment: { id: "exp_1", key: "exp_checkout_cta_v2", status: "draft", version: 1 } }; },
+      publishDraftExperiment() { return { ok: true, experiment: {} }; },
+    },
+  });
+  const cancel = orchestrator.cancelApproval({ siteId: "legend-ecommerce", approvalId: "apv_1", user: { id: "user_1" } });
+  assert.equal(cancel.ok, true);
+  assert.equal(cancel.type, "action_cancelled");
+  const approve = orchestrator.approveApproval({ siteId: "legend-ecommerce", approvalId: "apv_1", user: { id: "user_1" } });
+  assert.equal(approve.ok, false);
+  assert.match(approve.reason, /approval_not_pending/);
 });
 
 test("agent lists experiments with read-only tool", async () => {

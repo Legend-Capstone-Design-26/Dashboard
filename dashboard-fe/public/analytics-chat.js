@@ -112,13 +112,21 @@
 
     function renderAgentCard(data) {
       const type = data?.type || (data?.ok === false ? "action_failed" : "analysis_summary");
-      const card = createEl("article", `agentCard ${type === "safety_blocked" ? "blocked" : type === "action_failed" ? "failed" : type === "approval_required" ? "approval" : type === "draft_created" ? "draft" : "analysis"}`);
+      const cardClass = type === "safety_blocked" ? "blocked"
+        : type === "action_failed" ? "failed"
+          : type === "approval_required" ? "approval"
+            : type === "action_executed" ? "executed"
+              : type === "action_cancelled" ? "cancelled"
+                : type === "draft_created" ? "draft"
+                  : "analysis";
+      const card = createEl("article", `agentCard ${cardClass}`);
       const titleMap = {
         analysis_summary: "Agent 분석 요약",
         action_plan: "Agent 실행 계획",
         draft_created: "실험 초안",
         approval_required: "승인 필요",
         action_executed: "작업 완료",
+        action_cancelled: "작업 취소됨",
         action_failed: "요청 실패",
         safety_blocked: "승인 단계 전 차단됨",
       };
@@ -130,6 +138,11 @@
         card.appendChild(createEl("div", "agentDraftMeta", `key: ${exp.key || "-"}`));
         card.appendChild(createEl("div", "agentDraftMeta", `status: ${exp.status || "draft"} · url: ${exp.url_prefix || "/"}`));
         card.appendChild(createEl("div", "agentCardMeta", "아직 배포되지 않은 초안입니다. 실제 사용자는 이 변경을 보지 않습니다."));
+      }
+
+      if (type === "approval_required" && data?.approval) {
+        card.appendChild(createEl("div", "agentDraftMeta", `approval: ${data.approval.approval_id || "-"}`));
+        card.appendChild(createEl("div", "agentApprovalWarning", "승인하면 이 실험은 실제 사용자에게 노출될 수 있습니다."));
       }
 
       if (type === "safety_blocked") {
@@ -156,8 +169,12 @@
         actions.forEach((action) => {
           const btn = createEl("button", "agentActionButton", action.label || action.type || "action");
           btn.type = "button";
+          if (action.type === "approve_agent_action") btn.classList.add("approve");
+          if (action.type === "cancel_agent_action") btn.classList.add("danger");
           if (action.type === "open_editor" || action.type === "open_preview") {
             btn.addEventListener("click", () => { if (action.url) window.open(action.url, "_blank", "noopener"); });
+          } else if (action.type === "approve_agent_action" || action.type === "cancel_agent_action") {
+            btn.addEventListener("click", () => executeAgentAction(action, row));
           } else {
             btn.disabled = true;
             btn.title = "다음 단계에서 지원됩니다.";
@@ -169,6 +186,34 @@
 
       messagesEl.appendChild(card);
       scrollToBottom();
+    }
+
+    async function executeAgentAction(action, row) {
+      if (!state.agentMode) return;
+      const approvalId = action.approval_id || action.approvalId;
+      if (!approvalId) return;
+      Array.from(row.querySelectorAll("button")).forEach((btn) => { btn.disabled = true; });
+      const endpoint = action.type === "approve_agent_action" ? "approve" : "cancel";
+      try {
+        const response = await fetch(`/api/agent/approvals/${encodeURIComponent(approvalId)}/${endpoint}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ site_id: currentSiteId() }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!data) throw new Error("empty approval response");
+        renderAgentCard(data);
+        if (data.type === "action_executed" && typeof options.onAgentActionExecuted === "function") options.onAgentActionExecuted(data);
+      } catch (error) {
+        renderAgentCard({
+          ok: false,
+          type: "action_failed",
+          intent: action.type,
+          message: "승인 작업을 처리하지 못했습니다.",
+          reason: String(error),
+        });
+      }
     }
 
     function setOpen(nextOpen) {

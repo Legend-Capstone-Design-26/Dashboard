@@ -5,10 +5,10 @@ const READ_ONLY_CAPABILITIES = [
   "summarize_labels",
   "get_preview_targets",
   "create_experiment_draft",
+  "publish_experiment",
 ];
 
 const DISABLED_CAPABILITIES = [
-  "publish_experiment",
   "pause_experiment",
   "rollback_experiment",
   "archive_experiment",
@@ -68,17 +68,60 @@ function draftCreatedResponse({ siteId, intent, experiment, hypothesis, changesC
   };
 }
 
+function approvalRequiredResponse({ siteId, approval, experiment }) {
+  return {
+    ok: true,
+    type: "approval_required",
+    agent_mode: true,
+    site_id: siteId,
+    intent: "publish_experiment",
+    message: "이 작업은 실제 사용자에게 영향을 줄 수 있으므로 승인 후 진행됩니다. 승인 전까지 실험은 draft 상태로 유지됩니다.",
+    approval: {
+      approval_id: approval.id,
+      intent: approval.intent,
+      summary: approval.summary,
+      risk_level: approval.risk_level,
+      expires_at: approval.expires_at,
+    },
+    data: {
+      experiment_key: experiment.key,
+      status: experiment.status,
+      target_status: "running",
+      traffic: experiment.traffic || null,
+      goals: Array.isArray(experiment.goals) ? experiment.goals : [],
+      warning: "승인 후 실제 사용자에게 A/B 실험이 노출됩니다.",
+    },
+    actions: [
+      { label: "배포 승인", type: "approve_agent_action", approval_id: approval.id },
+      { label: "취소", type: "cancel_agent_action", approval_id: approval.id },
+    ],
+  };
+}
+
+function actionExecutedResponse({ siteId, intent, message, data }) {
+  return okResponse({ type: "action_executed", siteId, intent, message: message || "승인된 작업을 실행했습니다.", data });
+}
+
+function actionCancelledResponse({ siteId, intent, message, data }) {
+  return okResponse({ type: "action_cancelled", siteId, intent, message: message || "승인 요청을 취소했습니다.", data });
+}
+
+function expiredApprovalResponse({ siteId, intent }) {
+  return failedResponse({ siteId, intent, message: "승인 요청이 만료되어 실행할 수 없습니다.", reason: "approval_expired" });
+}
+
 function statusResponse({ siteId }) {
   return {
     ok: true,
     agent_mode: true,
     site_id: siteId,
-    phase: "draft_mvp",
+    phase: "approval_mvp",
     capabilities: READ_ONLY_CAPABILITIES.slice(),
     disabled_capabilities: DISABLED_CAPABILITIES.slice(),
     safety: {
       write_actions_enabled: true,
       enabled_write_actions: ["create_experiment_draft"],
+      approval_required_actions: ["publish_experiment"],
       approval_required_for_dangerous_actions: true,
     },
   };
@@ -91,5 +134,9 @@ module.exports = {
   failedResponse,
   blockedResponse,
   draftCreatedResponse,
+  approvalRequiredResponse,
+  actionExecutedResponse,
+  actionCancelledResponse,
+  expiredApprovalResponse,
   statusResponse,
 };

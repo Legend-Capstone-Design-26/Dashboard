@@ -122,12 +122,14 @@ const CHAT_SESSIONS_FILE = path.join(DATA_DIR, "chat_sessions.json");
 const CHAT_EVENTS_FILE = path.join(DATA_DIR, "chat_events.jsonl");
 const CHAT_FEEDBACK_FILE = path.join(DATA_DIR, "chat_feedback.json");
 const AGENT_ACTIONS_FILE = path.join(DATA_DIR, "agent_actions.jsonl");
+const AGENT_APPROVALS_FILE = path.join(DATA_DIR, "agent_approvals.json");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const USER_SITE_ACCESS_FILE = path.join(DATA_DIR, "user_site_access.json");
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 ensureJsonFile(EXP_FILE, { experiments: [] });
 ensureJsonlFile(AGENT_ACTIONS_FILE);
+ensureJsonFile(AGENT_APPROVALS_FILE, { approvals: [] });
 ensureJsonFile(SITES_FILE, {
   sites: [
     {
@@ -1485,6 +1487,7 @@ app.use(
       eventsFile: EVENTS_FILE,
       sitesFile: SITES_FILE,
       agentActionsFile: AGENT_ACTIONS_FILE,
+      agentApprovalsFile: AGENT_APPROVALS_FILE,
     },
     middlewares: {
       requireAuth,

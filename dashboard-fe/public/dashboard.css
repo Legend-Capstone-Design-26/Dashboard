@@ -1914,6 +1914,8 @@ details[open] > .detailsSummary::before {
 .agentCard.failed { border-color: rgba(239,68,68,.34); background: #fff5f5; }
 .agentCard.approval { border-color: rgba(124,58,237,.32); background: #faf5ff; }
 .agentCard.draft { border-color: rgba(20,184,166,.32); background: #f0fdfa; }
+.agentCard.executed { border-color: rgba(34,197,94,.34); background: #f0fdf4; }
+.agentCard.cancelled { border-color: rgba(100,116,139,.28); background: #f8fafc; }
 
 .agentCardTitle {
   font-family: var(--font-display);
@@ -1944,6 +1946,17 @@ details[open] > .detailsSummary::before {
   padding: 6px 8px;
   color: #0f766e;
   background: rgba(240,253,250,.7);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.agentApprovalWarning {
+  margin-top: 8px;
+  border: 1px solid rgba(245,158,11,.32);
+  border-radius: var(--radius-input);
+  padding: 7px 9px;
+  color: #92400e;
+  background: #fffbeb;
   font-size: 12px;
   font-weight: 700;
 }
@@ -1984,6 +1997,18 @@ details[open] > .detailsSummary::before {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 12px;
+}
+
+.agentActionButton.approve {
+  border-color: rgba(79,70,229,.28);
+  background: #4f46e5;
+  color: #fff;
+}
+
+.agentActionButton.danger {
+  border-color: rgba(239,68,68,.28);
+  color: #b91c1c;
+  background: #fff5f5;
 }
 
 .agentActionButton:disabled {

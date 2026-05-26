@@ -1,9 +1,17 @@
 const { parseAgentIntent } = require("./intent-parser");
 const { appendAgentActionLog } = require("./agent-action-log");
-const { blockedResponse, draftCreatedResponse, failedResponse, okResponse } = require("./agent-response");
+const { createApprovalRequest, validateApprovalBeforeExecute } = require("./approval-gate");
+const {
+  actionCancelledResponse,
+  actionExecutedResponse,
+  approvalRequiredResponse,
+  blockedResponse,
+  draftCreatedResponse,
+  failedResponse,
+  okResponse,
+} = require("./agent-response");
 
 const BLOCKED_WRITE_INTENTS = new Set([
-  "publish_experiment",
   "pause_experiment",
   "rollback_experiment",
   "archive_experiment",
@@ -14,7 +22,7 @@ function previewUrl(siteId, urlPrefix) {
   return `/preview/${encodeURIComponent(siteId)}${cleanPath}?__ab_force=B`;
 }
 
-function createAgentOrchestrator({ toolRegistry, agentActionsFile }) {
+function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile }) {
   async function runDraftFlow({ siteId, message, user, conversationId }) {
     let logBase = {
       site_id: siteId,
@@ -95,12 +103,146 @@ function createAgentOrchestrator({ toolRegistry, agentActionsFile }) {
     }
   }
 
+  function runPublishApprovalFlow({ siteId, message, selectedExperimentKey, user, conversationId }) {
+    const found = toolRegistry.findLatestDraftExperiment({ siteId, selectedExperimentKey, message });
+    if (!found.ok) return failedResponse({ siteId, intent: "publish_experiment", message: found.message || "배포할 draft 실험을 찾지 못했습니다.", reason: found.reason });
+
+    const payload = {
+      experiment_id: found.experiment.id,
+      experiment_key: found.experiment.key,
+      target_status: "running",
+    };
+    const approvalResult = createApprovalRequest({
+      siteId,
+      intent: "publish_experiment",
+      experiment: found.experiment,
+      payload,
+      summary: `${found.experiment.key} 실험을 running 상태로 배포합니다.`,
+      createdBy: user?.id || null,
+    }, { user });
+    if (!approvalResult.ok) return failedResponse({ siteId, intent: "publish_experiment", message: "승인 요청을 생성하지 못했습니다.", reason: approvalResult.reason });
+    const approval = approvalStore.create(approvalResult.approval);
+
+    appendAgentActionLog({
+      filePath: agentActionsFile,
+      entry: {
+        site_id: siteId,
+        user_id: user?.id || null,
+        conversation_id: conversationId || null,
+        intent: "publish_experiment",
+        status: "approval_required",
+        summary: approval.summary,
+        result_ref: { approval_id: approval.id, experiment_key: found.experiment.key, experiment_id: found.experiment.id },
+      },
+    });
+
+    return approvalRequiredResponse({ siteId, approval, experiment: found.experiment });
+  }
+
+  function approveApproval({ siteId, approvalId, user }) {
+    const approval = approvalStore.getById(siteId, approvalId);
+    if (!approval) return failedResponse({ siteId, intent: "publish_experiment", message: "승인 요청을 찾지 못했습니다.", reason: "approval_not_found" });
+
+    const current = toolRegistry.findExperimentByKeyOrHint({ siteId, key: approval.expected_experiment_key }).rawExperiment;
+    const validation = validateApprovalBeforeExecute(approval, { currentExperiment: current, user });
+    if (!validation.ok) {
+      const status = validation.reason === "approval_expired" ? "expired" : approval.status;
+      if (validation.reason === "approval_expired") approvalStore.update(siteId, approvalId, (item) => ({ ...item, status: "expired" }));
+      appendAgentActionLog({
+        filePath: agentActionsFile,
+        entry: {
+          site_id: siteId,
+          user_id: user?.id || null,
+          intent: "publish_experiment",
+          status: "failed",
+          summary: "승인 실행 검증 실패",
+          reason: validation.reason,
+          result_ref: { approval_id: approvalId, approval_status: status },
+        },
+      });
+      return failedResponse({ siteId, intent: "publish_experiment", message: "승인된 작업을 실행할 수 없습니다.", reason: validation.reason });
+    }
+
+    const published = toolRegistry.publishDraftExperiment({ siteId, approval });
+    if (!published.ok) {
+      approvalStore.update(siteId, approvalId, (item) => ({ ...item, status: "failed" }));
+      appendAgentActionLog({
+        filePath: agentActionsFile,
+        entry: {
+          site_id: siteId,
+          user_id: user?.id || null,
+          intent: "publish_experiment",
+          status: "failed",
+          summary: "draft publish 실행 실패",
+          reason: published.reason,
+          result_ref: { approval_id: approvalId, experiment_key: approval.expected_experiment_key },
+        },
+      });
+      return failedResponse({ siteId, intent: "publish_experiment", message: "draft 실험을 running으로 전환하지 못했습니다.", reason: published.reason });
+    }
+
+    const now = Date.now();
+    approvalStore.update(siteId, approvalId, (item) => ({
+      ...item,
+      status: "executed",
+      approved_by_user_id: user?.id || null,
+      approved_at: now,
+      executed_at: now,
+    }));
+    appendAgentActionLog({
+      filePath: agentActionsFile,
+      entry: {
+        site_id: siteId,
+        user_id: user?.id || null,
+        intent: "publish_experiment",
+        status: "executed",
+        summary: `${published.experiment.key} 실험을 running 상태로 배포`,
+        result_ref: { approval_id: approvalId, experiment_key: published.experiment.key, experiment_id: published.experiment.id },
+      },
+    });
+
+    return actionExecutedResponse({
+      siteId,
+      intent: "publish_experiment",
+      message: `${published.experiment.key} 실험을 running 상태로 전환했습니다.`,
+      data: { experiment: published.experiment, approval_id: approvalId },
+    });
+  }
+
+  function cancelApproval({ siteId, approvalId, user }) {
+    const approval = approvalStore.getById(siteId, approvalId);
+    if (!approval) return failedResponse({ siteId, intent: "publish_experiment", message: "승인 요청을 찾지 못했습니다.", reason: "approval_not_found" });
+    if (approval.status !== "pending") return failedResponse({ siteId, intent: approval.intent, message: "이미 처리된 승인 요청입니다.", reason: `approval_not_pending:${approval.status}` });
+    const now = Date.now();
+    const cancelled = approvalStore.update(siteId, approvalId, (item) => ({
+      ...item,
+      status: "cancelled",
+      cancelled_by_user_id: user?.id || null,
+      cancelled_at: now,
+    }));
+    appendAgentActionLog({
+      filePath: agentActionsFile,
+      entry: {
+        site_id: siteId,
+        user_id: user?.id || null,
+        intent: cancelled.intent,
+        status: "cancelled",
+        summary: cancelled.summary,
+        result_ref: { approval_id: approvalId, experiment_key: cancelled.expected_experiment_key },
+      },
+    });
+    return actionCancelledResponse({ siteId, intent: cancelled.intent, message: "승인 요청을 취소했습니다. 실험은 draft 상태로 유지됩니다.", data: { approval_id: approvalId } });
+  }
+
   async function runAgentTurn({ siteId, message, selectedExperimentKey, user, conversationId }) {
     const parsed = parseAgentIntent(message, { selectedExperimentKey });
     const query = {};
 
     if (parsed.intent === "create_experiment_draft") {
       return runDraftFlow({ siteId, message, user, conversationId });
+    }
+    if (parsed.intent === "publish_experiment") {
+      return runPublishApprovalFlow({ siteId, message, selectedExperimentKey, user, conversationId });
     }
     if (BLOCKED_WRITE_INTENTS.has(parsed.intent)) return blockedResponse({ siteId, intent: parsed.intent });
 
@@ -147,7 +289,7 @@ function createAgentOrchestrator({ toolRegistry, agentActionsFile }) {
     }
   }
 
-  return { runAgentTurn };
+  return { runAgentTurn, approveApproval, cancelApproval };
 }
 
 module.exports = { createAgentOrchestrator };

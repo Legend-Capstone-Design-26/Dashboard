@@ -101,10 +101,56 @@ function createExperimentTools({ experimentStore }) {
     return { ok: true, experiment: normalizeExperiment(saved), rawExperiment: saved };
   }
 
+  function findLatestDraftExperiment({ siteId, selectedExperimentKey, message }) {
+    const experiments = experimentStore.list(siteId);
+    const drafts = experiments.filter((experiment) => experiment.status === "draft");
+    if (!drafts.length) return { ok: false, reason: "draft_experiment_not_found", message: "배포할 draft 실험을 찾지 못했습니다. 먼저 초안을 생성하거나 draft 실험을 선택해 주세요." };
+
+    const selectedKey = String(selectedExperimentKey || "").trim();
+    if (selectedKey) {
+      const selected = drafts.find((experiment) => experiment.key === selectedKey) || null;
+      if (selected) return { ok: true, experiment: normalizeExperiment(selected), rawExperiment: selected };
+    }
+
+    const text = String(message || "").toLowerCase();
+    const keyMatch = text.match(/exp_[a-z0-9_]+/i);
+    if (keyMatch) {
+      const byMessage = drafts.find((experiment) => experiment.key === keyMatch[0]) || null;
+      if (byMessage) return { ok: true, experiment: normalizeExperiment(byMessage), rawExperiment: byMessage };
+    }
+
+    const latest = drafts.slice().sort((a, b) => (b.updated_at || 0) - (a.updated_at || 0))[0];
+    return { ok: true, experiment: normalizeExperiment(latest), rawExperiment: latest };
+  }
+
+  function publishDraftExperiment(input) {
+    const siteId = String(input?.siteId || "").trim();
+    const approval = input?.approval || {};
+    const current = experimentStore.getById(siteId, approval.expected_experiment_id);
+    if (!current) return { ok: false, reason: "experiment_not_found" };
+    if (current.id !== approval.expected_experiment_id) return { ok: false, reason: "experiment_id_mismatch" };
+    if (current.key !== approval.expected_experiment_key) return { ok: false, reason: "experiment_key_mismatch" };
+    if (current.version !== approval.expected_experiment_version) return { ok: false, reason: "experiment_version_mismatch" };
+    if (current.status !== "draft") return { ok: false, reason: "experiment_not_draft" };
+
+    const now = Date.now();
+    const updated = experimentStore.patchById(siteId, current.id, (experiment) => ({
+      ...experiment,
+      status: "running",
+      published_at: now,
+      updated_at: now,
+      archived_at: null,
+    }));
+    if (!updated) return { ok: false, reason: "publish_failed" };
+    return { ok: true, experiment: normalizeExperiment(updated), rawExperiment: updated };
+  }
+
   return {
     listExperiments,
     findExperimentByKeyOrHint,
     createExperimentDraft,
+    findLatestDraftExperiment,
+    publishDraftExperiment,
   };
 }
 
