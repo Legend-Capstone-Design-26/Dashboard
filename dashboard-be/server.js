@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { createRequire } = require("module");
 const { ensureJsonFile, ensureJsonlFile } = require("./services/data-store");
 const { createChatRoutes } = require("./routes/chat-routes");
+const { createAgentRoutes } = require("./routes/agent-routes");
 const { loadEnvFromFile } = require("./services/llm/config");
 const {
   createFileEventStore,
@@ -120,11 +121,15 @@ const SUPPORT_TICKETS_FILE = path.join(DATA_DIR, "support_tickets.json");
 const CHAT_SESSIONS_FILE = path.join(DATA_DIR, "chat_sessions.json");
 const CHAT_EVENTS_FILE = path.join(DATA_DIR, "chat_events.jsonl");
 const CHAT_FEEDBACK_FILE = path.join(DATA_DIR, "chat_feedback.json");
+const AGENT_ACTIONS_FILE = path.join(DATA_DIR, "agent_actions.jsonl");
+const AGENT_APPROVALS_FILE = path.join(DATA_DIR, "agent_approvals.json");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const USER_SITE_ACCESS_FILE = path.join(DATA_DIR, "user_site_access.json");
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 ensureJsonFile(EXP_FILE, { experiments: [] });
+ensureJsonlFile(AGENT_ACTIONS_FILE);
+ensureJsonFile(AGENT_APPROVALS_FILE, { approvals: [] });
 ensureJsonFile(SITES_FILE, {
   sites: [
     {
@@ -1473,6 +1478,29 @@ app.get("/api/insights", requireAuth, requireSiteAccess, async (req, res) => {
     return res.status(500).json({ ok: false, reason: String(e) });
   }
 });
+
+app.use(
+  "/api/agent",
+  createAgentRoutes({
+    files: {
+      experimentsFile: EXP_FILE,
+      eventsFile: EVENTS_FILE,
+      sitesFile: SITES_FILE,
+      agentActionsFile: AGENT_ACTIONS_FILE,
+      agentApprovalsFile: AGENT_APPROVALS_FILE,
+    },
+    middlewares: {
+      requireAuth,
+      requireSiteAccess,
+    },
+    analytics: {
+      computeLabeledSessionSummaries,
+      computeLabelsSummary,
+      buildInsightsInput,
+      generateInsights,
+    },
+  })
+);
 
 app.use(
   "/api",

@@ -945,7 +945,14 @@
   // ─── Copilot / Draft ───
   function updateCopilotExperimentUI() {
     if (copilotExperimentKey) copilotExperimentKey.textContent = state.selectedExperimentKey || "미선택";
-    if (state.chatWidget) state.chatWidget.setSelectedExperimentKey(state.selectedExperimentKey);
+    if (state.chatWidget) {
+      if (typeof state.chatWidget.setContext === "function") {
+        state.chatWidget.setContext({ siteId: getCurrentSiteId(), selectedExperimentKey: state.selectedExperimentKey });
+      } else {
+        state.chatWidget.setSelectedExperimentKey(state.selectedExperimentKey);
+        if (typeof state.chatWidget.setSiteId === "function") state.chatWidget.setSiteId(getCurrentSiteId());
+      }
+    }
   }
 
   function stageDraftForEditor(draft, changes) {
@@ -2291,9 +2298,16 @@
       localStorage.setItem(SITE_STORAGE_KEY, next);
       setSiteInUrl(next);
       updateSiteContextUI();
+      updateCopilotExperimentUI();
       render().catch((e) => alert(String(e)));
     });
   }
+
+  window.addEventListener("uxsdk:agent:experiment-updated", (event) => {
+    const detail = event.detail || {};
+    if (detail.site_id && detail.site_id !== getCurrentSiteId()) return;
+    render().catch((error) => console.warn("agent experiment refresh failed", error));
+  });
 
   if (experimentSelect) {
     experimentSelect.addEventListener("change", async () => {
@@ -2673,6 +2687,7 @@
       sendBtnId: "chatSendBtn",
       selectedExperimentId: "chatSelectedExperiment",
       storageKey: "dashboard",
+      getSiteId: () => getCurrentSiteId(),
       onExperimentDraft(draft) { stageDraftForEditor(draft, draft?.variant_b_changes || []); },
       onEditorChanges(changes, draft) { stageDraftForEditor(draft, changes); },
     });
