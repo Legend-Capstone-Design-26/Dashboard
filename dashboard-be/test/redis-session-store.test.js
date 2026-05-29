@@ -9,6 +9,7 @@ function createFakeRedisRuntime(initial = {}, keyPrefix = "") {
   return {
     async connect() {
       return {
+        options: { keyPrefix },
         async set(key, value) {
           data.set(withPrefix(key), value);
         },
@@ -21,7 +22,7 @@ function createFakeRedisRuntime(initial = {}, keyPrefix = "") {
           return Array.from(data.keys()).filter((key) => regex.test(key));
         },
         async mget(keys) {
-          return keys.map((key) => data.get(key) || null);
+          return keys.map((key) => data.get(withPrefix(key)) || null);
         },
       };
     },

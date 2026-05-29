@@ -18,6 +18,26 @@ function buildClicksKey({ siteId, key, variant }) {
   return `metrics:exp:${siteId}:${key}:${variant}:clicks`;
 }
 
+async function scanKeys(client, pattern) {
+  const prefix = String(client?.options?.keyPrefix || "");
+  const physicalPattern = `${prefix}${pattern}`;
+
+  if (typeof client.scan === "function") {
+    const keys = [];
+    let cursor = "0";
+    do {
+      const [nextCursor, batch] = await client.scan(cursor, "MATCH", physicalPattern, "COUNT", 100);
+      cursor = String(nextCursor);
+      keys.push(...(Array.isArray(batch) ? batch : []));
+    } while (cursor !== "0");
+
+    return keys.map((key) => prefix && key.startsWith(prefix) ? key.slice(prefix.length) : key);
+  }
+
+  const keys = await client.keys(pattern);
+  return keys.map((key) => prefix && key.startsWith(prefix) ? key.slice(prefix.length) : key);
+}
+
 function createRedisMetricsStore({ redisRuntime }) {
   async function recordExperimentEvent({ event, experimentKey, variant, goals }) {
     const client = await redisRuntime.connect();
@@ -67,7 +87,7 @@ function createRedisMetricsStore({ redisRuntime }) {
         client.scard(usersKey),
         client.scard(sessionsKey),
         client.zrevrange(clicksKey, 0, 9, "WITHSCORES"),
-        client.keys(buildSessionStatsKey({ siteId, key, variant, sessionId: "*" })),
+        scanKeys(client, buildSessionStatsKey({ siteId, key, variant, sessionId: "*" })),
       ]);
 
       const stats = {
