@@ -6,11 +6,31 @@ function buildSessionKey({ siteId, sessionId }) {
   return `session:${siteId}:${sessionId}`;
 }
 
+async function scanKeys(client, pattern) {
+  const prefix = String(client?.options?.keyPrefix || "");
+  const physicalPattern = `${prefix}${pattern}`;
+
+  if (typeof client.scan === "function") {
+    const keys = [];
+    let cursor = "0";
+    do {
+      const [nextCursor, batch] = await client.scan(cursor, "MATCH", physicalPattern, "COUNT", 100);
+      cursor = String(nextCursor);
+      keys.push(...(Array.isArray(batch) ? batch : []));
+    } while (cursor !== "0");
+
+    return keys.map((key) => prefix && key.startsWith(prefix) ? key.slice(prefix.length) : key);
+  }
+
+  const keys = await client.keys(pattern);
+  return keys.map((key) => prefix && key.startsWith(prefix) ? key.slice(prefix.length) : key);
+}
+
 function createRedisSessionStore({ redisRuntime, sessionTtlSec, assignmentTtlSec }) {
   async function listSessionStates({ siteId, limit = 50 }) {
     const client = await redisRuntime.connect();
     const pattern = buildSessionKey({ siteId, sessionId: "*" });
-    const keys = await client.keys(pattern);
+    const keys = await scanKeys(client, pattern);
     if (keys.length === 0) return [];
 
     const values = await client.mget(keys);
