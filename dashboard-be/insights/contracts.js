@@ -23,14 +23,23 @@
  * @property {number} generated_at
  * @property {Object[]} insights
  * @property {string} insights[].label
+ * @property {string} insights[].title
  * @property {string} insights[].where
+ * @property {string} insights[].priority_reason
+ * @property {Object} insights[].impact
+ * @property {number} insights[].impact.affected_sessions
+ * @property {number} insights[].impact.share
+ * @property {string} insights[].impact.primary_metric
+ * @property {string[]} insights[].evidence
  * @property {string[]} insights[].possible_causes
  * @property {string[]} insights[].validation_methods
+ * @property {string[]} insights[].recommended_actions
  * @property {Object[]} insights[].recommended_experiments
  * @property {string} insights[].recommended_experiments[].hypothesis
  * @property {string} insights[].recommended_experiments[].change
  * @property {string} insights[].recommended_experiments[].primary_metric
  * @property {string} insights[].priority
+ * @property {string} insights[].evidence_level
  */
 
 module.exports = {};

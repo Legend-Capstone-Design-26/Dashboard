@@ -14,6 +14,7 @@
     "infra:down": "npm run infra:down --workspace dashboard-be",
     "infra:logs": "npm run infra:logs --workspace dashboard-be",
     "test": "npm run test --workspace dashboard-be",
+    "scenario": "node dashboard-be/scripts/scenario-data.js",
     "simulate": "npm run simulate --workspace dashboard-be",
     "load:k6": "npm run load:k6 --workspace dashboard-be"
   }

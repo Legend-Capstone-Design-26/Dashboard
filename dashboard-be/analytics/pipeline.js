@@ -193,6 +193,7 @@ function buildInsightsInput(site_id, labeledSessions, opts) {
       label: x.label,
       sessions: x.sessions,
       share: x.share,
+      metrics: x.metrics,
       path_summary: summarizeRepresentativePaths(list),
       representative_steps: summarizeRepresentativeSteps(list),
       allowed_paths,

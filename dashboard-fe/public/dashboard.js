@@ -127,6 +127,7 @@
   const labelSummaryBody = document.getElementById("labelSummaryBody");
   const sessionsBody = document.getElementById("sessionsBody");
   const insightsList = document.getElementById("insightsList");
+  const generateInsightsBtn = document.getElementById("generateInsightsBtn");
   const sidebarLinks = Array.from(document.querySelectorAll(".sidebarLink[href^='#']"));
   const copilotExperimentKey = document.getElementById("copilotExperimentKey");
   const copilotDraftStatus = document.getElementById("copilotDraftStatus");
@@ -161,6 +162,11 @@
     selectedOverlayPersonaId: "",
     overlayGenerationPending: false,
     overlayPreviewReady: false,
+    generatedInsightData: null,
+    insightGenerationPending: false,
+    insightGenerationError: null,
+    insightGenerationToken: 0,
+    lastLabelSummary: [],
   };
 
   const AGE_GROUP_LABELS = {
@@ -1849,8 +1855,31 @@
     const topLabel = labels.slice().sort((a, b) => b.sessions - a.sessions)[0] || null;
     const journeySteps = Array.isArray(journeySummary?.journey?.steps) ? journeySummary.journey.steps : [];
     const highDropSteps = journeySteps.filter((step) => typeof step.drop_rate === "number" && step.drop_rate >= 0.5).slice(0, 2);
+    const insightSummary = insightData?.output?.summary && typeof insightData.output.summary === "object" ? insightData.output.summary : null;
+
+    const cleanText = (value) => String(value == null ? "" : value).trim();
+    const firstText = (value) => Array.isArray(value) ? cleanText(value[0]) : cleanText(value);
+    const formatImpact = (impact) => {
+      if (!impact || typeof impact !== "object") return "";
+      const parts = [];
+      const metric = cleanText(impact.primary_metric);
+      if (metric) parts.push(metric);
+      if (typeof impact.affected_sessions === "number" && isFinite(impact.affected_sessions)) parts.push(`영향 세션 ${fmtInt(impact.affected_sessions)}`);
+      if (typeof impact.share === "number" && isFinite(impact.share)) parts.push(`비중 ${fmtPct(impact.share)}`);
+      return parts.join(" · ");
+    };
+    const compactEvidence = (evidence) => {
+      if (!Array.isArray(evidence)) return "";
+      return evidence.map(cleanText).filter(Boolean).slice(0, 2).join(" · ");
+    };
 
     const summaryParts = [];
+    if (cleanText(insightSummary?.headline)) {
+      summaryParts.push(cleanText(insightSummary.headline));
+    }
+    if (cleanText(insightSummary?.top_priority_reason)) {
+      summaryParts.push(cleanText(insightSummary.top_priority_reason));
+    }
     if (highDropSteps[0]) {
       summaryParts.push(`${highDropSteps[0].label} 단계에서 이탈이 상대적으로 높게 나타났습니다.`);
     }
@@ -1872,12 +1901,18 @@
       });
     });
     insights.slice(0, Math.max(0, 3 - problemCards.length)).forEach((item) => {
+      const relatedLabel = item.label ? labelName(item.label) : "";
+      const impactText = formatImpact(item.impact);
+      const evidenceText = compactEvidence(item.evidence);
+      const fallbackCause = firstText(item.possible_causes);
       problemCards.push({
-        title: item.where || labelName(item.label),
+        title: cleanText(item.title) || cleanText(item.where) || relatedLabel || "우선 확인 포인트",
         priority: item.priority || "low",
-        where: labelName(item.label),
-        metric: topLabel && item.label === topLabel.label ? `유형 비중 ${fmtPct(topLabel.share)}` : "근거 지표 확인 필요",
-        desc: (Array.isArray(item.possible_causes) && item.possible_causes[0]) || "현재 데이터만으로는 원인을 단정하기 어렵지만 우선 확인이 필요한 신호입니다.",
+        where: cleanText(item.where) || relatedLabel || "확인 위치 미상",
+        metric: impactText || (topLabel && item.label === topLabel.label ? `유형 비중 ${fmtPct(topLabel.share)}` : "근거 지표 확인 필요"),
+        priorityReason: cleanText(item.priority_reason) || fallbackCause || "현재 데이터만으로는 원인을 단정하기 어렵지만 우선 확인이 필요한 신호입니다.",
+        evidence: evidenceText,
+        evidenceLevel: cleanText(item.evidence_level),
       });
     });
 
@@ -1886,6 +1921,10 @@
       actions.push(`${step.label} 단계의 CTA 위치와 정보 밀도를 먼저 점검해볼 수 있습니다.`);
     });
     insights.forEach((item) => {
+      (Array.isArray(item.recommended_actions) ? item.recommended_actions : []).forEach((action) => {
+        const text = cleanText(action);
+        if (text) actions.push(text);
+      });
       if (Array.isArray(item.validation_methods) && item.validation_methods[0]) actions.push(item.validation_methods[0]);
     });
 
@@ -2009,6 +2048,21 @@
 
   // ─── 렌더링: 개선 기회 ───
   function renderOpportunities(insights) {
+    if (state.insightGenerationPending) {
+      opportunityList.innerHTML = '<div class="emptyState">AI 인사이트를 도출하는 중입니다. 완료되면 우선 확인 포인트가 여기에 표시됩니다.</div>';
+      if (uxPriorityHint) uxPriorityHint.textContent = "AI 인사이트를 생성하는 중입니다.";
+      return;
+    }
+    if (state.insightGenerationError && !state.generatedInsightData) {
+      opportunityList.innerHTML = `<div class="emptyState">인사이트 생성에 실패했습니다.<br/>${escapeHtml(state.insightGenerationError)}</div>`;
+      if (uxPriorityHint) uxPriorityHint.textContent = "인사이트 생성에 실패했습니다.";
+      return;
+    }
+    if (!state.generatedInsightData) {
+      opportunityList.innerHTML = '<div class="emptyState">인사이트 도출 버튼을 누르면 우선 확인 포인트가 여기에 표시됩니다.</div>';
+      if (uxPriorityHint) uxPriorityHint.textContent = state.insightGenerationError || "버튼을 눌러 우선 확인 항목을 생성해 주세요.";
+      return;
+    }
     if (!Array.isArray(insights) || !insights.length) {
       opportunityList.innerHTML = '<div class="emptyState">인사이트가 생기면 요약이 여기에 올라옵니다.</div>';
       if (uxPriorityHint) uxPriorityHint.textContent = "우선 확인이 필요한 항목을 아직 만들지 못했습니다.";
@@ -2032,9 +2086,31 @@
           ${i.where ? `<span class="badge label">${escapeHtml(i.where)}</span>` : ""}
         </div>
         <div class="opportunityDesc">${escapeHtml((Array.isArray(i.possible_causes) && i.possible_causes[0]) || i.where || "최근 수집된 UX 패턴을 기반으로 우선 확인이 필요한 항목입니다.")}</div>
-        <div class="opportunityAction"><strong>권장 액션</strong> · ${escapeHtml((Array.isArray(i.validation_methods) && i.validation_methods[0]) || (Array.isArray(i.recommended_experiments) && (i.recommended_experiments[0]?.hypothesis || i.recommended_experiments[0]?.change)) || "관련 페이지와 사용자 행동을 먼저 확인해 주세요.")}</div>
+        <div class="opportunityAction"><strong>권장 액션</strong> · ${escapeHtml((Array.isArray(i.recommended_actions) && i.recommended_actions[0]) || (Array.isArray(i.validation_methods) && i.validation_methods[0]) || (Array.isArray(i.recommended_experiments) && (i.recommended_experiments[0]?.hypothesis || i.recommended_experiments[0]?.change)) || "관련 페이지와 사용자 행동을 먼저 확인해 주세요.")}</div>
       </div>
     `).join("");
+  }
+
+  function getGeneratedInsightItems() {
+    return Array.isArray(state.generatedInsightData?.output?.insights) ? state.generatedInsightData.output.insights : [];
+  }
+
+  function resetGeneratedInsights() {
+    state.insightGenerationToken += 1;
+    state.generatedInsightData = null;
+    state.insightGenerationPending = false;
+    state.insightGenerationError = null;
+  }
+
+  function renderInsightGenerationButton() {
+    if (!generateInsightsBtn) return;
+    generateInsightsBtn.disabled = state.insightGenerationPending;
+    generateInsightsBtn.textContent = state.insightGenerationPending ? "도출 중…" : "인사이트 도출";
+  }
+
+  function renderGeneratedInsightSections() {
+    renderInsights(state.generatedInsightData, state.lastEventSummary, state.lastLabelSummary);
+    renderOpportunities(getGeneratedInsightItems());
   }
 
   // ─── 렌더링: 라벨 요약 테이블 ───
@@ -2097,6 +2173,22 @@
 
   // ─── 렌더링: 인사이트 ───
   function renderInsights(data, eventSummary, labelSummary) {
+    renderInsightGenerationButton();
+    if (state.insightGenerationPending) {
+      uxHighPriorityCount.textContent = "…";
+      insightsList.innerHTML = '<div class="emptyState">선택한 기간의 AI UX 인사이트를 도출하는 중입니다.</div>';
+      return;
+    }
+    if (state.insightGenerationError && !data) {
+      uxHighPriorityCount.textContent = "—";
+      insightsList.innerHTML = `<div class="emptyState">인사이트 생성에 실패했습니다.<br/>${escapeHtml(state.insightGenerationError)}</div>`;
+      return;
+    }
+    if (!data) {
+      uxHighPriorityCount.textContent = "—";
+      insightsList.innerHTML = '<div class="emptyState">인사이트 도출 버튼을 누르면 선택한 기간의 AI UX 인사이트를 생성합니다.</div>';
+      return;
+    }
     const insights = Array.isArray(data?.output?.insights) ? data.output.insights : [];
     uxHighPriorityCount.textContent = String(insights.filter((i) => i.priority === "high").length);
 
@@ -2124,7 +2216,9 @@
                 <span class="badge ${escapeHtml(item.priority || "low")}">${escapeHtml(item.priority === "high" ? "높음" : item.priority === "medium" ? "보통" : "낮음")}</span>
               </div>
               <div class="productInsightMeta"><span class="badge label">${escapeHtml(item.metric)}</span></div>
-              <div class="insightText">${escapeHtml(item.desc)}</div>
+              ${item.evidenceLevel ? `<div class="productInsightMeta"><span class="badge label">근거 ${escapeHtml(item.evidenceLevel)}</span></div>` : ""}
+              <div class="insightText">${escapeHtml(item.priorityReason || item.desc)}</div>
+              ${item.evidence ? `<div class="muted">${escapeHtml(item.evidence)}</div>` : ""}
             </article>
           `).join("") : '<div class="emptyState">아직 주요 문제를 정리할 수 있는 데이터가 부족합니다.</div>'}
         </section>
@@ -2163,13 +2257,11 @@
     updatePeriodStatus();
     if (trendChartCard) trendChartCard.innerHTML = '<div class="chartState">불러오는 중…</div>';
 
-    const [sites, exps, sessions, labelSummary, insightData, opportunityData, eventSummary, usersResult] = await Promise.all([
+    const [sites, exps, sessions, labelSummary, eventSummary, usersResult] = await Promise.all([
       fetchSites(),
       fetchExperiments(),
       fetchSessions(),
       fetchLabelsSummary(),
-      fetchInsights(true),
-      fetchInsights(false),
       fetchEventSummary().catch((error) => ({ ok: false, reason: String(error) })),
       state.authUser?.is_admin === true
         ? fetchUsers().then((users) => ({ users, error: null })).catch((error) => ({ users: [], error: String(error) }))
@@ -2181,6 +2273,7 @@
     state.experiments = exps;
     state.userFetchError = usersResult.error;
     state.lastEventSummary = eventSummary?.ok ? eventSummary : null;
+    state.lastLabelSummary = labelSummary;
     syncNewUserSiteIds();
 
     if (!state.selectedExperimentKey && exps.length > 0) {
@@ -2210,8 +2303,8 @@
 
     renderSessions(sessions);
     renderLabelSummary(labelSummary);
-    renderUxOverview(labelSummary, insightData, eventSummary?.ok ? eventSummary : null);
-    renderOpportunities(Array.isArray(opportunityData?.output?.insights) ? opportunityData.output.insights : []);
+    renderUxOverview(labelSummary, state.generatedInsightData, eventSummary?.ok ? eventSummary : null);
+    renderOpportunities(getGeneratedInsightItems());
     if (eventSummary?.ok) {
       renderTrendChart(eventSummary);
       renderJourneyFlow(eventSummary);
@@ -2232,6 +2325,29 @@
       if (state.userFetchError) setUserFormStatus(state.userFetchError, true);
     }
     updateSiteContextUI();
+  }
+
+  async function generateInsights() {
+    if (state.insightGenerationPending) return;
+    const token = state.insightGenerationToken + 1;
+    state.insightGenerationToken = token;
+    state.generatedInsightData = null;
+    state.insightGenerationPending = true;
+    state.insightGenerationError = null;
+    renderGeneratedInsightSections();
+    try {
+      const result = await fetchInsights(true);
+      if (state.insightGenerationToken !== token) return;
+      state.generatedInsightData = result;
+    } catch (error) {
+      if (state.insightGenerationToken !== token) return;
+      state.insightGenerationError = String(error);
+    } finally {
+      if (state.insightGenerationToken === token) {
+        state.insightGenerationPending = false;
+        renderGeneratedInsightSections();
+      }
+    }
   }
 
   // ─── 이벤트 리스너 ───
@@ -2281,6 +2397,16 @@
     render();
   });
 
+  if (generateInsightsBtn) {
+    generateInsightsBtn.addEventListener("click", () => {
+      generateInsights().catch((error) => {
+        state.insightGenerationPending = false;
+        state.insightGenerationError = String(error);
+        renderGeneratedInsightSections();
+      });
+    });
+  }
+
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
       await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
@@ -2294,6 +2420,8 @@
       state.siteId = next;
       state.selectedExperimentKey = null;
       state.selectedExperimentMetrics = null;
+      resetGeneratedInsights();
+      renderGeneratedInsightSections();
       if (experimentMetricsDialog?.open) experimentMetricsDialog.close();
       localStorage.setItem(SITE_STORAGE_KEY, next);
       setSiteInUrl(next);
@@ -2394,6 +2522,8 @@
   if (periodPreset) {
     periodPreset.addEventListener("change", () => {
       state.periodPreset = String(periodPreset.value || "7d");
+      resetGeneratedInsights();
+      renderGeneratedInsightSections();
       updatePeriodStatus();
       const range = getPeriodRange();
       if (state.periodPreset !== "custom" || (range.fromTs != null && range.toTs != null)) {
@@ -2406,6 +2536,8 @@
   if (customFromDate) {
     customFromDate.addEventListener("change", () => {
       state.customFromDate = String(customFromDate.value || "");
+      resetGeneratedInsights();
+      renderGeneratedInsightSections();
       updatePeriodStatus();
       const range = getPeriodRange();
       if (state.periodPreset === "custom" && range.fromTs != null && range.toTs != null) {
@@ -2418,6 +2550,8 @@
   if (customToDate) {
     customToDate.addEventListener("change", () => {
       state.customToDate = String(customToDate.value || "");
+      resetGeneratedInsights();
+      renderGeneratedInsightSections();
       updatePeriodStatus();
       const range = getPeriodRange();
       if (state.periodPreset === "custom" && range.fromTs != null && range.toTs != null) {

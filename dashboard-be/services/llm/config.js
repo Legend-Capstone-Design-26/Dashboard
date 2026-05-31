@@ -10,6 +10,7 @@ function loadEnvFromFile() {
   const envPaths = Array.from(new Set([
     path.join(process.cwd(), ".env"),
     path.join(__dirname, "..", "..", ".env"),
+    path.join(__dirname, "..", "..", "..", ".env"),
   ]));
 
   for (const envPath of envPaths) {
