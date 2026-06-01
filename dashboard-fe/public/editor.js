@@ -1007,15 +1007,23 @@
     };
 
     try {
-      const r = await fetch("/api/experiments/real-apply", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      async function request(replaceRunning = false) {
+        const r = await fetch("/api/experiments/real-apply", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ...payload, replace_running: replaceRunning })
+        });
+        return r.json().catch(() => ({ ok: false, reason: "unknown" }));
+      }
 
-      const j = await r.json();
+      let j = await request(false);
+      if (!j?.ok && j?.reason === "running_experiment_exists") {
+        const runningKey = j.running_experiment?.key || "기존 실험";
+        const confirmed = window.confirm(`현재 ${runningKey} 실험이 진행 중입니다.\n새 실험을 배포하려면 기존 실험을 일시 중지해야 합니다.\n\n기존 실험을 일시 중지하고 새 실험을 배포하시겠습니까?`);
+        if (confirmed) j = await request(true);
+      }
       if (!j?.ok) {
-        alert("Real 적용 실패: " + (j?.reason || "unknown"));
+        alert("Real 적용 실패: " + (j?.message || j?.reason || "unknown"));
         log("real apply failed");
         return;
       }

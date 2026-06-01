@@ -39,6 +39,12 @@ const {
   normalizeExperimentStatus,
   canTransitionExperimentStatus,
 } = require("./services/analytics/experiment-status");
+const {
+  detectDuplicateRunningExperiments,
+  isReplaceRunningRequested,
+  replaceRunningExperimentIfRequested,
+  selectLatestExperiment,
+} = require("./services/analytics/running-experiment-policy");
 
 loadEnvFromFile();
 const infraConfig = getInfraConfig();
@@ -437,6 +443,10 @@ const fileEventStore = createFileEventStore({ eventsFile: EVENTS_FILE });
 const experimentStore = createFileExperimentStore({ experimentsFile: EXP_FILE });
 const siteRegistryStore = createFileSiteRegistryStore({ sitesFile: SITES_FILE });
 const metricsReadModel = createMetricsReadModel({ eventStore: fileEventStore, experimentStore });
+
+detectDuplicateRunningExperiments(experimentStore.load().experiments).forEach((group) => {
+  console.warn(`[experiments] multiple running experiments found for site_id=${group.site_id}. Count=${group.experiments.length}.`);
+});
 
 ensureDefaultAdminUser();
 
@@ -1190,6 +1200,14 @@ app.post("/api/experiments/real-apply", requireAuth, requireSiteAccess, (req, re
   }
 
   const existing = experimentStore.getByKey(site_id, key);
+  const policy = replaceRunningExperimentIfRequested({
+    experimentStore,
+    siteId: site_id,
+    targetExperimentId: existing?.id || null,
+    replaceRunning: isReplaceRunningRequested(req.body),
+    now: now(),
+  });
+  if (!policy.ok) return res.status(409).json(policy);
 
   const base = {
     id: existing?.id || rid(),
@@ -1207,7 +1225,12 @@ app.post("/api/experiments/real-apply", requireAuth, requireSiteAccess, (req, re
   };
 
   const updated = experimentStore.upsert(base, (item) => item.site_id === site_id && item.key === key);
-  return res.json({ ok: true, experiment: updated });
+  return res.json({
+    ok: true,
+    replaced: Boolean(policy.replaced),
+    paused_experiment: policy.paused_experiment || undefined,
+    experiment: updated,
+  });
 });
 
 app.post("/api/experiments/:id/rollback", requireAuth, requireSiteAccess, (req, res) => {
@@ -1278,6 +1301,18 @@ app.patch("/api/experiments/:id", requireAuth, requireSiteAccess, (req, res) => 
     return res.status(400).json({ ok: false, reason: `invalid transition: ${currentStatus} -> ${status}` });
   }
 
+  let policy = { ok: true, replaced: false, paused_experiment: null };
+  if (status === "running") {
+    policy = replaceRunningExperimentIfRequested({
+      experimentStore,
+      siteId: site_id,
+      targetExperimentId: current.id,
+      replaceRunning: isReplaceRunningRequested(req.body),
+      now: now(),
+    });
+    if (!policy.ok) return res.status(409).json(policy);
+  }
+
   const updated = experimentStore.patchById(site_id, id, (experiment) => {
     const next = {
       ...experiment,
@@ -1289,7 +1324,12 @@ app.patch("/api/experiments/:id", requireAuth, requireSiteAccess, (req, res) => 
     return next;
   });
 
-  return res.json({ ok: true, experiment: updated });
+  return res.json({
+    ok: true,
+    replaced: Boolean(policy.replaced),
+    paused_experiment: policy.paused_experiment || undefined,
+    experiment: updated,
+  });
 });
 
 // delete
@@ -1312,10 +1352,14 @@ app.get("/api/config", (req, res) => {
     try { return new URL(url).pathname; } catch { return url || "/"; }
   })();
 
-  const running = experimentStore.list(site_id)
+  const matchingRunning = experimentStore.list(site_id)
     .filter((x) => x.site_id === site_id && x.status === "running")
-    .filter((x) => pathname.startsWith(x.url_prefix))
-    .map((x) => ({
+    .filter((x) => pathname.startsWith(x.url_prefix));
+  const selectedRunning = selectLatestExperiment(matchingRunning);
+  if (matchingRunning.length > 1) {
+    console.warn(`[experiments] multiple running experiments matched for site_id=${site_id} pathname=${pathname}. Using latest only.`);
+  }
+  const running = selectedRunning ? [selectedRunning].map((x) => ({
       key: x.key,
       url_prefix: x.url_prefix,
       traffic: x.traffic,
@@ -1323,7 +1367,7 @@ app.get("/api/config", (req, res) => {
       variants: x.variants,
       version: x.version,
       published_at: x.published_at
-    }));
+    })) : [];
 
   return res.json({ ok: true, site_id, pathname, experiments: running });
 });

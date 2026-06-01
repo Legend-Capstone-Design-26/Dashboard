@@ -1,4 +1,10 @@
 const crypto = require("crypto");
+const {
+  findConflictingRunningExperiment,
+  isReplaceRunningRequested,
+  replaceRunningExperimentIfRequested,
+  summarizeExperiment,
+} = require("../../analytics/running-experiment-policy");
 
 function normalizeExperiment(experiment) {
   return {
@@ -134,6 +140,15 @@ function createExperimentTools({ experimentStore }) {
     if (current.status !== "draft") return { ok: false, reason: "experiment_not_draft" };
 
     const now = Date.now();
+    const policy = replaceRunningExperimentIfRequested({
+      experimentStore,
+      siteId,
+      targetExperimentId: current.id,
+      replaceRunning: isReplaceRunningRequested(approval.payload || approval),
+      now,
+    });
+    if (!policy.ok) return policy;
+
     const updated = experimentStore.patchById(siteId, current.id, (experiment) => ({
       ...experiment,
       status: "running",
@@ -142,7 +157,13 @@ function createExperimentTools({ experimentStore }) {
       archived_at: null,
     }));
     if (!updated) return { ok: false, reason: "publish_failed" };
-    return { ok: true, experiment: normalizeExperiment(updated), rawExperiment: updated };
+    return {
+      ok: true,
+      replaced: Boolean(policy.replaced),
+      paused_experiment: policy.paused_experiment || null,
+      experiment: normalizeExperiment(updated),
+      rawExperiment: updated,
+    };
   }
 
   return {
@@ -150,6 +171,10 @@ function createExperimentTools({ experimentStore }) {
     findExperimentByKeyOrHint,
     createExperimentDraft,
     findLatestDraftExperiment,
+    findConflictingRunningExperiment({ siteId, targetExperimentId }) {
+      return findConflictingRunningExperiment({ experimentStore, siteId, targetExperimentId });
+    },
+    summarizeExperiment,
     publishDraftExperiment,
   };
 }
