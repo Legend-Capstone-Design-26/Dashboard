@@ -1160,6 +1160,19 @@ tr:hover td { background: rgba(91, 118, 254, 0.03); }
   gap: var(--space-3);
 }
 
+.insightHeaderActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.insightExportBtn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
 .productInsightSummary {
   border-radius: var(--radius-card);
   border: 1px solid var(--color-border-input);
@@ -1761,6 +1774,18 @@ details[open] > .detailsSummary::before {
   transition: opacity 0.18s, transform 0.18s, visibility 0.18s;
 }
 
+.chatbotPanel.size-wide {
+  width: 620px;
+  max-width: min(720px, calc(100vw - 32px));
+}
+
+.chatbotPanel.size-large {
+  width: 720px;
+  height: 760px;
+  max-width: min(820px, calc(100vw - 32px));
+  max-height: calc(100vh - 96px);
+}
+
 .chatbotPanel.is-hidden {
   opacity: 0;
   visibility: hidden;
@@ -1828,6 +1853,73 @@ details[open] > .detailsSummary::before {
 
 .chatbotIconBtn:hover { background: var(--color-surface-muted); }
 
+.chatbotUtilityRow {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 8px var(--space-4);
+  border-bottom: 1px solid var(--color-border-input);
+  background: #fff;
+}
+
+.chatbotSizeControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chatbotSizeLabel {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chatbotSizeButton,
+.chatbotHelpButton,
+.chatbotActionButton {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  background: #fff;
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.chatbotSizeButton,
+.chatbotHelpButton { padding: 5px 9px; }
+
+.chatbotSizeButton.is-active,
+.chatbotHelpButton.is-active {
+  border-color: rgba(91,118,254,.3);
+  background: rgba(91,118,254,.08);
+  color: var(--color-interactive);
+}
+
+.chatbotHelpPanel {
+  flex: 0 0 auto;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-input);
+  background: #fbfcff;
+}
+
+.chatbotHelpSection {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.chatbotHelpSection + .chatbotHelpSection { margin-top: 6px; }
+
+.chatbotHelpSection strong { color: var(--color-text); }
+
 .chatbotMetaRow, .chatbotActionsRow {
   display: flex;
   align-items: center;
@@ -1836,6 +1928,13 @@ details[open] > .detailsSummary::before {
   flex-wrap: wrap;
   padding: var(--space-2) var(--space-4);
   font-size: 12px;
+}
+
+.chatbotActionsRow[hidden],
+#copilotDraftStatus[hidden],
+#saveDraftBtn[hidden],
+#openDraftInEditorBtn[hidden] {
+  display: none !important;
 }
 
 .chatbotActionsRow { padding-bottom: var(--space-2); }
@@ -1948,6 +2047,24 @@ details[open] > .detailsSummary::before {
   align-self: flex-start;
   background: #fafbfc;
 }
+
+.chatbotMessageActions {
+  align-self: flex-start;
+  display: flex;
+  gap: 6px;
+  margin-top: -4px;
+  margin-left: 4px;
+}
+
+.chatbotActionButton {
+  padding: 4px 8px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.chatbotActionButton:hover,
+.chatbotSizeButton:hover,
+.chatbotHelpButton:hover { background: var(--color-surface-muted); }
 
 .agentCard {
   align-self: flex-start;
@@ -2158,7 +2275,17 @@ details[open] > .detailsSummary::before {
 @media (max-width: 640px) {
   .metricsGrid { grid-template-columns: 1fr; }
   .chatbotDock { right: var(--space-3); bottom: var(--space-3); }
-  .chatbotPanel { width: min(100vw - 24px, 400px); }
+  .chatbotPanel,
+  .chatbotPanel.size-wide,
+  .chatbotPanel.size-large {
+    width: min(100vw - 24px, 400px);
+    height: min(82vh, 640px);
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 88px);
+  }
+  .chatbotUtilityRow,
+  .insightHeaderActions { align-items: flex-start; justify-content: flex-start; }
+  .chatbotHelpSection { grid-template-columns: 1fr; }
   .experimentSummaryGrid,
   .experimentDialogMetaGrid,
   .experimentMetricsGrid,

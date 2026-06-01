@@ -128,11 +128,14 @@
   const sessionsBody = document.getElementById("sessionsBody");
   const insightsList = document.getElementById("insightsList");
   const generateInsightsBtn = document.getElementById("generateInsightsBtn");
+  const copyInsightsMarkdownBtn = document.getElementById("copyInsightsMarkdownBtn");
+  const downloadInsightsMarkdownBtn = document.getElementById("downloadInsightsMarkdownBtn");
   const sidebarLinks = Array.from(document.querySelectorAll(".sidebarLink[href^='#']"));
   const copilotExperimentKey = document.getElementById("copilotExperimentKey");
   const copilotDraftStatus = document.getElementById("copilotDraftStatus");
   const saveDraftBtn = document.getElementById("saveDraftBtn");
   const openDraftInEditorBtn = document.getElementById("openDraftInEditorBtn");
+  const copilotDraftActionsRow = saveDraftBtn?.closest(".chatbotActionsRow") || null;
 
   const DRAFT_STORAGE_KEY = "uxsdk.analyticsCopilotDraft";
   const state = {
@@ -961,18 +964,36 @@
     }
   }
 
+  function setCopilotDraftUi({ statusText = "", showSave = false, showOpen = false, saveDisabled = false, openDisabled = false } = {}) {
+    const shouldShow = Boolean(statusText || showSave || showOpen);
+    if (copilotDraftStatus) {
+      copilotDraftStatus.hidden = !statusText;
+      copilotDraftStatus.textContent = statusText;
+    }
+    if (copilotDraftActionsRow) copilotDraftActionsRow.hidden = !shouldShow;
+    if (saveDraftBtn) {
+      saveDraftBtn.hidden = !showSave;
+      saveDraftBtn.disabled = !showSave || saveDisabled;
+    }
+    if (openDraftInEditorBtn) {
+      openDraftInEditorBtn.hidden = !showOpen;
+      openDraftInEditorBtn.disabled = !showOpen || openDisabled;
+    }
+  }
+
   function stageDraftForEditor(draft, changes) {
     if (!draft && !Array.isArray(changes)) return;
     const payload = { draft: draft || null, changesB: Array.isArray(changes) ? changes : [], selectedExperimentKey: state.selectedExperimentKey, savedAt: Date.now() };
     state.latestDraft = payload;
     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
-    if (openDraftInEditorBtn) openDraftInEditorBtn.disabled = false;
-    if (saveDraftBtn) saveDraftBtn.disabled = false;
     const cnt = payload.changesB.length;
-    if (copilotDraftStatus) copilotDraftStatus.textContent = draft ? `초안 있음 · ${draft.key || "draft"} · 수정 ${cnt}건` : `수정 ${cnt}건 반영 대기`;
+    setCopilotDraftUi({
+      statusText: draft ? `초안 준비됨 · ${draft.key || "draft"} · 수정 ${cnt}건` : `초안 준비됨 · 수정 ${cnt}건`,
+      showSave: true,
+    });
   }
 
-  function stageExperimentForEditor(exp) {
+  function stageExperimentForEditor(exp, options = {}) {
     const payload = {
       draft: { key: exp.key, version: exp.version || null, target_page: exp.url_prefix, hypothesis: exp.hypothesis || "" },
       changesB: Array.isArray(exp?.variants?.B) ? exp.variants.B : [],
@@ -981,9 +1002,14 @@
     };
     state.latestDraft = payload;
     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
-    if (openDraftInEditorBtn) openDraftInEditorBtn.disabled = false;
-    if (saveDraftBtn) saveDraftBtn.disabled = exp.status === "draft";
-    if (copilotDraftStatus) copilotDraftStatus.textContent = `${exp.status === "draft" ? "초안" : "실험"} 불러옴 · ${exp.key}`;
+    if (options.revealActions) {
+      setCopilotDraftUi({
+        statusText: `${exp.status === "draft" ? "초안 저장됨" : "실험 불러옴"} · ${exp.key}`,
+        showOpen: true,
+      });
+    } else {
+      setCopilotDraftUi();
+    }
   }
 
   async function persistLatestDraft() {
@@ -1001,7 +1027,7 @@
       source: "analytics_copilot",
     };
     const saved = await saveDraftExperiment(payload);
-    stageExperimentForEditor(saved);
+    stageExperimentForEditor(saved, { revealActions: true });
     await render();
     return saved;
   }
@@ -1964,6 +1990,88 @@
     };
   }
 
+  function buildInsightsMarkdown(insightData, eventSummary, labelSummary) {
+    const insights = Array.isArray(insightData?.output?.insights) ? insightData.output.insights : [];
+    const model = buildProductInsightModel(insightData, eventSummary, labelSummary);
+    if (model.status !== "ready" || !insights.length || !model.hasData) return "";
+    const period = getPeriodRange();
+    const lines = [
+      "# AI UX 인사이트",
+      "",
+      "## 전체 요약",
+      `- 한 줄 결론: ${model.summary.headline || "정리된 결론 없음"}`,
+      `- 쉽게 말하면: ${model.summary.plainExplanation || "사용자 행동 데이터를 바탕으로 먼저 확인할 흐름을 정리했습니다."}`,
+      `- 지금 가장 먼저 볼 것: ${model.summary.firstCheck || "CTA 클릭 이벤트와 결제 완료 이벤트 수집을 확인하세요."}`,
+      "",
+      "## 주요 문제",
+    ];
+    if (model.problems.length) {
+      model.problems.forEach((item, index) => {
+        const evidence = item.evidenceBullets && item.evidenceBullets.length ? item.evidenceBullets : [item.evidence || item.metric].filter(Boolean);
+        lines.push(
+          `### ${index + 1}. ${item.title}`,
+          `- 위치: ${item.where || "확인 위치 미상"}`,
+          `- 우선순위: ${item.priority === "high" ? "높음" : item.priority === "medium" ? "보통" : "낮음"}`,
+          `- 쉽게 말하면: ${item.plainExplanation || item.priorityReason || "우선 확인이 필요한 신호입니다."}`,
+          `- 근거: ${evidence.join(" / ") || item.metric || "근거 지표 확인 필요"}`,
+          `- 먼저 확인할 것: ${item.nextBestAction || "관련 이벤트 수집 상태를 먼저 확인하세요."}`,
+          `- 주의할 점: ${item.riskNote || "표본이 적으면 확정적인 결론으로 보기 어렵습니다."}`,
+          "",
+        );
+      });
+    } else {
+      lines.push("- 아직 주요 문제를 정리할 수 있는 데이터가 부족합니다.", "");
+    }
+    lines.push("## 권장 액션");
+    if (model.actions.length) model.actions.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+    else lines.push("1. 아직 권장 액션을 만들 수 있는 데이터가 부족합니다.");
+    lines.push("", "## 관련 실험 제안");
+    if (model.experiments.length) {
+      model.experiments.forEach((item, index) => {
+        lines.push(
+          `### ${index + 1}. 실험 제안`,
+          item.brief ? `- 요약: ${item.brief}` : "",
+          item.hypothesis ? `- 가설: ${item.hypothesis}` : "",
+          item.change ? `- 바꿀 것: ${item.change}` : "",
+          item.metric ? `- 확인할 지표: ${item.metric}` : "",
+          "",
+        );
+      });
+    } else {
+      lines.push("- 현재 인사이트 기준으로 바로 연결할 실험 제안이 없습니다.", "");
+    }
+    lines.push(
+      "## 메타 정보",
+      `- 사이트 ID: ${getCurrentSiteId()}`,
+      `- 기간: ${period.label}`,
+      `- 생성 시각: ${window.UxExportUtils.formatTimestampForMarkdown(Date.now())}`,
+      `- 총 이벤트: ${fmtInt(eventSummary?.summary?.total_events)}`,
+      "- 출처: Dashboard AI UX 인사이트",
+      "",
+    );
+    return `${lines.filter((line, index, all) => line !== "" || all[index - 1] !== "").join("\n").trim()}\n`;
+  }
+
+  function hasExportableInsights() {
+    return Boolean(buildInsightsMarkdown(state.generatedInsightData, state.lastEventSummary, state.lastLabelSummary));
+  }
+
+  function setTemporaryButtonText(button, text, delay = 1200) {
+    if (!button) return;
+    const original = button.textContent;
+    button.textContent = text;
+    setTimeout(() => { button.textContent = original; }, delay);
+  }
+
+  function renderInsightExportButtons() {
+    const enabled = hasExportableInsights() && !state.insightGenerationPending;
+    [copyInsightsMarkdownBtn, downloadInsightsMarkdownBtn].forEach((button) => {
+      if (!button) return;
+      button.disabled = !enabled;
+      button.title = enabled ? "생성된 인사이트를 Markdown으로 내보냅니다." : "다운로드할 인사이트가 없습니다.";
+    });
+  }
+
   async function showMetrics(key) {
     const experiment = state.experiments.find((item) => item.key === key) || null;
     const metrics = state.selectedExperimentKey === key && state.selectedExperimentMetrics
@@ -2126,6 +2234,7 @@
     if (!generateInsightsBtn) return;
     generateInsightsBtn.disabled = state.insightGenerationPending;
     generateInsightsBtn.textContent = state.insightGenerationPending ? "도출 중…" : "인사이트 도출";
+    renderInsightExportButtons();
   }
 
   function renderGeneratedInsightSections() {
@@ -2468,6 +2577,35 @@
         state.insightGenerationError = String(error);
         renderGeneratedInsightSections();
       });
+    });
+  }
+
+  if (copyInsightsMarkdownBtn) {
+    copyInsightsMarkdownBtn.addEventListener("click", async () => {
+      const markdown = buildInsightsMarkdown(state.generatedInsightData, state.lastEventSummary, state.lastLabelSummary);
+      if (!markdown) {
+        setTemporaryButtonText(copyInsightsMarkdownBtn, "복사할 인사이트 없음");
+        return;
+      }
+      try {
+        await window.UxExportUtils.copyTextToClipboard(markdown);
+        setTemporaryButtonText(copyInsightsMarkdownBtn, "복사됨");
+      } catch {
+        setTemporaryButtonText(copyInsightsMarkdownBtn, "복사 실패");
+      }
+    });
+  }
+
+  if (downloadInsightsMarkdownBtn) {
+    downloadInsightsMarkdownBtn.addEventListener("click", () => {
+      const markdown = buildInsightsMarkdown(state.generatedInsightData, state.lastEventSummary, state.lastLabelSummary);
+      if (!markdown) {
+        setTemporaryButtonText(downloadInsightsMarkdownBtn, "다운로드 없음");
+        return;
+      }
+      const site = window.UxExportUtils.safeFilenamePart(getCurrentSiteId());
+      const ts = window.UxExportUtils.formatTimestampForFilename(Date.now());
+      window.UxExportUtils.downloadTextFile(`ux-insights-${site}-${ts}.md`, markdown);
     });
   }
 

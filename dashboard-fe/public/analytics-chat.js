@@ -1,4 +1,61 @@
 (function () {
+  function pad2(value) {
+    return String(value).padStart(2, "0");
+  }
+
+  function formatTimestampForFilename(ts) {
+    const d = ts ? new Date(ts) : new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}`;
+  }
+
+  function formatTimestampForMarkdown(ts) {
+    const d = ts ? new Date(ts) : new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+
+  function safeFilenamePart(value) {
+    return String(value || "unknown").trim().replace(/[^A-Za-z0-9_.-]+/g, "_").replace(/^_+|_+$/g, "") || "unknown";
+  }
+
+  function downloadTextFile(filename, content, mimeType = "text/markdown;charset=utf-8") {
+    const blob = new Blob([String(content || "")], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function copyTextToClipboard(text) {
+    const value = String(text || "");
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand("copy");
+    textarea.remove();
+    if (!ok) throw new Error("copy_failed");
+    return true;
+  }
+
+  window.UxExportUtils = {
+    downloadTextFile,
+    copyTextToClipboard,
+    formatTimestampForFilename,
+    formatTimestampForMarkdown,
+    safeFilenamePart,
+  };
+
   function createMessage(role, text) {
     const el = document.createElement("div");
     el.className = `chatbotMessage ${role}`;
@@ -26,8 +83,16 @@
     if (!fab || !panel || !messagesEl || !inputEl || !sendBtn) return null;
 
     const openKey = `uxsdk.chatWidget.open.${options.storageKey || "default"}`;
+    const sizeKey = `uxsdk.chatWidget.size.${options.storageKey || "default"}`;
+    const sizePresets = [
+      { key: "default", label: "기본" },
+      { key: "wide", label: "넓게" },
+      { key: "large", label: "크게" },
+    ];
     const state = {
       isOpen: false,
+      size: "default",
+      helpOpen: false,
       sessionId: `analytics_${Math.random().toString(16).slice(2, 10)}`,
       selectedExperimentKey: null,
       agentMode: false,
@@ -37,6 +102,35 @@
       pendingApprovalActions: new Set(),
       completedApprovalActions: new Set(),
     };
+
+    const utilityRow = createEl("div", "chatbotUtilityRow");
+    const sizeControls = createEl("div", "chatbotSizeControls");
+    const sizeLabel = createEl("span", "chatbotSizeLabel", "크기");
+    const sizeButtons = sizePresets.map((preset) => {
+      const btn = createEl("button", "chatbotSizeButton", preset.label);
+      btn.type = "button";
+      btn.dataset.size = preset.key;
+      sizeControls.appendChild(btn);
+      return btn;
+    });
+    const helpButton = createEl("button", "chatbotHelpButton", "도움말");
+    const helpPanel = createEl("div", "chatbotHelpPanel");
+    helpButton.type = "button";
+    helpButton.setAttribute("aria-expanded", "false");
+    helpPanel.hidden = true;
+    helpPanel.innerHTML = `
+      <div class="chatbotHelpSection"><strong>일반 챗봇</strong><span>실험 결과 해석, 이탈 원인, 다음 실험 아이디어를 물어볼 수 있습니다.</span></div>
+      <div class="chatbotHelpSection"><strong>Agent Mode</strong><span>켜면 실험 목록 조회와 초안 생성을 Agent 흐름으로 처리합니다. 배포는 승인 gate를 거칩니다.</span></div>
+      <div class="chatbotHelpSection"><strong>복사/다운로드</strong><span>일반 챗봇 답변과 AI UX 인사이트는 브라우저에서 Markdown으로 복사하거나 저장합니다.</span></div>
+      <div class="chatbotHelpSection"><strong>추천 질문</strong><span>“현재 실험 요약해줘”, “가장 먼저 볼 UX 문제는?”, “다음 실험안을 만들어줘”</span></div>`;
+    sizeControls.prepend(sizeLabel);
+    utilityRow.appendChild(sizeControls);
+    utilityRow.appendChild(helpButton);
+    const headerEl = panel.querySelector(".chatbotHeader");
+    if (headerEl && headerEl.parentNode) {
+      headerEl.parentNode.insertBefore(utilityRow, headerEl.nextSibling);
+      headerEl.parentNode.insertBefore(helpPanel, utilityRow.nextSibling);
+    }
 
     const agentControls = createEl("div", "agentModeControls");
     const agentToggle = createEl("button", "agentModeToggle", "Agent Mode OFF");
@@ -56,8 +150,29 @@
     }
 
     function renderMessage(role, text) {
-      messagesEl.appendChild(createMessage(role, text));
+      const el = createMessage(role, text);
+      messagesEl.appendChild(el);
       scrollToBottom();
+      return el;
+    }
+
+    function setChatSize(size) {
+      const next = sizePresets.some((preset) => preset.key === size) ? size : "default";
+      state.size = next;
+      sizePresets.forEach((preset) => panel.classList.toggle(`size-${preset.key}`, preset.key === next));
+      sizeButtons.forEach((btn) => {
+        const active = btn.dataset.size === next;
+        btn.classList.toggle("is-active", active);
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      try { localStorage.setItem(sizeKey, next); } catch {}
+    }
+
+    function setHelpOpen(open) {
+      state.helpOpen = !!open;
+      helpPanel.hidden = !state.helpOpen;
+      helpButton.classList.toggle("is-active", state.helpOpen);
+      helpButton.setAttribute("aria-expanded", state.helpOpen ? "true" : "false");
     }
 
     function rememberChatMessage(role, content) {
@@ -68,6 +183,60 @@
     function currentSiteId() {
       if (typeof options.getSiteId === "function") return String(options.getSiteId() || "").trim();
       return String(options.siteId || "").trim();
+    }
+
+    function buildChatMarkdown({ question, answer, createdAt }) {
+      const siteId = currentSiteId() || "없음";
+      const selectedExperiment = state.selectedExperimentKey || "없음";
+      return [
+        "# AI UX Copilot 답변",
+        "",
+        "## 질문",
+        String(question || ""),
+        "",
+        "## 답변",
+        String(answer || ""),
+        "",
+        "## 메타 정보",
+        `- 사이트 ID: ${siteId}`,
+        `- 선택 실험: ${selectedExperiment}`,
+        `- 생성 시각: ${window.UxExportUtils.formatTimestampForMarkdown(createdAt)}`,
+        "- 출처: Dashboard AI Copilot",
+        "",
+      ].join("\n");
+    }
+
+    function setTemporaryButtonText(button, text, delay = 1200) {
+      const original = button.textContent;
+      button.textContent = text;
+      setTimeout(() => { button.textContent = original; }, delay);
+    }
+
+    function renderAssistantMessageWithActions({ answer, question }) {
+      renderMessage("assistant", answer || "응답이 비어 있어요.");
+      const row = createEl("div", "chatbotMessageActions");
+      const copyBtn = createEl("button", "chatbotActionButton", "복사");
+      const downloadBtn = createEl("button", "chatbotActionButton", "MD 다운로드");
+      const createdAt = Date.now();
+      copyBtn.type = "button";
+      downloadBtn.type = "button";
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await window.UxExportUtils.copyTextToClipboard(answer || "");
+          setTemporaryButtonText(copyBtn, "복사됨");
+        } catch {
+          setTemporaryButtonText(copyBtn, "복사 실패");
+        }
+      });
+      downloadBtn.addEventListener("click", () => {
+        const site = window.UxExportUtils.safeFilenamePart(currentSiteId());
+        const ts = window.UxExportUtils.formatTimestampForFilename(createdAt);
+        window.UxExportUtils.downloadTextFile(`ux-chat-answer-${site}-${ts}.md`, buildChatMarkdown({ question, answer, createdAt }));
+      });
+      row.appendChild(copyBtn);
+      row.appendChild(downloadBtn);
+      messagesEl.appendChild(row);
+      scrollToBottom();
     }
 
     function compactJson(value) {
@@ -373,7 +542,7 @@
         const data = await response.json();
         if (!data?.ok) throw new Error(data?.reason || "chat failed");
 
-        renderMessage("assistant", data.answer || "응답이 비어 있어요.");
+        renderAssistantMessageWithActions({ answer: data.answer || "응답이 비어 있어요.", question: content });
         rememberChatMessage("assistant", data.answer || "");
 
         const actions = Array.isArray(data.actions) ? data.actions : [];
@@ -406,6 +575,8 @@
     fab.addEventListener("click", () => setOpen(!state.isOpen));
     if (closeBtn) closeBtn.addEventListener("click", () => setOpen(false));
     agentToggle.addEventListener("click", () => setAgentMode(!state.agentMode));
+    sizeButtons.forEach((btn) => btn.addEventListener("click", () => setChatSize(btn.dataset.size || "default")));
+    helpButton.addEventListener("click", () => setHelpOpen(!state.helpOpen));
     document.addEventListener("pointerdown", (event) => {
       if (!state.isOpen) return;
       const target = event.target;
@@ -425,6 +596,12 @@
     });
 
     renderMessage("assistant", "안녕하세요. 실험 결과 해석이나 다음에 시험해 볼 아이디어가 필요하면 편하게 물어보세요.");
+
+    try {
+      setChatSize(localStorage.getItem(sizeKey) || "default");
+    } catch {
+      setChatSize("default");
+    }
 
     try {
       setOpen(localStorage.getItem(openKey) === "1");
