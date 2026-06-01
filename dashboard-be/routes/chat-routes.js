@@ -15,7 +15,7 @@ const { createFileEventStore } = require("../services/stores/event-store");
 const { createFileSiteRegistryStore } = require("../services/stores/site-registry-store");
 const { createMetricsReadModel } = require("../services/read-models/metrics-read-model");
 
-function createChatRoutes({ files, middlewares = {} }) {
+function createChatRoutes({ files, middlewares = {}, redisEventSummaryStore = null }) {
   const router = express.Router();
   const requireAuth = typeof middlewares.requireAuth === "function" ? middlewares.requireAuth : (_req, _res, next) => next();
   const requireSiteAccess = typeof middlewares.requireSiteAccess === "function" ? middlewares.requireSiteAccess : (_req, _res, next) => next();
@@ -32,6 +32,7 @@ function createChatRoutes({ files, middlewares = {} }) {
     experimentStore,
     metricsReadModel,
   });
+  // TODO: events.jsonl 기반 analytics pipeline은 Redis read model 전환 완료 후 제거 예정.
   const eventsService = createEventsService({ eventsFile: files.eventsFile, eventStore });
   const conversationAnalyticsService = createConversationAnalyticsService({
     chatEventsFile: files.chatEventsFile,
@@ -68,14 +69,35 @@ function createChatRoutes({ files, middlewares = {} }) {
     return res.json(result);
   });
 
-  router.get("/event-summary", requireAuth, requireSiteAccess, (req, res) => {
+  router.get("/event-summary", requireAuth, requireSiteAccess, async (req, res) => {
     const siteId = String(req.query.site_id || "ab-sample");
     const page = req.query.page ? String(req.query.page) : null;
     const fromTs = Number.isFinite(Number(req.query.from_ts)) ? Number(req.query.from_ts) : undefined;
     const toTs = Number.isFinite(Number(req.query.to_ts)) ? Number(req.query.to_ts) : undefined;
     const rawSite = siteRegistryStore ? siteRegistryStore.getRawById(siteId) : null;
     const pathMappings = rawSite?.journey_path_mappings || null;
-    return res.json(eventsService.getEventSummary({ siteId, page, fromTs, toTs, pathMappings }));
+    if (!redisEventSummaryStore) {
+      return res.status(503).json({
+        ok: false,
+        reason: "redis_unavailable",
+        message: "실시간 데이터 저장소에 연결할 수 없습니다. Redis와 event consumer 상태를 확인해 주세요.",
+        source: "redis",
+        fallback_used: false,
+      });
+    }
+    try {
+      const summary = await redisEventSummaryStore.getEventSummary({ siteId, page, fromTs, toTs, pathMappings });
+      return res.json({ ...summary, source: "redis", fallback_used: false });
+    } catch (error) {
+      console.warn("[redis-summary] event-summary read failed", error);
+      return res.status(503).json({
+        ok: false,
+        reason: "redis_unavailable",
+        message: "실시간 데이터 저장소에 연결할 수 없습니다. Redis와 event consumer 상태를 확인해 주세요.",
+        source: "redis",
+        fallback_used: false,
+      });
+    }
   });
 
   router.get("/chat-issues-summary", requireAuth, requireSiteAccess, (req, res) => {
