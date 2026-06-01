@@ -83,8 +83,8 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
     return ["환불", "refund", "취소", "cancel", "교환", "exchange"].some((k) => q.includes(k));
   }
 
-  async function runAnalyticsCopilot({ messages, context }) {
-    const ctx = buildChatContext({ messages, context });
+  async function runAnalyticsCopilot({ messages, context, siteId: requestedSiteId }) {
+    const ctx = buildChatContext({ messages, context, siteId: requestedSiteId });
     const tools = toolRegistry.analyticsTools;
     const allowedTools = [
       "get_experiments",
@@ -98,7 +98,7 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
 
     const usedTools = [];
     const actions = [];
-    const siteId = "ab-sample";
+    const siteId = ctx.siteId;
     const userText = ctx.latestUserMessage;
     const detectedIntent = detectIntent(userText);
 
@@ -138,6 +138,7 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
       usedTools,
       name: "get_chat_issue_summary",
       input: {
+        siteId,
         page: ctx.page && ctx.page !== "dashboard" && ctx.page !== "editor" ? ctx.page : null,
         productId: ctx.productId || null,
       },
@@ -249,6 +250,7 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
       actions,
       meta: {
         agent: "analytics_copilot",
+        siteId,
         llmMode: safeLlmClient.mode,
         usedTools,
       },
@@ -488,11 +490,11 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
     };
   }
 
-  async function handleChat({ agent, messages, context }) {
+  async function handleChat({ agent, messages, context, siteId }) {
     if (!Array.isArray(messages) || messages.length === 0) {
       return { ok: false, reason: "messages_required" };
     }
-    if (agent === "analytics_copilot") return runAnalyticsCopilot({ messages, context });
+    if (agent === "analytics_copilot") return runAnalyticsCopilot({ messages, context, siteId });
     if (agent === "commerce_support") return runCommerceSupport({ messages, context });
     return { ok: false, reason: "unsupported_agent" };
   }

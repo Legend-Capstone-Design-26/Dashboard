@@ -1,9 +1,12 @@
-function buildChatContext({ context, messages }) {
+function buildChatContext({ context, messages, siteId }) {
   const latestUserMessage = [...(messages || [])]
     .reverse()
     .find((m) => m.role === "user" && typeof m.content === "string")?.content || "";
 
+  const resolvedSiteId = String(context?.site_id || context?.siteId || siteId || "ab-sample").trim() || "ab-sample";
+
   return {
+    siteId: resolvedSiteId,
     page: context?.page || "unknown",
     selectedExperimentKey: context?.selectedExperimentKey || null,
     selectedElement: context?.selectedElement || null,

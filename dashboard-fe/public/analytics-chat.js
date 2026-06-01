@@ -33,6 +33,7 @@
       agentMode: false,
       agentStatus: null,
       agentStatusLoaded: false,
+      messages: [],
       pendingApprovalActions: new Set(),
       completedApprovalActions: new Set(),
     };
@@ -57,6 +58,11 @@
     function renderMessage(role, text) {
       messagesEl.appendChild(createMessage(role, text));
       scrollToBottom();
+    }
+
+    function rememberChatMessage(role, content) {
+      state.messages.push({ role, content: String(content || "") });
+      if (state.messages.length > 20) state.messages = state.messages.slice(-20);
     }
 
     function currentSiteId() {
@@ -345,6 +351,8 @@
           return;
         }
 
+        rememberChatMessage("user", content);
+
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -352,7 +360,7 @@
           body: JSON.stringify({
             site_id: siteId,
             agent: "analytics_copilot",
-            messages: [{ role: "user", content }],
+            messages: state.messages.slice(-10),
             context: {
               page: "dashboard",
               site_id: siteId,
@@ -366,6 +374,7 @@
         if (!data?.ok) throw new Error(data?.reason || "chat failed");
 
         renderMessage("assistant", data.answer || "응답이 비어 있어요.");
+        rememberChatMessage("assistant", data.answer || "");
 
         const actions = Array.isArray(data.actions) ? data.actions : [];
         const draftAction = actions.find((item) => item.type === "experiment_draft");
@@ -426,11 +435,17 @@
     return {
       setSelectedExperimentKey,
       setSiteId(siteId) {
-        options.siteId = siteId || "";
+        const nextSiteId = siteId || "";
+        if (options.siteId && options.siteId !== nextSiteId) state.messages = [];
+        options.siteId = nextSiteId;
         if (state.agentMode) loadAgentStatus();
       },
       setContext(context) {
-        if (context && Object.prototype.hasOwnProperty.call(context, "siteId")) options.siteId = context.siteId || "";
+        if (context && Object.prototype.hasOwnProperty.call(context, "siteId")) {
+          const nextSiteId = context.siteId || "";
+          if (options.siteId && options.siteId !== nextSiteId) state.messages = [];
+          options.siteId = nextSiteId;
+        }
         if (context && Object.prototype.hasOwnProperty.call(context, "selectedExperimentKey")) setSelectedExperimentKey(context.selectedExperimentKey || null);
         if (state.agentMode) loadAgentStatus();
       },

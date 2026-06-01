@@ -12,8 +12,8 @@ function createToolRegistry({
     get_experiments: async ({ siteId }) => experimentsService.listExperiments(siteId),
     get_metrics: async ({ siteId, key }) => metricsService.getMetrics({ siteId, key }),
     get_event_summary: async ({ siteId, page }) => eventsService.getEventSummary({ siteId, page }),
-    get_chat_issue_summary: async ({ page, productId }) =>
-      conversationAnalyticsService.getChatIssueSummary({ page, productId }),
+    get_chat_issue_summary: async ({ siteId, page, productId }) =>
+      conversationAnalyticsService.getChatIssueSummary({ siteId, page, productId }),
     get_element_context: async ({ selectedElement }) => {
       if (!selectedElement) return null;
       const fallbackSelector = selectedElement.track_id ? `[data-track-id='${selectedElement.track_id}']` : null;
