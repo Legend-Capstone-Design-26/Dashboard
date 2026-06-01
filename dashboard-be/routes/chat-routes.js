@@ -57,8 +57,13 @@ function createChatRoutes({ files, middlewares = {} }) {
   const chatOrchestrator = createChatOrchestrator({ toolRegistry, conversationAnalyticsService, llmClient });
 
   router.post("/chat", requireAuth, requireSiteAccess, async (req, res) => {
-    const { agent, messages, context } = req.body || {};
-    const result = await chatOrchestrator.handleChat({ agent, messages, context });
+    const { agent, messages, context, site_id } = req.body || {};
+    const safeContext = context && typeof context === "object" ? context : {};
+    const mergedContext = {
+      ...safeContext,
+      site_id: safeContext.site_id || safeContext.siteId || site_id || req.query.site_id || "",
+    };
+    const result = await chatOrchestrator.handleChat({ agent, messages, context: mergedContext, siteId: site_id || req.query.site_id || "" });
     if (!result.ok) return res.status(400).json(result);
     return res.json(result);
   });
