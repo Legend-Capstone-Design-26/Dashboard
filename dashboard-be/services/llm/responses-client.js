@@ -1,4 +1,28 @@
 function createOpenAIClient({ apiKey, model }) {
+  function safeText(value, fallback = "") {
+    if (typeof value === "string") return value;
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    return fallback;
+  }
+
+  function safeJsonStringify(value, fallback = "{}") {
+    try {
+      const text = JSON.stringify(value, null, 2);
+      return typeof text === "string" ? text : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function sanitizeDetail(value, maxLength = 1000) {
+    const text = safeText(value, "");
+    if (!text) return "";
+    const withoutBearer = text.replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [redacted]");
+    const withoutOpenAiKeys = withoutBearer.replace(/sk-[A-Za-z0-9_-]+/g, "sk-[redacted]");
+    return withoutOpenAiKeys.slice(0, maxLength);
+  }
+
   function extractOutputText(data) {
     return Array.isArray(data.output)
       ? data.output
@@ -26,7 +50,7 @@ function createOpenAIClient({ apiKey, model }) {
           input: [
             {
               role: "system",
-              content: [{ type: "text", text: systemPrompt }],
+              content: [{ type: "text", text: safeText(systemPrompt) }],
             },
             ...input,
           ],
@@ -35,14 +59,14 @@ function createOpenAIClient({ apiKey, model }) {
 
       if (!response.ok) {
         const txt = await response.text();
-        return { ok: false, reason: `http_${response.status}`, detail: txt, text: fallbackAnswer };
+        return { ok: false, reason: `http_${response.status}`, detail: sanitizeDetail(txt), text: safeText(fallbackAnswer) };
       }
 
       const data = await response.json();
       const text = extractOutputText(data);
-      return { ok: true, text: text || fallbackAnswer, raw: data };
+      return { ok: true, text: text || safeText(fallbackAnswer), raw: data };
     } catch (error) {
-      return { ok: false, reason: "network_error", detail: String(error), text: fallbackAnswer };
+      return { ok: false, reason: "network_error", detail: sanitizeDetail(String(error)), text: safeText(fallbackAnswer) };
     }
   }
 
@@ -51,31 +75,32 @@ function createOpenAIClient({ apiKey, model }) {
     async rewrite({ systemPrompt, userPrompt, draftAnswer }) {
       return callResponses({
         systemPrompt,
-        input: [{ role: "user", content: [{ type: "text", text: userPrompt }] }],
+        input: [{ role: "user", content: [{ type: "text", text: safeText(userPrompt) }] }],
         fallbackAnswer: draftAnswer,
       });
     },
     async answer({ systemPrompt, messages, context, fallbackAnswer }) {
-      const history = (Array.isArray(messages) ? messages : [])
+      const safeMessages = (Array.isArray(messages) ? messages : [])
         .filter((message) => ["user", "assistant"].includes(message?.role) && typeof message.content === "string")
         .slice(-10)
         .map((message) => ({
           role: message.role,
-          content: [{ type: "text", text: message.content.slice(0, 2000) }],
+          content: message.content.slice(0, 2000),
         }));
+      const safeContext = context && typeof context === "object" ? context : {};
+      const userPrompt = [
+        "User conversation:",
+        safeJsonStringify(safeMessages, "[]"),
+        "",
+        "Dashboard context:",
+        safeJsonStringify(safeContext, "{}"),
+        "",
+        "Please answer the latest user message using the dashboard context.",
+      ].join("\n");
 
       return callResponses({
         systemPrompt,
-        input: [
-          ...history,
-          {
-            role: "user",
-            content: [{
-              type: "text",
-              text: `아래 structured analytics context만 근거로 최종 답변을 작성하세요.\n${JSON.stringify(context || {}, null, 2)}`,
-            }],
-          },
-        ],
+        input: [{ role: "user", content: [{ type: "text", text: userPrompt }] }],
         fallbackAnswer,
       });
     },
