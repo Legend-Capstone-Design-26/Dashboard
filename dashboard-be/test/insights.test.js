@@ -6,7 +6,7 @@ const { computeLabeledSessionSummaries, buildInsightsInput, isInsightEligibleSum
 const { generateInsights, mergeInsights } = require("../insights/generator");
 const { buildInsightsPrompt } = require("../insights/promptBuilder");
 
-test("generateInsights returns fallback insight output matching labeled data", async () => {
+test("generateInsights returns honest fallback status without fake insight cards", async () => {
   const fixture = path.join(__dirname, "..", "eval", "sample-events.jsonl");
   const labeled = await computeLabeledSessionSummaries(fixture, {
     site_id: "ab-sample",
@@ -19,21 +19,11 @@ test("generateInsights returns fallback insight output matching labeled data", a
   assert.equal(result.provider, "fallback");
   assert.equal(result.output.site_id, "ab-sample");
   assert.equal(Array.isArray(result.output.insights), true);
-  assert.equal(result.output.insights.length > 0, true);
-
-  for (const insight of result.output.insights) {
-    assert.equal(typeof insight.label, "string");
-    assert.equal(typeof insight.where, "string");
-    assert.equal(Array.isArray(insight.possible_causes), true);
-    assert.equal(Array.isArray(insight.validation_methods), true);
-    assert.equal(Array.isArray(insight.recommended_experiments), true);
-    assert.equal(typeof insight.title, "string");
-    assert.equal(typeof insight.priority_reason, "string");
-    assert.equal(typeof insight.impact, "object");
-    assert.equal(Array.isArray(insight.evidence), true);
-    assert.equal(Array.isArray(insight.recommended_actions), true);
-    assert.match(insight.evidence_level, /^(strong|moderate|weak)$/);
-  }
+  assert.equal(result.output.insights.length, 0);
+  assert.equal(result.output.status, "insufficient_data");
+  assert.equal(typeof result.output.summary.headline, "string");
+  assert.equal(typeof result.output.summary.plain_explanation, "string");
+  assert.equal(Array.isArray(result.output.next_steps), true);
 });
 
 test("buildInsightsInput excludes login-only low-signal sessions", () => {
@@ -221,7 +211,7 @@ test("mergeInsights rejects unsupported pathless evidence from LLM", () => {
   assert.equal(merged.insights[0].evidence.some((item) => item.includes("/cart")), true);
 });
 
-test("fallback insight evidence excludes auth subpaths", async () => {
+test("fallback status does not create auth-path-derived insight cards", async () => {
   const input = buildInsightsInput("legend-ecommerce", [{
     summary: {
       session_id: "s_real",
@@ -241,9 +231,9 @@ test("fallback insight evidence excludes auth subpaths", async () => {
     label: { label: "window_shopper", confidence: 0.55, evidence: [{ path: "/cart" }] },
   }], { perLabelRepresentatives: 1 });
   const result = await generateInsights(input, { provider: "fallback" });
-  const serialized = JSON.stringify(result.output.insights[0]);
+  const serialized = JSON.stringify(result.output);
   assert.equal(serialized.includes("/login/callback"), false);
-  assert.equal(serialized.includes("/cart"), true);
+  assert.equal(result.output.insights.length, 0);
 });
 
 test("buildInsightsPrompt asks for rich insight fields", () => {

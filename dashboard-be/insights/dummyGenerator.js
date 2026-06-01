@@ -1,4 +1,6 @@
 // insights/dummyGenerator.js
+// Deprecated: kept for legacy tests/reference only. Do not use this as a real
+// /api/insights UI fallback because it can look like data-backed analysis.
 
 const LABEL_PLAYBOOK = {
   checkout_abandoner: {
