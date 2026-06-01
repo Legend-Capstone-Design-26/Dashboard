@@ -2,6 +2,7 @@
 
 const LABEL_PLAYBOOK = {
   checkout_abandoner: {
+    title: "결제 완료 직전 이탈이 반복됩니다",
     where: "결제 진입 이후 완료 직전 구간",
     possible_causes: [
       "결제 직전 비용 정보나 혜택 정보가 충분히 설득되지 않음",
@@ -20,6 +21,7 @@ const LABEL_PLAYBOOK = {
     }
   },
   ux_friction_dropper: {
+    title: "오류나 반복 클릭으로 인한 마찰이 보입니다",
     where: "오류 또는 반복 클릭이 발생한 마찰 구간",
     possible_causes: [
       "UI 반응 지연이나 오류 메시지 노출 부족",
@@ -38,6 +40,7 @@ const LABEL_PLAYBOOK = {
     }
   },
   price_sensitive_dropper: {
+    title: "가격 정보 확인 뒤 구매 흐름이 약해집니다",
     where: "가격, 쿠폰, 배송비 정보 탐색 구간",
     possible_causes: [
       "최종 비용 구조가 늦게 드러나 신뢰가 떨어짐",
@@ -56,6 +59,7 @@ const LABEL_PLAYBOOK = {
     }
   },
   over_explorer: {
+    title: "탐색은 길지만 결제로 수렴하지 않습니다",
     where: "탐색이 길어지지만 결제로 수렴하지 않는 구간",
     possible_causes: [
       "상품 비교 정보는 많지만 선택을 도와주는 장치가 부족함",
@@ -74,6 +78,7 @@ const LABEL_PLAYBOOK = {
     }
   },
   window_shopper: {
+    title: "초기 탐색 직후 빠르게 이탈합니다",
     where: "초기 탐색 직후 빠르게 이탈하는 구간",
     possible_causes: [
       "첫 화면에서 가치 제안이 즉시 전달되지 않음",
@@ -106,6 +111,44 @@ function priorityFromShare(share, label) {
   return "low";
 }
 
+function isAuthPath(path) {
+  return path === "/login" || path === "/logout" || path.startsWith("/login/") || path.startsWith("/logout/");
+}
+
+function evidenceLevel(representatives) {
+  const count = Array.isArray(representatives) ? representatives.length : 0;
+  const evidenceCount = (representatives || []).reduce((sum, item) => sum + (Array.isArray(item?.evidence) ? item.evidence.length : 0), 0);
+  if (count >= 3 && evidenceCount >= 3) return "strong";
+  if (count >= 1 || evidenceCount >= 1) return "moderate";
+  return "weak";
+}
+
+function buildEvidence(representatives, labelBucket) {
+  const paths = Array.from(new Set(
+    (representatives || [])
+      .flatMap((item) => (Array.isArray(item?.summary?.unique_paths) ? item.summary.unique_paths : []))
+      .filter((path) => typeof path === "string" && path && !isAuthPath(path))
+  )).slice(0, 3);
+  const steps = Array.from(new Set(
+    (representatives || [])
+      .map((item) => (typeof item?.summary?.max_step === "string" ? item.summary.max_step : ""))
+      .filter(Boolean)
+  )).slice(0, 2);
+
+  const evidence = [];
+  if (paths.length) evidence.push(`대표 세션에서 ${paths.join(", ")} 경로가 반복되었습니다.`);
+  if (steps.length) evidence.push(`대표 세션의 주요 도달 단계는 ${steps.join(", ")}입니다.`);
+  evidence.push(`해당 유형은 ${labelBucket.sessions || 0}개 세션, 전체의 ${Math.round((labelBucket.share || 0) * 100)}%를 차지합니다.`);
+  return evidence;
+}
+
+function priorityReason(priority, labelBucket, primaryMetric) {
+  const sharePct = Math.round((labelBucket.share || 0) * 100);
+  if (priority === "high") return `전체 세션의 ${sharePct}%를 차지하고 ${primaryMetric}에 직접 영향을 줄 수 있어 우선순위가 높습니다.`;
+  if (priority === "medium") return `반복 신호가 확인되지만 영향 범위를 추가 검증해야 하므로 중간 우선순위입니다.`;
+  return `현재 근거가 제한적이어서 추적 대상으로 두고 추가 데이터를 확인하는 것이 적절합니다.`;
+}
+
 function buildWhere(label, representatives) {
   const playbook = LABEL_PLAYBOOK[label] || LABEL_PLAYBOOK.window_shopper;
   const avgDuration = Math.round(avg(representatives.map((item) => item?.summary?.duration_ms || 0)) / 1000);
@@ -113,7 +156,7 @@ function buildWhere(label, representatives) {
   const pathSummary = Array.from(new Set(
     representatives
       .flatMap((item) => (Array.isArray(item?.summary?.unique_paths) ? item.summary.unique_paths : []))
-      .filter((path) => typeof path === "string" && path && path !== "/login" && path !== "/logout")
+      .filter((path) => typeof path === "string" && path && !isAuthPath(path))
   )).slice(0, 4).join(", ");
   if (pathSummary) {
     return `${pathSummary} 중심 구간에서 반복 신호가 보입니다. 대표 세션 기준 평균 체류 ${avgDuration}초, 평균 탐색 깊이 ${avgDepth} 수준입니다.`;
@@ -129,17 +172,38 @@ function generateDummyInsights(input) {
   const insights = labels.map((labelBucket) => {
     const playbook = LABEL_PLAYBOOK[labelBucket.label] || LABEL_PLAYBOOK.window_shopper;
     const representatives = Array.isArray(labelBucket.representatives) ? labelBucket.representatives : [];
+    const priority = priorityFromShare(labelBucket.share || 0, labelBucket.label);
+    const primaryMetric = playbook.experiment.primary_metric;
     return {
       label: labelBucket.label,
+      title: playbook.title,
       where: buildWhere(labelBucket.label, representatives),
+      priority_reason: priorityReason(priority, labelBucket, primaryMetric),
+      impact: {
+        affected_sessions: labelBucket.sessions || 0,
+        share: labelBucket.share || 0,
+        primary_metric: primaryMetric
+      },
+      evidence: buildEvidence(representatives, labelBucket),
       possible_causes: playbook.possible_causes.slice(),
       validation_methods: playbook.validation_methods.slice(),
+      recommended_actions: [playbook.experiment.change].concat(playbook.validation_methods.slice(0, 1)),
       recommended_experiments: [Object.assign({}, playbook.experiment)],
-      priority: priorityFromShare(labelBucket.share || 0, labelBucket.label)
+      priority,
+      evidence_level: evidenceLevel(representatives)
     };
   });
 
-  return { site_id, generated_at, insights };
+  const top = insights.find((item) => item.priority === "high") || insights[0] || null;
+  return {
+    site_id,
+    generated_at,
+    summary: {
+      headline: top ? `${top.title} 항목을 먼저 확인하는 것이 좋습니다.` : "아직 우선순위를 정할 인사이트가 부족합니다.",
+      top_priority_reason: top?.priority_reason || "분석 가능한 대표 세션이 더 필요합니다."
+    },
+    insights
+  };
 }
 
 module.exports = {
