@@ -170,6 +170,8 @@
     insightGenerationError: null,
     insightGenerationToken: 0,
     lastLabelSummary: [],
+    sessionsError: null,
+    labelsError: null,
   };
 
   const AGE_GROUP_LABELS = {
@@ -695,21 +697,14 @@
     const siteId = encodeURIComponent(getCurrentSiteId());
     const { query } = buildPeriodQuery();
     const suffix = query ? `&${query}` : "";
-    try {
-      if (state.periodPreset === "today") {
-        const rr = await fetch(`/api/realtime/sessions?site_id=${siteId}&limit=12`);
-        const rj = await rr.json();
-        if (rj?.ok) {
-          state.sessionsSource = rj.source || "redis";
-          return Array.isArray(rj.sessions) ? rj.sessions : [];
-        }
-      }
-    } catch (_) { /* fallback */ }
-
     const r = await fetch(`/api/sessions?site_id=${siteId}&limit=12${suffix}`);
-    const j = await r.json();
-    if (!j?.ok) throw new Error(j?.reason || "sessions failed");
-    state.sessionsSource = "analytics";
+    const j = await r.json().catch(() => ({ ok: false, reason: "sessions failed" }));
+    state.sessionsSource = j?.source || "redis";
+    if (!j?.ok) {
+      state.sessionsError = j;
+      return [];
+    }
+    state.sessionsError = null;
     return j.sessions || [];
   }
 
@@ -717,8 +712,12 @@
     const { query } = buildPeriodQuery();
     const suffix = query ? `&${query}` : "";
     const r = await fetch(`/api/labels/summary?site_id=${encodeURIComponent(getCurrentSiteId())}${suffix}`);
-    const j = await r.json();
-    if (!j?.ok) throw new Error(j?.reason || "labels summary failed");
+    const j = await r.json().catch(() => ({ ok: false, reason: "labels summary failed" }));
+    if (!j?.ok) {
+      state.labelsError = j;
+      return [];
+    }
+    state.labelsError = null;
     return j.summary || [];
   }
 
@@ -728,8 +727,9 @@
       return query ? `&${query}` : "";
     })() : "";
     const r = await fetch(`/api/insights?site_id=${encodeURIComponent(getCurrentSiteId())}&reps=3${suffix}`);
-    const j = await r.json();
-    if (!j?.ok) throw new Error(j?.reason || "insights failed");
+    const j = await r.json().catch(() => ({ ok: false, reason: "insights failed" }));
+    if (!j?.ok && j?.reason === "redis_unavailable") throw new Error("AI 인사이트를 생성할 수 없습니다. Redis 기반 세션 데이터가 준비되지 않았습니다.");
+    if (!j?.ok) throw new Error(j?.message || j?.reason || "insights failed");
     return j;
   }
 
@@ -2164,6 +2164,12 @@
 
   // ─── 렌더링: 라벨 분포 바 ───
   function renderLabelBars(summary) {
+    if (state.labelsError) {
+      if (labelDonutTotal) labelDonutTotal.textContent = "—";
+      if (labelDonut) labelDonut.classList.add("empty");
+      labelBars.innerHTML = '<div class="emptyState">UX 라벨 데이터를 불러오지 못했습니다.<br/>Redis 또는 Kafka Consumer 상태를 확인해 주세요.</div>';
+      return;
+    }
     const fullSummary = mergeLabelSummary(summary);
     const totalSessions = fullSummary.reduce((sum, item) => sum + item.sessions, 0);
     if (labelDonutTotal) labelDonutTotal.textContent = fmtInt(totalSessions);
@@ -2252,6 +2258,10 @@
 
   // ─── 렌더링: 라벨 요약 테이블 ───
   function renderLabelSummary(summary) {
+    if (state.labelsError) {
+      labelSummaryBody.innerHTML = '<tr><td colspan="6" class="emptyState">UX 라벨 데이터를 불러오지 못했습니다.<br/>Redis 또는 Kafka Consumer 상태를 확인해 주세요.</td></tr>';
+      return;
+    }
     if (!Array.isArray(summary) || !summary.length) {
       labelSummaryBody.innerHTML = '<tr><td colspan="6" class="emptyState">세션 데이터가 없어요.</td></tr>';
       return;
@@ -2270,14 +2280,18 @@
   function renderSessions(sessions) {
     if (sessionsSourceLabel) {
       sessionsSourceLabel.textContent = state.sessionsSource === "redis"
-        ? "실시간(연동 시)"
+        ? "Redis read model"
         : "최근 방문 기록";
+    }
+    if (state.sessionsError) {
+      sessionsBody.innerHTML = '<tr><td colspan="9" class="emptyState">실시간 세션 데이터 연결 실패<br/>Redis 또는 Kafka Consumer 상태를 확인해 주세요.</td></tr>';
+      return;
     }
     if (!Array.isArray(sessions) || !sessions.length) {
       sessionsBody.innerHTML = '<tr><td colspan="9" class="emptyState">세션 데이터가 없어요.</td></tr>';
       return;
     }
-    if (state.sessionsSource === "redis") {
+    if (state.sessionsSource === "redis" && !sessions.some((entry) => entry && entry.summary)) {
       sessionsBody.innerHTML = sessions.map((s) => `<tr>
         <td class="mono">${escapeHtml(s.session_id || "—")}</td>
         <td><span class="badge running">라이브</span></td>

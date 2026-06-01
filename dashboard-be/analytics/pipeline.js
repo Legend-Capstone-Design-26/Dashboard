@@ -1,4 +1,5 @@
 // analytics/pipeline.js
+// TODO: Redis read model 전환 완료 후 events.jsonl 기반 analytics pipeline 제거 예정.
 
 const { readEventsJsonl } = require("./events");
 const { buildSessions } = require("./sessionize");

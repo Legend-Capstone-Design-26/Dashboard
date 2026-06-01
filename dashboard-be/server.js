@@ -22,6 +22,10 @@ const { createRedisRuntime } = require("./services/runtime/redis");
 const { createRedisSessionStore } = require("./services/stores/redis-session-store");
 const { createRedisMetricsStore } = require("./services/stores/redis-metrics-store");
 const { createRedisEventSummaryStore } = require("./services/stores/redis-event-summary-store");
+const {
+  createRedisSessionAnalyticsService,
+  redisUnavailableResponse,
+} = require("./services/analytics/redis-session-analytics-service");
 const { listPersonas, getPersona } = require("./personas");
 const {
   generateOverlay,
@@ -466,6 +470,9 @@ const redisSessionStore = redisRuntime
   : null;
 const redisMetricsStore = redisRuntime ? createRedisMetricsStore({ redisRuntime }) : null;
 const redisEventSummaryStore = redisRuntime ? createRedisEventSummaryStore({ redisRuntime }) : null;
+const redisSessionAnalyticsService = redisSessionStore
+  ? createRedisSessionAnalyticsService({ redisSessionStore, redisEventSummaryStore })
+  : null;
 const eventStore = kafkaRuntime
   ? createCompositeEventStore({
       primaryStore: fileEventStore,
@@ -1431,37 +1438,26 @@ app.get("/api/realtime/sessions", requireAuth, requireSiteAccess, async (req, re
   }
 });
 
-// ---------- Sessions / Labels / Insights (UX-Stream v1) ----------
-// NOTE: 현재는 JSONL 기반 MVP. (대용량에서는 range query/DB/streaming 권장)
+// ---------- Sessions / Labels / Insights (Redis read model) ----------
+
+function sendRedisUnavailable(res, error) {
+  if (error) console.warn("[redis-read-model] unavailable", error);
+  return res.status(503).json(redisUnavailableResponse());
+}
 
 app.get("/api/sessions", requireAuth, requireSiteAccess, async (req, res) => {
   const site_id = String(req.query.site_id || "ab-sample");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
   const limit_sessions = Math.max(1, Math.min(200, toInt(req.query.limit) ?? 50));
-  const limit_events = Math.max(100, Math.min(200_000, toInt(req.query.limit_events) ?? 50_000));
+
+  if (!redisSessionAnalyticsService) return sendRedisUnavailable(res);
 
   try {
-    const pathMappings = siteRegistryStore.getRawById(site_id)?.journey_path_mappings || null;
-    const labeled = await computeLabeledSessionSummaries(EVENTS_FILE, {
-      site_id,
-      from_ts,
-      to_ts,
-      limit_events,
-      session_ttl_ms: 30 * 60 * 1000,
-      pathMappings,
-    });
-
-    const sessions = labeled
-      .slice(0, limit_sessions)
-      .map((x) => ({
-        summary: x.summary,
-        label: x.label
-      }));
-
-    return res.json({ ok: true, site_id, from_ts, to_ts, sessions });
+    const result = await redisSessionAnalyticsService.getSessions({ siteId: site_id, fromTs: from_ts, toTs: to_ts, limit: limit_sessions });
+    return res.json(result);
   } catch (e) {
-    return res.status(500).json({ ok: false, reason: String(e) });
+    return sendRedisUnavailable(res, e);
   }
 });
 
@@ -1469,23 +1465,15 @@ app.get("/api/labels/summary", requireAuth, requireSiteAccess, async (req, res) 
   const site_id = String(req.query.site_id || "ab-sample");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
-  const limit_events = Math.max(100, Math.min(200_000, toInt(req.query.limit_events) ?? 100_000));
+  const limit_sessions = Math.max(1, Math.min(1000, toInt(req.query.limit_sessions) ?? 1000));
+
+  if (!redisSessionAnalyticsService) return sendRedisUnavailable(res);
 
   try {
-    const pathMappings = siteRegistryStore.getRawById(site_id)?.journey_path_mappings || null;
-    const labeled = await computeLabeledSessionSummaries(EVENTS_FILE, {
-      site_id,
-      from_ts,
-      to_ts,
-      limit_events,
-      session_ttl_ms: 30 * 60 * 1000,
-      pathMappings,
-    });
-
-    const summary = computeLabelsSummary(labeled);
-    return res.json({ ok: true, site_id, from_ts, to_ts, summary });
+    const result = await redisSessionAnalyticsService.getLabelsSummary({ siteId: site_id, fromTs: from_ts, toTs: to_ts, limit: limit_sessions });
+    return res.json(result);
   } catch (e) {
-    return res.status(500).json({ ok: false, reason: String(e) });
+    return sendRedisUnavailable(res, e);
   }
 });
 
@@ -1493,27 +1481,27 @@ app.get("/api/insights", requireAuth, requireSiteAccess, async (req, res) => {
   const site_id = String(req.query.site_id || "ab-sample");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
-  const limit_events = Math.max(100, Math.min(200_000, toInt(req.query.limit_events) ?? 150_000));
+  const limit_sessions = Math.max(1, Math.min(1000, toInt(req.query.limit_sessions) ?? 1000));
   const reps = Math.max(1, Math.min(5, toInt(req.query.reps) ?? 3));
   const provider = typeof req.query.provider === "string" ? req.query.provider : undefined;
   const model = typeof req.query.model === "string" ? req.query.model : undefined;
   const include_prompt = String(req.query.include_prompt || "") === "1";
 
-  try {
-    const pathMappings = siteRegistryStore.getRawById(site_id)?.journey_path_mappings || null;
-    const labeled = await computeLabeledSessionSummaries(EVENTS_FILE, {
-      site_id,
-      from_ts,
-      to_ts,
-      limit_events,
-      session_ttl_ms: 30 * 60 * 1000,
-      pathMappings,
-    });
+  if (!redisSessionAnalyticsService || !redisEventSummaryStore) return sendRedisUnavailable(res);
 
-    const input = buildInsightsInput(site_id, labeled, { perLabelRepresentatives: reps });
+  let input;
+  try {
+    input = await redisSessionAnalyticsService.buildRedisInsightsInput({ siteId: site_id, fromTs: from_ts, toTs: to_ts, reps, limit: limit_sessions });
+  } catch (e) {
+    return sendRedisUnavailable(res, e);
+  }
+
+  try {
     const result = await generateInsights(input, { provider, model });
     return res.json({
       ok: true,
+      source: "redis",
+      fallback_used: false,
       provider: result.provider,
       model: result.model,
       fallback_reason: result.fallbackReason || null,
@@ -1522,7 +1510,7 @@ app.get("/api/insights", requireAuth, requireSiteAccess, async (req, res) => {
       prompt: include_prompt ? result.prompt : undefined
     });
   } catch (e) {
-    return res.status(500).json({ ok: false, reason: String(e) });
+    return res.status(500).json({ ok: false, reason: String(e), source: "redis", fallback_used: false });
   }
 });
 
