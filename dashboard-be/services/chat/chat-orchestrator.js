@@ -223,6 +223,11 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
     };
   }
 
+  function previewAnswerDetail(detail) {
+    if (typeof detail !== "string" || !detail) return null;
+    return detail.slice(0, 500);
+  }
+
   async function runAnalyticsCopilot({ messages, context, siteId: requestedSiteId }) {
     const ctx = buildChatContext({ messages, context, siteId: requestedSiteId });
     const tools = toolRegistry.analyticsTools;
@@ -354,6 +359,7 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
           draftAnswer: fallbackAnswer,
         });
     const answer = answerResponse?.text || fallbackAnswer;
+    const answerDetailPreview = previewAnswerDetail(answerResponse?.detail);
 
     conversationAnalyticsService.logChatEvent({
       sessionId: ctx.sessionId,
@@ -370,7 +376,7 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
       fallback: safeLlmClient.mode === "mock" || answerResponse?.ok === false,
       handedOffToHuman: false,
       relatedExperimentKey: selectedExperimentKey,
-      metadata: { llmMode: safeLlmClient.mode, answerReason: answerResponse?.reason || null },
+      metadata: { llmMode: safeLlmClient.mode, answerReason: answerResponse?.reason || null, answerDetailPreview },
     });
 
     conversationAnalyticsService.logChatEvent({
@@ -388,7 +394,7 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
       fallback: safeLlmClient.mode === "mock" || answerResponse?.ok === false,
       handedOffToHuman: false,
       relatedExperimentKey: selectedExperimentKey,
-      metadata: { actionCount: actions.length, answerReason: answerResponse?.reason || null },
+      metadata: { actionCount: actions.length, answerReason: answerResponse?.reason || null, answerDetailPreview },
     });
 
     return {
@@ -403,6 +409,7 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
         answerMode: typeof safeLlmClient.answer === "function" ? "answer" : "rewrite_fallback",
         answerFallback: answerResponse?.ok === false,
         answerReason: answerResponse?.reason || null,
+        answerDetailPreview,
       },
     };
   }
