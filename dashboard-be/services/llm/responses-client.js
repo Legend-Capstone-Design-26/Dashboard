@@ -50,7 +50,7 @@ function createOpenAIClient({ apiKey, model }) {
           input: [
             {
               role: "system",
-              content: [{ type: "text", text: safeText(systemPrompt) }],
+              content: [{ type: "input_text", text: safeText(systemPrompt) }],
             },
             ...input,
           ],
@@ -75,7 +75,7 @@ function createOpenAIClient({ apiKey, model }) {
     async rewrite({ systemPrompt, userPrompt, draftAnswer }) {
       return callResponses({
         systemPrompt,
-        input: [{ role: "user", content: [{ type: "text", text: safeText(userPrompt) }] }],
+        input: [{ role: "user", content: [{ type: "input_text", text: safeText(userPrompt) }] }],
         fallbackAnswer: draftAnswer,
       });
     },
@@ -100,7 +100,7 @@ function createOpenAIClient({ apiKey, model }) {
 
       return callResponses({
         systemPrompt,
-        input: [{ role: "user", content: [{ type: "text", text: userPrompt }] }],
+        input: [{ role: "user", content: [{ type: "input_text", text: userPrompt }] }],
         fallbackAnswer,
       });
     },
