@@ -84,6 +84,35 @@ test("agent returns approval_required for publish intent", async () => {
   assert.equal(approvals[0].status, "pending");
 });
 
+test("agent publish approval includes replacement for existing running experiment", async () => {
+  const approvals = [];
+  const orchestrator = createAgentOrchestrator({
+    toolRegistry: {
+      findLatestDraftExperiment() {
+        return {
+          ok: true,
+          experiment: { id: "exp_new", key: "exp_checkout_cta_v2", status: "draft", version: 1, traffic: { A: 50, B: 50 }, goals: ["checkout_complete"] },
+        };
+      },
+      findConflictingRunningExperiment() {
+        return { ok: true, experiment: { id: "exp_old", key: "exp_home_cta_v1", status: "running", version: 3 } };
+      },
+    },
+    approvalStore: {
+      create(approval) { approvals.push(approval); return approval; },
+    },
+    agentActionsFile: "",
+  });
+  const result = await orchestrator.runAgentTurn({ siteId: "legend-ecommerce", message: "초안 배포해줘" });
+  assert.equal(result.ok, true);
+  assert.equal(result.type, "approval_required");
+  assert.equal(result.data.replace_running, true);
+  assert.equal(result.data.running_experiment.key, "exp_home_cta_v1");
+  assert.equal(approvals[0].payload.replace_running, true);
+  assert.equal(approvals[0].expected_replaced_running_experiment_id, "exp_old");
+  assert.match(result.message, /기존 실험은 paused/);
+});
+
 test("agent still blocks rollback intent", async () => {
   const orchestrator = createAgentOrchestrator({ toolRegistry: {}, agentActionsFile: "" });
   const result = await orchestrator.runAgentTurn({ siteId: "legend-ecommerce", message: "이전 버전으로 롤백해줘" });

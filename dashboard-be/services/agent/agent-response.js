@@ -70,14 +70,17 @@ function draftCreatedResponse({ siteId, intent, experiment, hypothesis, changesC
   };
 }
 
-function approvalRequiredResponse({ siteId, approval, experiment }) {
+function approvalRequiredResponse({ siteId, approval, experiment, runningExperiment }) {
+  const hasReplacement = Boolean(runningExperiment);
   return {
     ok: true,
     type: "approval_required",
     agent_mode: true,
     site_id: siteId,
     intent: "publish_experiment",
-    message: "이 작업은 실제 사용자에게 영향을 줄 수 있으므로 승인 후 진행됩니다. 승인 전까지 실험은 draft 상태로 유지됩니다.",
+    message: hasReplacement
+      ? `현재 ${runningExperiment.key} 실험이 진행 중입니다. 새 실험 ${experiment.key}을 배포하려면 기존 실험을 일시 중지해야 합니다. 승인하면 기존 실험은 paused 상태가 되고 새 실험이 running 상태로 배포됩니다.`
+      : "이 작업은 실제 사용자에게 영향을 줄 수 있으므로 승인 후 진행됩니다. 승인 전까지 실험은 draft 상태로 유지됩니다.",
     approval: {
       id: approval.id,
       approval_id: approval.id,
@@ -90,12 +93,16 @@ function approvalRequiredResponse({ siteId, approval, experiment }) {
       experiment_key: experiment.key,
       status: experiment.status,
       target_status: "running",
+      replace_running: hasReplacement,
+      running_experiment: hasReplacement ? runningExperiment : null,
       traffic: experiment.traffic || null,
       goals: Array.isArray(experiment.goals) ? experiment.goals : [],
-      warning: "승인 후 실제 사용자에게 A/B 실험이 노출됩니다.",
+      warning: hasReplacement
+        ? "승인 후 기존 running 실험은 일시 중지되고 새 실험이 노출됩니다."
+        : "승인 후 실제 사용자에게 A/B 실험이 노출됩니다.",
     },
     actions: [
-      { label: "배포 승인", type: "approve_agent_action", approval_id: approval.id },
+      { label: hasReplacement ? "기존 실험 중지 후 배포 승인" : "배포 승인", type: "approve_agent_action", approval_id: approval.id },
       { label: "취소", type: "cancel_agent_action", approval_id: approval.id },
     ],
   };

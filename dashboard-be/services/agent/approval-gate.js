@@ -31,11 +31,17 @@ function createApprovalRequest(input = {}, context = {}) {
     return { ok: false, reason: "approval_not_implemented_for_intent" };
   }
   const experiment = input.experiment || {};
-  const payload = input.payload || {
+  const replaceRunningExperiment = input.replaceRunningExperiment || null;
+  const payload = input.payload ? { ...input.payload } : {
     experiment_id: experiment.id,
     experiment_key: experiment.key,
     target_status: "running",
   };
+  if (replaceRunningExperiment) {
+    payload.replace_running = true;
+    payload.running_experiment_id = replaceRunningExperiment.id;
+    payload.running_experiment_key = replaceRunningExperiment.key;
+  }
   const id = `apv_${crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(12).toString("hex")}`;
   const approval = {
     id,
@@ -49,6 +55,10 @@ function createApprovalRequest(input = {}, context = {}) {
     expected_experiment_key: experiment.key,
     expected_experiment_version: experiment.version,
     expected_status: "draft",
+    expected_replaced_running_experiment_id: replaceRunningExperiment?.id || null,
+    expected_replaced_running_experiment_key: replaceRunningExperiment?.key || null,
+    expected_replaced_running_experiment_version: replaceRunningExperiment?.version || null,
+    expected_replaced_running_experiment_status: replaceRunningExperiment ? "running" : null,
     payload_hash: buildPayloadHash(payload),
     expires_at: now + (Number(input.ttlMs) || 15 * 60 * 1000),
     created_at: now,
@@ -78,6 +88,15 @@ function validateApprovalBeforeExecute(approval, context = {}) {
   if (experiment.key !== approval.expected_experiment_key) return { ok: false, reason: "experiment_key_mismatch" };
   if (experiment.version !== approval.expected_experiment_version) return { ok: false, reason: "experiment_version_mismatch" };
   if (experiment.status !== approval.expected_status) return { ok: false, reason: "experiment_status_mismatch" };
+
+  if (approval.expected_replaced_running_experiment_id) {
+    const runningExperiment = context.replacedRunningExperiment || null;
+    if (!runningExperiment) return { ok: false, reason: "replaced_running_experiment_missing" };
+    if (runningExperiment.id !== approval.expected_replaced_running_experiment_id) return { ok: false, reason: "replaced_running_experiment_id_mismatch" };
+    if (runningExperiment.key !== approval.expected_replaced_running_experiment_key) return { ok: false, reason: "replaced_running_experiment_key_mismatch" };
+    if (runningExperiment.version !== approval.expected_replaced_running_experiment_version) return { ok: false, reason: "replaced_running_experiment_version_mismatch" };
+    if (runningExperiment.status !== approval.expected_replaced_running_experiment_status) return { ok: false, reason: "replaced_running_experiment_status_mismatch" };
+  }
   return { ok: true };
 }
 

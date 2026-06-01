@@ -28,6 +28,8 @@ function approvalFailureMessage(reason) {
   if (reason === "payload_hash_mismatch") return "승인 요청 내용과 현재 실행 대상이 일치하지 않습니다. 다시 요청해 주세요.";
   if (reason === "experiment_status_mismatch" || reason === "experiment_not_draft") return "실험 상태가 변경되어 이 승인 요청을 실행할 수 없습니다. 최신 상태를 확인한 뒤 다시 요청해 주세요.";
   if (reason === "experiment_version_mismatch") return "실험 버전이 변경되어 이 승인 요청을 실행할 수 없습니다.";
+  if (String(reason || "").startsWith("replaced_running_experiment_")) return "기존 진행 중 실험의 상태나 버전이 변경되어 이 승인 요청을 실행할 수 없습니다. 최신 상태로 다시 배포 요청을 생성해 주세요.";
+  if (reason === "running_experiment_exists") return "이미 진행 중인 실험이 있습니다. 기존 실험을 일시 중지하는 승인 요청을 다시 생성해 주세요.";
   if (reason === "approval_not_pending:cancelled") return "이미 취소된 승인 요청입니다.";
   if (reason === "approval_not_pending:executed") return "이미 실행된 승인 요청입니다.";
   if (reason === "approval_not_pending:expired") return "만료된 승인 요청입니다. 다시 배포 요청을 생성해 주세요.";
@@ -120,17 +122,26 @@ function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile
     const found = toolRegistry.findLatestDraftExperiment({ siteId, selectedExperimentKey, message });
     if (!found.ok) return failedResponse({ siteId, intent: "publish_experiment", message: found.message || "배포할 draft 실험을 찾지 못했습니다.", reason: found.reason });
 
+    const conflict = typeof toolRegistry.findConflictingRunningExperiment === "function"
+      ? toolRegistry.findConflictingRunningExperiment({ siteId, targetExperimentId: found.experiment.id })
+      : { ok: false };
+    const runningExperiment = conflict.ok ? conflict.experiment : null;
+
     const payload = {
       experiment_id: found.experiment.id,
       experiment_key: found.experiment.key,
       target_status: "running",
+      replace_running: Boolean(runningExperiment),
     };
     const approvalResult = createApprovalRequest({
       siteId,
       intent: "publish_experiment",
       experiment: found.experiment,
       payload,
-      summary: `${found.experiment.key} 실험을 running 상태로 배포합니다.`,
+      replaceRunningExperiment: runningExperiment,
+      summary: runningExperiment
+        ? `${runningExperiment.key} 실험을 paused로 일시 중지하고 ${found.experiment.key} 실험을 running 상태로 배포합니다.`
+        : `${found.experiment.key} 실험을 running 상태로 배포합니다.`,
       createdBy: user?.id || null,
     }, { user });
     if (!approvalResult.ok) return failedResponse({ siteId, intent: "publish_experiment", message: "승인 요청을 생성하지 못했습니다.", reason: approvalResult.reason });
@@ -149,7 +160,7 @@ function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile
       },
     });
 
-    return approvalRequiredResponse({ siteId, approval, experiment: found.experiment });
+    return approvalRequiredResponse({ siteId, approval, experiment: found.experiment, runningExperiment });
   }
 
   function approveApproval({ siteId, approvalId, user }) {
@@ -158,7 +169,10 @@ function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile
 
     const found = toolRegistry.findExperimentByKeyOrHint({ siteId, key: approval.expected_experiment_key });
     const current = found?.rawExperiment || null;
-    const validation = validateApprovalBeforeExecute(approval, { currentExperiment: current, user });
+    const conflict = approval.expected_replaced_running_experiment_id && typeof toolRegistry.findConflictingRunningExperiment === "function"
+      ? toolRegistry.findConflictingRunningExperiment({ siteId, targetExperimentId: approval.expected_experiment_id })
+      : null;
+    const validation = validateApprovalBeforeExecute(approval, { currentExperiment: current, replacedRunningExperiment: conflict?.rawExperiment || null, user });
     if (!validation.ok) {
       const status = validation.reason === "approval_expired" ? "expired" : approval.status;
       if (validation.reason === "approval_expired") approvalStore.update(siteId, approvalId, (item) => ({ ...item, status: "expired" }));
@@ -192,7 +206,7 @@ function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile
           result_ref: { approval_id: approvalId, experiment_key: approval.expected_experiment_key },
         },
       });
-      return failedResponse({ siteId, intent: "publish_experiment", message: approvalFailureMessage(published.reason), reason: published.reason });
+      return failedResponse({ siteId, intent: "publish_experiment", message: published.message || approvalFailureMessage(published.reason), reason: published.reason });
     }
 
     const now = Date.now();
@@ -210,16 +224,20 @@ function createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile
         user_id: user?.id || null,
         intent: "publish_experiment",
         status: "executed",
-        summary: `${published.experiment.key} 실험을 running 상태로 배포`,
-        result_ref: { approval_id: approvalId, experiment_key: published.experiment.key, experiment_id: published.experiment.id },
+        summary: published.replaced
+          ? `${published.paused_experiment?.key || "기존 실험"} 실험을 paused로 바꾸고 ${published.experiment.key} 실험을 running 상태로 배포`
+          : `${published.experiment.key} 실험을 running 상태로 배포`,
+        result_ref: { approval_id: approvalId, experiment_key: published.experiment.key, experiment_id: published.experiment.id, paused_experiment_key: published.paused_experiment?.key || null },
       },
     });
 
     return actionExecutedResponse({
       siteId,
       intent: "publish_experiment",
-      message: `${published.experiment.key} 실험을 running 상태로 전환했습니다.`,
-      data: { experiment: published.experiment, approval_id: approvalId },
+      message: published.replaced
+        ? `${published.paused_experiment?.key || "기존 실험"} 실험을 paused로 일시 중지하고 ${published.experiment.key} 실험을 running 상태로 배포했습니다.`
+        : `${published.experiment.key} 실험을 running 상태로 전환했습니다.`,
+      data: { experiment: published.experiment, paused_experiment: published.paused_experiment || null, replaced: Boolean(published.replaced), approval_id: approvalId },
     });
   }
 
