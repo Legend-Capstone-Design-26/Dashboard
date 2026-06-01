@@ -7,12 +7,15 @@ const { createRedisRuntime } = require("../services/runtime/redis");
 const { createConsumedEventStore } = require("../services/stores/consumed-event-store");
 const { createRedisSessionStore } = require("../services/stores/redis-session-store");
 const { createRedisMetricsStore } = require("../services/stores/redis-metrics-store");
+const { createRedisEventSummaryStore } = require("../services/stores/redis-event-summary-store");
+const { createFileSiteRegistryStore } = require("../services/stores/site-registry-store");
 const { mergeSessionState, extractVariantAssignments } = require("../services/analytics/session-state");
 
 loadEnvFromFile();
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const CONSUMED_EVENTS_FILE = path.join(DATA_DIR, "events.consumed.jsonl");
+const SITES_FILE = path.join(DATA_DIR, "sites.json");
 ensureJsonlFile(CONSUMED_EVENTS_FILE);
 
 const infraConfig = getInfraConfig();
@@ -32,8 +35,21 @@ const redisSessionStore = redisRuntime
     })
   : null;
 const redisMetricsStore = redisRuntime ? createRedisMetricsStore({ redisRuntime }) : null;
+const redisEventSummaryStore = redisRuntime ? createRedisEventSummaryStore({ redisRuntime }) : null;
+const siteRegistryStore = createFileSiteRegistryStore({ sitesFile: SITES_FILE });
 
 async function mirrorEventToRedis(event) {
+  if (!redisSessionStore && !redisEventSummaryStore) return;
+
+  if (redisEventSummaryStore) {
+    try {
+      const rawSite = event.site_id ? siteRegistryStore.getRawById(event.site_id) : null;
+      await redisEventSummaryStore.recordEventSummary({ event, pathMappings: rawSite?.journey_path_mappings || null });
+    } catch (error) {
+      console.warn("[redis-summary] failed to record event summary", error);
+    }
+  }
+
   if (!redisSessionStore) return;
 
   const assignments = extractVariantAssignments(event);

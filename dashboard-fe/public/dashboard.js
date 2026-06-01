@@ -686,8 +686,8 @@
     const { query } = buildPeriodQuery();
     const suffix = query ? `&${query}` : "";
     const r = await fetch(`/api/event-summary?site_id=${encodeURIComponent(getCurrentSiteId())}${suffix}`);
-    const j = await r.json();
-    if (!j?.ok) throw new Error(j?.reason || "event summary failed");
+    const j = await r.json().catch(() => ({ ok: false, reason: "event summary failed" }));
+    if (!j?.ok) return { ...j, ok: false, http_status: r.status };
     return j;
   }
 
@@ -2494,10 +2494,22 @@
         uxSessionHint.textContent = `${getPeriodRange().label} 동안 세션 ${fmtInt(labelSummary.reduce((sum, item) => sum + (Number(item.sessions) || 0), 0))}건 · 이벤트 ${fmtInt(eventSummary.total_events || 0)}건`;
       }
     } else if (trendChartCard) {
-      trendChartCard.innerHTML = `<div class="chartState">그래프를 불러오지 못했어요.<br/>${escapeHtml(eventSummary?.reason || "잠시 후 다시 시도해 주세요.")}</div>`;
+      const redisUnavailable = eventSummary?.reason === "redis_unavailable";
+      const message = redisUnavailable
+        ? "실시간 데이터 연결 실패<br/>Redis 또는 Kafka Consumer 상태를 확인해 주세요."
+        : `그래프를 불러오지 못했어요.<br/>${escapeHtml(eventSummary?.message || eventSummary?.reason || "잠시 후 다시 시도해 주세요.")}`;
+      trendChartCard.innerHTML = `<div class="chartState">${message}</div>`;
       renderJourneyFlow(null);
-      renderSdkStatus(null);
-      if (uxSessionHint) uxSessionHint.textContent = "세션 카드와 그래프는 선택한 기간 기준으로 집계됩니다.";
+      if (redisUnavailable && sdkStatusBadge && sdkStatusText) {
+        sdkStatusBadge.className = "sdkStatusBadge missing";
+        sdkStatusBadge.textContent = "연결 실패";
+        sdkStatusText.textContent = "실시간 데이터 연결 실패. Redis 또는 Kafka Consumer 상태를 확인해 주세요.";
+      } else {
+        renderSdkStatus(null);
+      }
+      if (uxSessionHint) uxSessionHint.textContent = redisUnavailable
+        ? "실시간 데이터 저장소에 연결할 수 없어 요약 데이터를 표시하지 못했습니다."
+        : "세션 카드와 그래프는 선택한 기간 기준으로 집계됩니다.";
     }
 
     if (state.authUser?.is_admin === true) {

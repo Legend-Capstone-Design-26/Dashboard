@@ -21,6 +21,7 @@ const { createKafkaRuntime } = require("./services/runtime/kafka");
 const { createRedisRuntime } = require("./services/runtime/redis");
 const { createRedisSessionStore } = require("./services/stores/redis-session-store");
 const { createRedisMetricsStore } = require("./services/stores/redis-metrics-store");
+const { createRedisEventSummaryStore } = require("./services/stores/redis-event-summary-store");
 const { listPersonas, getPersona } = require("./personas");
 const {
   generateOverlay,
@@ -464,6 +465,7 @@ const redisSessionStore = redisRuntime
     })
   : null;
 const redisMetricsStore = redisRuntime ? createRedisMetricsStore({ redisRuntime }) : null;
+const redisEventSummaryStore = redisRuntime ? createRedisEventSummaryStore({ redisRuntime }) : null;
 const eventStore = kafkaRuntime
   ? createCompositeEventStore({
       primaryStore: fileEventStore,
@@ -966,6 +968,7 @@ app.post("/collect", async (req, res) => {
   if (events.length === 0) return res.status(400).json({ ok: false, reason: "no events" });
 
   try {
+    // TODO: event-summary는 Redis read model을 사용한다. file write는 legacy analytics 전환 완료 후 정리한다.
     await eventStore.appendBatch(events, { received_at: Date.now(), request_id: rid() });
     console.log("✅ collect:", events[events.length - 1]?.event_name, "count=", events.length);
     return res.json({ ok: true, received: events.length });
@@ -1562,6 +1565,7 @@ app.use(
       chatEventsFile: CHAT_EVENTS_FILE,
       chatFeedbackFile: CHAT_FEEDBACK_FILE,
     },
+    redisEventSummaryStore,
     middlewares: {
       requireAuth,
       requireSiteAccess,
