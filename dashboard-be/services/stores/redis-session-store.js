@@ -27,7 +27,7 @@ async function scanKeys(client, pattern) {
 }
 
 function createRedisSessionStore({ redisRuntime, sessionTtlSec, assignmentTtlSec }) {
-  async function listSessionStates({ siteId, limit = 50 }) {
+  async function listSessionStates({ siteId, limit = 50, fromTs, toTs } = {}) {
     const client = await redisRuntime.connect();
     const pattern = buildSessionKey({ siteId, sessionId: "*" });
     const keys = await scanKeys(client, pattern);
@@ -45,9 +45,16 @@ function createRedisSessionStore({ redisRuntime, sessionTtlSec, assignmentTtlSec
       }
     }
 
+    const maxLimit = Math.max(1, Math.min(Number(limit) || 50, 1000));
     return items
+      .filter((item) => {
+        const lastTs = Number(item?.last_ts || item?.updated_at || 0);
+        if (typeof fromTs === "number" && Number.isFinite(fromTs) && lastTs < fromTs) return false;
+        if (typeof toTs === "number" && Number.isFinite(toTs) && lastTs > toTs) return false;
+        return true;
+      })
       .sort((a, b) => (Number(b?.last_ts) || 0) - (Number(a?.last_ts) || 0))
-      .slice(0, Math.max(1, Math.min(Number(limit) || 50, 200)));
+      .slice(0, maxLimit);
   }
 
   async function setVariantAssignment({ siteId, experimentKey, anonUserId, variant, version }) {
