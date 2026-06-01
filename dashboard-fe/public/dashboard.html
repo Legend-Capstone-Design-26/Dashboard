@@ -322,7 +322,11 @@
           <h2>AI UX 인사이트</h2>
           <div class="muted">선택한 기간의 세션, 유형, 이동 흐름을 바탕으로 전체 프로덕트 관점에서 요약합니다.</div>
         </div>
-        <button class="btnPrimary" id="generateInsightsBtn" type="button">인사이트 도출</button>
+        <div class="insightHeaderActions">
+          <button class="btnGhost insightExportBtn" id="copyInsightsMarkdownBtn" type="button" disabled>Markdown 복사</button>
+          <button class="btnGhost insightExportBtn" id="downloadInsightsMarkdownBtn" type="button" disabled>MD 다운로드</button>
+          <button class="btnPrimary" id="generateInsightsBtn" type="button">인사이트 도출</button>
+        </div>
       </div>
 
       <div id="insightsList" class="insightsGrid">
@@ -550,7 +554,7 @@
 
       <div class="chatbotMetaRow">
         <div class="muted">지금 실험 <span class="mono" id="copilotExperimentKey">미선택</span></div>
-        <div class="muted" id="copilotDraftStatus">초안 없음</div>
+        <div class="muted" id="copilotDraftStatus" hidden></div>
       </div>
 
       <div class="chatbotQuickActions">
@@ -561,9 +565,9 @@
 
       <div id="chatMessages" class="chatbotMessages"></div>
 
-      <div class="chatbotActionsRow">
-        <button class="btnGhost" type="button" id="saveDraftBtn" disabled>초안 저장</button>
-        <button class="btnGhost" type="button" id="openDraftInEditorBtn" disabled>편집기로 열기</button>
+      <div class="chatbotActionsRow" hidden>
+        <button class="btnGhost" type="button" id="saveDraftBtn" hidden disabled>초안 저장</button>
+        <button class="btnGhost" type="button" id="openDraftInEditorBtn" hidden disabled>편집기로 열기</button>
       </div>
 
       <footer class="chatbotComposer">
