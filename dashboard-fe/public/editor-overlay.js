@@ -3,6 +3,7 @@
   "use strict";
 
   let pickMode = true;
+  let individualMode = false;
 
   // Hover/select overlay boxes
   const hoverBox = document.createElement("div");
@@ -249,12 +250,89 @@
     return parts.join(" > ");
   }
 
+  // ---------- Precise Selector (개별 모드) ----------
+  function buildPreciseSelector(el) {
+    if (!(el instanceof Element)) return { selector: null, anchorType: "none", matchCount: 0 };
+
+    // 1. id
+    if (el.id) return { selector: `#${cssEscape(el.id)}`, anchorType: "unique", matchCount: 1 };
+
+    const tag = el.tagName.toLowerCase();
+
+    // 2. data-* ID성 속성 (product-id, item-id, sku, no 등)
+    for (const attr of Array.from(el.attributes)) {
+      if (/^data-(product[-_]?id|item[-_]?id|sku|no|key|idx)$/i.test(attr.name) && attr.value) {
+        const sel = `[${attr.name}="${attrEscape(attr.value)}"]`;
+        const count = qsaSafe(sel).length;
+        if (count === 1) return { selector: sel, anchorType: "attr", matchCount: 1 };
+      }
+    }
+
+    // 3. img → alt 앵커
+    if (tag === "img") {
+      const alt = (el.getAttribute("alt") || "").trim();
+      if (alt) {
+        const sel = `img[alt="${attrEscape(alt)}"]`;
+        const count = qsaSafe(sel).length;
+        return { selector: sel, anchorType: "attr", matchCount: count };
+      }
+    }
+
+    // 4. 텍스트 앵커: 요소에 의미있는 텍스트가 있으면 클래스 셀렉터 + anchorText로 1개 특정
+    const ownText = (el.innerText || el.textContent || "").trim();
+    if (ownText && ownText.length >= 2 && ownText.length <= 100) {
+      const cls = (el.className || "").toString().trim();
+      let baseSel = tag;
+      if (cls) {
+        const classes = cls.split(/\s+/).filter(Boolean).slice(0, 3);
+        baseSel = `${tag}.${classes.map(cssEscape).join(".")}`;
+      }
+      const count = qsaSafe(baseSel).length;
+      return { selector: baseSel, anchorType: "text", anchorText: ownText, matchCount: count };
+    }
+
+    // 5. nth-child 경로 (최후 수단 - 위치 기반)
+    const parts = [];
+    let cur = el;
+    let depth = 0;
+    while (cur && cur.tagName && depth < 6) {
+      const t = cur.tagName.toLowerCase();
+      const parent = cur.parentElement;
+      if (!parent) { parts.unshift(t); break; }
+      const idx = Array.from(parent.children).indexOf(cur) + 1;
+      parts.unshift(`${t}:nth-child(${idx})`);
+      cur = parent;
+      depth++;
+    }
+    const sel = parts.join(" > ");
+    return { selector: sel, anchorType: "nth-child", matchCount: qsaSafe(sel).length };
+  }
+
   function getElementInfo(el) {
-    const selector = buildSelector(el);
     const rect = el.getBoundingClientRect();
     const text = (el.innerText || "").trim().slice(0, 120);
+
+    if (individualMode) {
+      const precise = buildPreciseSelector(el);
+      return {
+        selector: precise.selector,
+        anchorType: precise.anchorType,
+        anchorText: precise.anchorText || null,
+        matchCount: precise.matchCount,
+        tag: el.tagName ? el.tagName.toLowerCase() : null,
+        track_id: el.getAttribute("data-track-id") || null,
+        text: text || null,
+        rect: { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.width), h: Math.round(rect.height) }
+      };
+    }
+
+    const selector = buildSelector(el);
+    const matchCount = qsaSafe(selector).length;
     return {
       selector,
+      anchorType: "standard",
+      anchorText: null,
+      matchCount,
       tag: el.tagName ? el.tagName.toLowerCase() : null,
       track_id: el.getAttribute("data-track-id") || null,
       text: text || null,
@@ -339,7 +417,14 @@
 
     const selector = change.selector;
     const actions = Array.isArray(change.actions) ? change.actions : [];
-    const els = qsaSafe(selector);
+    let els = qsaSafe(selector);
+
+    // anchorText가 있으면 텍스트가 일치하는 요소로 범위 축소
+    if (change.anchorText && els.length > 1) {
+      const anchor = String(change.anchorText).trim();
+      const narrowed = els.filter((el) => (el.innerText || el.textContent || "").trim() === anchor);
+      if (narrowed.length > 0) els = narrowed;
+    }
 
     if (els.length === 0) {
       return { ok: false, message: `selector not found: ${selector}` };
@@ -463,6 +548,12 @@
   window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin) return;
     const data = event.data || {};
+
+    if (data.type === "EDITOR_SET_INDIVIDUAL_MODE") {
+      individualMode = !!data.individualMode;
+      post("EDITOR_LOG", { message: `individualMode=${individualMode}` });
+      return;
+    }
 
     if (data.type === "EDITOR_SET_PICKMODE") {
       pickMode = !!data.pickMode;

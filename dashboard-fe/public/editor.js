@@ -7,6 +7,7 @@
   const logoutBtn = document.getElementById("logoutBtn");
   const openDashboardLink = document.getElementById("openDashboardLink");
   const togglePickBtn = document.getElementById("togglePickBtn");
+  const toggleIndividualBtn = document.getElementById("toggleIndividualBtn");
 
   const variantABtn = document.getElementById("variantABtn");
   const variantBBtn = document.getElementById("variantBBtn");
@@ -17,6 +18,7 @@
 
   const elementNameText = document.getElementById("elementNameText");
   const statusText = document.getElementById("statusText");
+  const matchCountText = document.getElementById("matchCountText");
   const selectorText = document.getElementById("selectorText");
   const tagText = document.getElementById("tagText");
   const trackIdText = document.getElementById("trackIdText");
@@ -152,6 +154,7 @@
   }
 
   let pickMode = true;
+  let individualMode = false;
   let currentVariant = "A";
   let currentComposerMode = "text";
   let currentSiteConfig = null;
@@ -184,6 +187,15 @@
     togglePickBtn.classList.toggle("is-on", on);
     postToFrame("EDITOR_SET_PICKMODE", { pickMode: on });
     log(`pickMode -> ${on}`);
+  }
+
+  function setIndividualMode(on) {
+    individualMode = on;
+    toggleIndividualBtn.dataset.state = on ? "on" : "off";
+    toggleIndividualBtn.textContent = on ? "개별 모드 ON" : "개별 모드 OFF";
+    toggleIndividualBtn.classList.toggle("is-on", on);
+    postToFrame("EDITOR_SET_INDIVIDUAL_MODE", { individualMode: on });
+    log(`individualMode -> ${on}`);
   }
 
   function setVariant(v, options) {
@@ -228,6 +240,7 @@
         statusText.textContent = "오버레이 활성화됨";
         log("overlay injected");
         setPickMode(pickMode);
+        setIndividualMode(individualMode);
         setVariant(currentVariant, { refreshFrame: false });
       };
 
@@ -252,6 +265,20 @@
     rectText.textContent = info?.rect
       ? `x:${info.rect.x} y:${info.rect.y} w:${info.rect.w} h:${info.rect.h}`
       : "—";
+
+    const count = typeof info?.matchCount === "number" ? info.matchCount : null;
+    if (matchCountText) {
+      if (count === null) {
+        matchCountText.textContent = "—";
+        matchCountText.style.color = "";
+      } else if (count === 1) {
+        matchCountText.textContent = "1개 요소 ✓";
+        matchCountText.style.color = "var(--color-success, #22c55e)";
+      } else {
+        matchCountText.textContent = `${count}개 요소에 적용됨 ⚠️`;
+        matchCountText.style.color = "var(--color-warn, #f59e0b)";
+      }
+    }
   }
 
   function prettifyToken(value) {
@@ -643,11 +670,14 @@
       return null;
     }
 
+    const anchorText = lastSelected?.anchorText || null;
+
     if (currentComposerMode === "text") {
       const value = (actionValue.value || "").trim();
       if (!value) { alert("새 문구를 입력하세요."); return null; }
       return withChangeMeta({
         selector: lastSelected.selector,
+        anchorText,
         actions: [{ type: "set_text", value }]
       }, lastSelected);
     }
@@ -657,6 +687,7 @@
       if (!built.ok) { alert(built.reason); return null; }
       return withChangeMeta({
         selector: lastSelected.selector,
+        anchorText,
         actions: [{ type: "set_style", styles: built.styles }]
       }, lastSelected);
     }
@@ -665,6 +696,7 @@
       const type = getVisibilityMode();
       return withChangeMeta({
         selector: lastSelected.selector,
+        anchorText,
         actions: [{ type }]
       }, lastSelected);
     }
@@ -680,6 +712,7 @@
       }
       return withChangeMeta({
         selector: lastSelected.selector,
+        anchorText,
         actions
       }, lastSelected);
     }
@@ -696,32 +729,32 @@
     if (!selector) { alert("selector가 없습니다."); return null; }
 
     if (type === "hide" || type === "show") {
-      return withChangeMeta({ selector, actions: [{ type }] }, lastSelected);
+      return withChangeMeta({ selector, anchorText, actions: [{ type }] }, lastSelected);
     }
 
     if (type === "set_text") {
       const v = (actionValue.value || "").trim();
       if (!v) { alert("텍스트를 입력하세요."); return null; }
-      return withChangeMeta({ selector, actions: [{ type: "set_text", value: v }] }, lastSelected);
+      return withChangeMeta({ selector, anchorText, actions: [{ type: "set_text", value: v }] }, lastSelected);
     }
 
     if (type === "set_style") {
       const parsed = parseStyleDeclarations(styleValue.value);
       if (!parsed.ok) { alert(parsed.reason); return null; }
-      return withChangeMeta({ selector, actions: [{ type: "set_style", styles: parsed.styles }] }, lastSelected);
+      return withChangeMeta({ selector, anchorText, actions: [{ type: "set_style", styles: parsed.styles }] }, lastSelected);
     }
 
     if (type === "add_class" || type === "remove_class") {
       const v = (actionValue.value || "").trim();
       if (!v) { alert("클래스명을 입력하세요."); return null; }
-      return withChangeMeta({ selector, actions: [{ type, value: v }] }, lastSelected);
+      return withChangeMeta({ selector, anchorText, actions: [{ type, value: v }] }, lastSelected);
     }
 
     if (type === "set_attr") {
       const n = (attrName.value || "").trim();
       const v = (attrValue.value || "").trim();
       if (!n) { alert("attr name을 입력하세요."); return null; }
-      return withChangeMeta({ selector, actions: [{ type: "set_attr", name: n, value: v }] }, lastSelected);
+      return withChangeMeta({ selector, anchorText, actions: [{ type: "set_attr", name: n, value: v }] }, lastSelected);
     }
 
     alert("지원하지 않는 action입니다.");
@@ -1053,6 +1086,7 @@
   });
 
   togglePickBtn.addEventListener("click", () => setPickMode(!pickMode));
+  toggleIndividualBtn.addEventListener("click", () => setIndividualMode(!individualMode));
   variantABtn.addEventListener("click", () => setVariant("A"));
   variantBBtn.addEventListener("click", () => setVariant("B"));
 

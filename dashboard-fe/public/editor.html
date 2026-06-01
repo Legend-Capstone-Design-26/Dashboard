@@ -19,6 +19,7 @@
         <button id="variantBBtn" class="segBtn">변경안 (B)</button>
       </div>
       <button id="togglePickBtn" class="btnToggle is-on" data-state="on">선택모드 ON</button>
+      <button id="toggleIndividualBtn" class="btnToggle" data-state="off" title="ON: 클릭한 요소 1개만 수정 / OFF: 동일 셀렉터 전체 수정">개별 모드 OFF</button>
     </div>
     <div class="topbarRight">
       <span class="topbarUser" id="authUserLabel"></span>
@@ -66,6 +67,7 @@
           <div class="infoCard">
             <div class="infoRow"><span class="infoKey">이름</span><span class="infoVal" id="elementNameText">요소를 클릭해 선택하세요</span></div>
             <div class="infoRow"><span class="infoKey">상태</span><span class="infoVal" id="statusText">대기 중</span></div>
+            <div class="infoRow"><span class="infoKey">매칭 수</span><span class="infoVal" id="matchCountText">—</span></div>
             <div class="infoRow"><span class="infoKey">텍스트</span><span class="infoVal" id="textText">—</span></div>
             <div class="infoRow"><span class="infoKey">크기</span><span class="infoVal mono" id="rectText">—</span></div>
             <details class="techDetails">
