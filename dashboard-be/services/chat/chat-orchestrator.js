@@ -10,6 +10,9 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
           async rewrite({ draftAnswer }) {
             return { ok: true, text: draftAnswer, reason: "fallback_mock" };
           },
+          async answer({ fallbackAnswer }) {
+            return { ok: true, text: fallbackAnswer, reason: "fallback_mock" };
+          },
         };
 
   async function maybeLLMRewrite({ agent, answer, messages, context }) {
@@ -81,6 +84,143 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
   function hasCommerceActionIntent(text) {
     const q = String(text || "").toLowerCase();
     return ["환불", "refund", "취소", "cancel", "교환", "exchange"].some((k) => q.includes(k));
+  }
+
+  function roundRate(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return Number((n * 100).toFixed(2));
+  }
+
+  function compactExperiment(exp) {
+    if (!exp || typeof exp !== "object") return null;
+    return {
+      id: exp.id || null,
+      key: exp.key || null,
+      status: exp.status || null,
+      url_prefix: exp.url_prefix || null,
+      traffic: exp.traffic || null,
+      goals: Array.isArray(exp.goals) ? exp.goals.slice(0, 5) : [],
+      version: exp.version || null,
+      updated_at: exp.updated_at || null,
+      published_at: exp.published_at || null,
+    };
+  }
+
+  function compactMetrics(metrics) {
+    if (!metrics || !metrics.ok) return { ok: false, reason: metrics?.reason || "metrics_unavailable" };
+    function variantStats(item) {
+      return {
+        sessions: Number(item?.sessions || 0),
+        users: Number(item?.users || 0),
+        page_views: Number(item?.page_views || 0),
+        clicks: Number(item?.clicks || 0),
+        conversions: Number(item?.conversions || 0),
+        cvr_percent: roundRate(item?.cvr),
+        ctr_percent: roundRate(item?.ctr),
+        bounce_rate_percent: roundRate(item?.bounce_rate),
+        top_clicked_elements: Array.isArray(item?.top_clicked_elements) ? item.top_clicked_elements.slice(0, 5) : [],
+      };
+    }
+    return {
+      ok: true,
+      source: metrics.source || null,
+      key: metrics.key || null,
+      goals: Array.isArray(metrics.goals) ? metrics.goals.slice(0, 5) : [],
+      experiment: metrics.experiment ? compactExperiment(metrics.experiment) : null,
+      A: variantStats(metrics.A),
+      B: variantStats(metrics.B),
+      totals: metrics.totals || null,
+    };
+  }
+
+  function compactEventSummary(summary) {
+    if (!summary || typeof summary !== "object") return null;
+    return {
+      site_id: summary.site_id || null,
+      total_events: Number(summary.total_events || summary.event_count || 0),
+      sessions: Number(summary.sessions || summary.session_count || 0),
+      event_types: Array.isArray(summary.event_types) ? summary.event_types.slice(0, 8) : summary.event_types || null,
+      top_paths: Array.isArray(summary.top_paths) ? summary.top_paths.slice(0, 8) : [],
+      top_elements: Array.isArray(summary.top_elements) ? summary.top_elements.slice(0, 8) : [],
+      funnel: summary.funnel || null,
+      labels: Array.isArray(summary.labels) ? summary.labels.slice(0, 8) : summary.labels || null,
+    };
+  }
+
+  function compactIssueSummary(summary) {
+    if (!summary || typeof summary !== "object") return null;
+    return {
+      total: Number(summary.total || summary.totalIssues || 0),
+      issue_types: Array.isArray(summary.issue_types) ? summary.issue_types.slice(0, 8) : [],
+      top_products: Array.isArray(summary.top_products) ? summary.top_products.slice(0, 5) : [],
+      unresolved: Number(summary.unresolved || 0),
+    };
+  }
+
+  function compactMessages(messages) {
+    return (Array.isArray(messages) ? messages : [])
+      .filter((message) => ["user", "assistant"].includes(message?.role) && typeof message.content === "string")
+      .slice(-10)
+      .map((message) => ({ role: message.role, content: message.content.slice(0, 500) }));
+  }
+
+  function compactActions(actions) {
+    return (Array.isArray(actions) ? actions : []).slice(0, 5).map((action) => ({
+      type: action.type || null,
+      key: action.draft?.key || action.experiment?.key || null,
+      saved: action.type === "saved_experiment_draft",
+      change_count: Array.isArray(action.changesB) ? action.changesB.length : Array.isArray(action.draft?.variant_b_changes) ? action.draft.variant_b_changes.length : null,
+    }));
+  }
+
+  function buildFallbackAnswer({ metrics, draft, actions }) {
+    const parts = ["현재 AI 답변 생성에 실패했습니다. 다만 선택된 사이트의 실험/이벤트 데이터 조회는 완료되었습니다."];
+    if (metrics?.ok) {
+      parts.push("선택 실험의 A/B 지표는 조회되었습니다. 상세 지표 영역에서 전환율과 클릭률을 확인해 주세요.");
+    }
+    if (draft) {
+      parts.push(actions.some((action) => action.type === "saved_experiment_draft")
+        ? "요청한 실험 초안은 draft로 저장되었습니다."
+        : "요청한 실험 초안은 응답 action으로 생성되었지만 아직 저장/배포되지 않았습니다.");
+    }
+    parts.push("잠시 후 다시 시도해 주세요.");
+    return parts.join(" ");
+  }
+
+  function buildAnalyticsAnswerContext({ ctx, messages, siteId, selectedExperimentKey, experiments, metrics, eventSummary, issueSummary, selectedElement, draft, actions, usedTools }) {
+    const selectedExperiment = experiments.find((exp) => exp.key === selectedExperimentKey) || null;
+    return {
+      siteId,
+      latestUserMessage: ctx.latestUserMessage,
+      messages: compactMessages(messages),
+      selectedExperimentKey,
+      experiments: {
+        count: experiments.length,
+        running_count: experiments.filter((exp) => exp.status === "running").length,
+        draft_count: experiments.filter((exp) => exp.status === "draft").length,
+        selected: compactExperiment(selectedExperiment),
+        recent: experiments.slice(0, 8).map(compactExperiment).filter(Boolean),
+      },
+      selectedExperimentMetrics: compactMetrics(metrics),
+      eventSummary: compactEventSummary(eventSummary),
+      chatIssueSummary: compactIssueSummary(issueSummary),
+      selectedElementContext: selectedElement || null,
+      draft: draft ? {
+        created: true,
+        key: draft.key || null,
+        target_page: draft.target_page || null,
+        target_selector: draft.target_selector || null,
+        primary_goal: draft.primary_goal || null,
+        saved: actions.some((action) => action.type === "saved_experiment_draft"),
+      } : { created: false },
+      actionsSummary: compactActions(actions),
+      usedTools: usedTools.map((tool) => ({ tool: tool.tool, input: tool.input, resultPreview: tool.resultPreview })).slice(0, 10),
+      safety: {
+        noDirectWriteActions: ["publish_experiment", "pause_experiment", "rollback_experiment", "delete_experiment"],
+        guidance: "일반 챗봇은 배포/중지/롤백/삭제를 직접 실행하지 않습니다. 실제 작업은 Agent Mode와 승인 흐름으로 안내하세요.",
+      },
+    };
   }
 
   async function runAnalyticsCopilot({ messages, context, siteId: requestedSiteId }) {
@@ -186,27 +326,34 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
       }
     }
 
-    const baseAnswer = [
-      `현재 실험 수: ${experiments.length}개`,
-      metrics?.ok
-        ? `선택 실험(${metrics.key}) 기준 CVR A:${(metrics.A.cvr * 100).toFixed(2)}% / B:${(metrics.B.cvr * 100).toFixed(2)}%`
-        : "선택 실험 metrics가 없어 전체 이벤트/이슈 기준으로 분석했습니다.",
-      `상위 고객 이슈: ${
-        issueSummary.issue_types?.slice(0, 3).map((x) => `${x.issueType}(${x.count})`).join(", ") || "없음"
-      }`,
-      draft
-        ? shouldSaveDraft(userText)
-          ? "요청에 따라 실험 초안을 생성하고 draft로 저장했습니다."
-          : "실험 초안을 생성했습니다. 아직 저장하지 않았고 JSON 액션으로만 반환했습니다."
-        : "원하면 현재 컨텍스트 기반 실험 초안을 생성할 수 있습니다.",
-    ].join("\n");
-
-    const answer = await maybeLLMRewrite({
-      agent: "analytics_copilot",
-      answer: baseAnswer,
+    const answerContext = buildAnalyticsAnswerContext({
+      ctx,
       messages,
-      context: { ...ctx, selectedExperimentKey },
+      siteId,
+      selectedExperimentKey,
+      experiments,
+      metrics,
+      eventSummary,
+      issueSummary,
+      selectedElement,
+      draft,
+      actions,
+      usedTools,
     });
+    const fallbackAnswer = buildFallbackAnswer({ metrics, draft, actions });
+    const answerResponse = typeof safeLlmClient.answer === "function"
+      ? await safeLlmClient.answer({
+          systemPrompt: getAnalyticsSystemPrompt(),
+          messages,
+          context: answerContext,
+          fallbackAnswer,
+        })
+      : await safeLlmClient.rewrite({
+          systemPrompt: getAnalyticsSystemPrompt(),
+          userPrompt: `User message: ${userText}\n\nContext:${JSON.stringify(answerContext)}`,
+          draftAnswer: fallbackAnswer,
+        });
+    const answer = answerResponse?.text || fallbackAnswer;
 
     conversationAnalyticsService.logChatEvent({
       sessionId: ctx.sessionId,
@@ -220,10 +367,10 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
       detectedIntent,
       resolved: true,
       unresolved: false,
-      fallback: safeLlmClient.mode === "mock",
+      fallback: safeLlmClient.mode === "mock" || answerResponse?.ok === false,
       handedOffToHuman: false,
       relatedExperimentKey: selectedExperimentKey,
-      metadata: { llmMode: safeLlmClient.mode },
+      metadata: { llmMode: safeLlmClient.mode, answerReason: answerResponse?.reason || null },
     });
 
     conversationAnalyticsService.logChatEvent({
@@ -238,10 +385,10 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
       detectedIntent,
       resolved: true,
       unresolved: false,
-      fallback: safeLlmClient.mode === "mock",
+      fallback: safeLlmClient.mode === "mock" || answerResponse?.ok === false,
       handedOffToHuman: false,
       relatedExperimentKey: selectedExperimentKey,
-      metadata: { actionCount: actions.length },
+      metadata: { actionCount: actions.length, answerReason: answerResponse?.reason || null },
     });
 
     return {
@@ -253,6 +400,9 @@ function createChatOrchestrator({ toolRegistry, conversationAnalyticsService, ll
         siteId,
         llmMode: safeLlmClient.mode,
         usedTools,
+        answerMode: typeof safeLlmClient.answer === "function" ? "answer" : "rewrite_fallback",
+        answerFallback: answerResponse?.ok === false,
+        answerReason: answerResponse?.reason || null,
       },
     };
   }
