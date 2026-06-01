@@ -33,11 +33,6 @@ const {
   listOverlayRecords,
 } = require("./personas/overlay-generator");
 
-const {
-  computeLabeledSessionSummaries,
-  computeLabelsSummary,
-  buildInsightsInput
-} = require("./analytics/pipeline");
 const { generateInsights } = require("./insights/generator");
 const {
   VALID_EXPERIMENT_STATUSES,
@@ -1424,7 +1419,7 @@ app.get("/api/metrics", requireAuth, requireSiteAccess, async (req, res) => {
 
 app.get("/api/realtime/sessions", requireAuth, requireSiteAccess, async (req, res) => {
   if (!redisSessionStore) {
-    return res.json({ ok: false, reason: "redis realtime session store disabled", sessions: [] });
+    return sendRedisUnavailable(res);
   }
 
   const site_id = String(req.query.site_id || "ab-sample");
@@ -1434,7 +1429,7 @@ app.get("/api/realtime/sessions", requireAuth, requireSiteAccess, async (req, re
     const sessions = await redisSessionStore.listSessionStates({ siteId: site_id, limit });
     return res.json({ ok: true, site_id, source: "redis", sessions });
   } catch (error) {
-    return res.status(500).json({ ok: false, reason: String(error) });
+    return sendRedisUnavailable(res, error);
   }
 });
 
@@ -1529,11 +1524,9 @@ app.use(
       requireSiteAccess,
     },
     analytics: {
-      computeLabeledSessionSummaries,
-      computeLabelsSummary,
-      buildInsightsInput,
       generateInsights,
     },
+    redisSessionAnalyticsService,
   })
 );
 
