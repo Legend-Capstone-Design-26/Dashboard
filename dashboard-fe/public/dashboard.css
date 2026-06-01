@@ -1173,6 +1173,44 @@ tr:hover td { background: rgba(91, 118, 254, 0.03); }
   line-height: 1.65;
 }
 
+.summaryExplainGrid,
+.productInsightStatusGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.summaryExplainGrid p,
+.productInsightStatusCard p,
+.experimentBrief p {
+  margin: 6px 0 0;
+  color: var(--color-text);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.summaryExplainGrid strong,
+.productInsightStatusGrid strong,
+.insightSectionLabel {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-top: 10px;
+}
+
+.productInsightStatusCard {
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.95), rgba(255, 255, 255, 0.96));
+  padding: var(--space-4);
+}
+
+.productInsightStatusCard h3 {
+  margin-bottom: 6px;
+}
+
 .productInsightBlocks {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1213,6 +1251,18 @@ tr:hover td { background: rgba(91, 118, 254, 0.03); }
   background: linear-gradient(135deg, rgba(229, 236, 255, 0.94), rgba(214, 241, 255, 0.9));
   color: #243d63;
 }
+
+.experimentBrief {
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-border-input);
+  background: #fafbfc;
+  padding: var(--space-3);
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.experimentBrief + .experimentBrief { margin-top: var(--space-2); }
 
 .footerStatusRow {
   display: flex;

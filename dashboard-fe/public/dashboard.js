@@ -1851,6 +1851,8 @@
 
   function buildProductInsightModel(insightData, journeySummary, labelSummary) {
     const insights = Array.isArray(insightData?.output?.insights) ? insightData.output.insights : [];
+    const outputStatus = insightData?.output?.status || "ready";
+    const nextSteps = Array.isArray(insightData?.output?.next_steps) ? insightData.output.next_steps : [];
     const labels = mergeLabelSummary(labelSummary).filter((item) => item.sessions > 0);
     const topLabel = labels.slice().sort((a, b) => b.sessions - a.sessions)[0] || null;
     const journeySteps = Array.isArray(journeySummary?.journey?.steps) ? journeySummary.journey.steps : [];
@@ -1859,10 +1861,17 @@
 
     const cleanText = (value) => String(value == null ? "" : value).trim();
     const firstText = (value) => Array.isArray(value) ? cleanText(value[0]) : cleanText(value);
+    const metricName = (metric) => ({
+      "checkout_complete / sessions": "결제 완료 비율",
+      "checkout_entered / sessions": "결제 단계 진입 비율",
+      page_view_to_click_rate: "화면 조회 후 클릭 비율",
+      "error_count / sessions": "세션당 오류 발생 정도",
+      price_interaction_count: "가격/혜택 관련 상호작용 수",
+    }[cleanText(metric)] || cleanText(metric));
     const formatImpact = (impact) => {
       if (!impact || typeof impact !== "object") return "";
       const parts = [];
-      const metric = cleanText(impact.primary_metric);
+      const metric = metricName(impact.primary_metric);
       if (metric) parts.push(metric);
       if (typeof impact.affected_sessions === "number" && isFinite(impact.affected_sessions)) parts.push(`영향 세션 ${fmtInt(impact.affected_sessions)}`);
       if (typeof impact.share === "number" && isFinite(impact.share)) parts.push(`비중 ${fmtPct(impact.share)}`);
@@ -1873,13 +1882,12 @@
       return evidence.map(cleanText).filter(Boolean).slice(0, 2).join(" · ");
     };
 
-    const summaryParts = [];
-    if (cleanText(insightSummary?.headline)) {
-      summaryParts.push(cleanText(insightSummary.headline));
-    }
-    if (cleanText(insightSummary?.top_priority_reason)) {
-      summaryParts.push(cleanText(insightSummary.top_priority_reason));
-    }
+    const summary = {
+      headline: cleanText(insightSummary?.headline),
+      plainExplanation: cleanText(insightSummary?.plain_explanation),
+      firstCheck: cleanText(insightSummary?.top_priority_reason),
+    };
+    const summaryParts = [summary.headline, summary.plainExplanation, summary.firstCheck].filter(Boolean);
     if (highDropSteps[0]) {
       summaryParts.push(`${highDropSteps[0].label} 단계에서 이탈이 상대적으로 높게 나타났습니다.`);
     }
@@ -1897,7 +1905,10 @@
         priority: step.high_drop ? "high" : "medium",
         where: step.label,
         metric: `다음 단계 이동률 ${fmtPct(step.next_step_rate)} · 이탈률 ${fmtPct(step.drop_rate)}`,
-        desc: `${step.label} 단계에서 다음 흐름으로 이어지지 않는 세션이 많아 보입니다. CTA 배치나 정보 전달을 우선 확인해볼 수 있습니다.`,
+        plainExplanation: `${step.label} 단계에서 다음 흐름으로 이어지지 않는 세션이 많아 보입니다. CTA 배치나 정보 전달을 우선 확인해볼 수 있습니다.`,
+        evidenceBullets: [`다음 단계 이동률 ${fmtPct(step.next_step_rate)}`, `이탈률 ${fmtPct(step.drop_rate)}`],
+        nextBestAction: `${step.label} 단계의 CTA 위치와 문구가 명확한지 먼저 확인하세요.`,
+        riskNote: "표본이 적다면 이탈 원인을 확정하기 어렵습니다.",
       });
     });
     insights.slice(0, Math.max(0, 3 - problemCards.length)).forEach((item) => {
@@ -1912,6 +1923,10 @@
         metric: impactText || (topLabel && item.label === topLabel.label ? `유형 비중 ${fmtPct(topLabel.share)}` : "근거 지표 확인 필요"),
         priorityReason: cleanText(item.priority_reason) || fallbackCause || "현재 데이터만으로는 원인을 단정하기 어렵지만 우선 확인이 필요한 신호입니다.",
         evidence: evidenceText,
+        plainExplanation: cleanText(item.plain_explanation) || cleanText(item.operator_summary) || fallbackCause || "데이터를 더 확인해야 하는 사용자 흐름입니다.",
+        evidenceBullets: (Array.isArray(item.evidence_bullets) && item.evidence_bullets.length ? item.evidence_bullets : item.evidence || []).map(cleanText).filter(Boolean).slice(0, 3),
+        nextBestAction: cleanText(item.next_best_action) || firstText(item.recommended_actions) || firstText(item.validation_methods) || "관련 이벤트 수집 상태를 먼저 확인하세요.",
+        riskNote: cleanText(item.risk_note) || cleanText(item.confidence_reason) || "데이터가 적으면 확정적인 결론으로 보기 어렵습니다.",
         evidenceLevel: cleanText(item.evidence_level),
       });
     });
@@ -1931,16 +1946,21 @@
     const experiments = [];
     insights.forEach((item) => {
       (Array.isArray(item.recommended_experiments) ? item.recommended_experiments : []).forEach((exp) => {
-        if (exp?.hypothesis || exp?.change) experiments.push(`${exp.hypothesis || exp.change} (${exp.primary_metric || "지표 확인 필요"})`);
+        const brief = cleanText(item.experiment_brief);
+        if (brief) experiments.push({ brief, hypothesis: exp?.hypothesis || "", change: exp?.change || "", metric: metricName(exp?.primary_metric || "") });
+        else if (exp?.hypothesis || exp?.change) experiments.push({ hypothesis: exp.hypothesis || "", change: exp.change || "", metric: metricName(exp.primary_metric || "지표 확인 필요") });
       });
     });
 
     return {
-      hasData: Boolean(summaryParts.length || problemCards.length || actions.length || experiments.length),
-      summary: summaryParts.join(" "),
+      status: outputStatus,
+      fallbackReason: insightData?.fallback_reason || insightData?.output?.fallbackReason || null,
+      nextSteps,
+      hasData: outputStatus === "ready" && Boolean(summaryParts.length || problemCards.length || actions.length || experiments.length),
+      summary,
       problems: problemCards.slice(0, 3),
       actions: Array.from(new Set(actions)).slice(0, 4),
-      experiments: Array.from(new Set(experiments)).slice(0, 4),
+      experiments: experiments.slice(0, 4),
     };
   }
 
@@ -2193,6 +2213,35 @@
     uxHighPriorityCount.textContent = String(insights.filter((i) => i.priority === "high").length);
 
     const model = buildProductInsightModel(data, eventSummary, labelSummary);
+    if (model.status !== "ready" || !insights.length) {
+      uxHighPriorityCount.textContent = "0";
+      const summary = data?.output?.summary || {};
+      const nextSteps = model.nextSteps.length ? model.nextSteps : [
+        "SDK 이벤트 수집 상태 확인",
+        "CTA 클릭 이벤트 수집 확인",
+        "결제 완료 이벤트 수집 확인",
+        "데이터를 더 모은 뒤 다시 인사이트 도출",
+      ];
+      insightsList.innerHTML = `
+        <section class="productInsightStatusCard">
+          <h3>${escapeHtml(summary.headline || "아직 AI 인사이트를 만들기에는 데이터가 부족합니다.")}</h3>
+          <p>${escapeHtml(summary.plain_explanation || "이벤트는 일부 수집되고 있지만, 전환이나 세션 흐름을 판단할 만큼 충분하지 않습니다.")}</p>
+          <div class="productInsightStatusGrid">
+            <div>
+              <strong>현재 확인된 내용</strong>
+              <ul class="compactList">
+                <li>${escapeHtml(summary.top_priority_reason || "이벤트 추적과 세션 집계가 정상인지 먼저 확인해야 합니다.")}</li>
+                ${model.fallbackReason ? `<li>상태: ${escapeHtml(model.fallbackReason)}</li>` : ""}
+              </ul>
+            </div>
+            <div>
+              <strong>먼저 할 일</strong>
+              <ol class="compactList">${nextSteps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>
+            </div>
+          </div>
+        </section>`;
+      return;
+    }
     if (!model.hasData) {
       insightsList.innerHTML = '<div class="emptyState">아직 AI 인사이트를 생성할 수 있는 데이터가 부족합니다.</div>';
       return;
@@ -2201,7 +2250,11 @@
     insightsList.innerHTML = `
       <section class="productInsightSummary">
         <h3>전체 요약</h3>
-        <div class="productInsightSummaryText">${escapeHtml(model.summary || "선택한 기간의 UX 상태를 요약할 수 있는 데이터가 아직 충분하지 않습니다.")}</div>
+        <div class="summaryExplainGrid">
+          <div><strong>한 줄 결론</strong><p>${escapeHtml(model.summary.headline || "선택한 기간의 UX 상태를 요약할 수 있는 데이터가 아직 충분하지 않습니다.")}</p></div>
+          <div><strong>쉽게 말하면</strong><p>${escapeHtml(model.summary.plainExplanation || "사용자 행동 데이터를 바탕으로 먼저 확인할 흐름을 정리했습니다.")}</p></div>
+          <div><strong>지금 가장 먼저 볼 것</strong><p>${escapeHtml(model.summary.firstCheck || "CTA 클릭 이벤트와 결제 완료 이벤트가 정상적으로 수집되는지 확인하세요.")}</p></div>
+        </div>
       </section>
       <div class="productInsightBlocks">
         <section class="productInsightBlock">
@@ -2217,18 +2270,29 @@
               </div>
               <div class="productInsightMeta"><span class="badge label">${escapeHtml(item.metric)}</span></div>
               ${item.evidenceLevel ? `<div class="productInsightMeta"><span class="badge label">근거 ${escapeHtml(item.evidenceLevel)}</span></div>` : ""}
-              <div class="insightText">${escapeHtml(item.priorityReason || item.desc)}</div>
-              ${item.evidence ? `<div class="muted">${escapeHtml(item.evidence)}</div>` : ""}
+              <div class="insightSectionLabel">쉽게 말하면</div>
+              <div class="insightText">${escapeHtml(item.plainExplanation || item.priorityReason || "현재 데이터만으로 원인을 단정하기 어렵지만 우선 확인이 필요한 신호입니다.")}</div>
+              <div class="insightSectionLabel">근거</div>
+              <ul class="compactList">${(item.evidenceBullets && item.evidenceBullets.length ? item.evidenceBullets : [item.evidence || item.metric]).filter(Boolean).map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
+              <div class="insightSectionLabel">먼저 확인할 것</div>
+              <div class="insightText">${escapeHtml(item.nextBestAction || "관련 이벤트 수집 상태를 먼저 확인하세요.")}</div>
+              <div class="insightSectionLabel">주의할 점</div>
+              <div class="muted">${escapeHtml(item.riskNote || "표본이 적으면 확정적인 결론으로 보기 어렵습니다.")}</div>
             </article>
           `).join("") : '<div class="emptyState">아직 주요 문제를 정리할 수 있는 데이터가 부족합니다.</div>'}
         </section>
         <section class="productInsightBlock">
           <h3>권장 액션</h3>
-          <ul class="compactList">${model.actions.length ? model.actions.map((item) => `<li>${escapeHtml(item)}</li>`).join("") : '<li>아직 권장 액션을 만들 수 있는 데이터가 부족합니다.</li>'}</ul>
+          <ol class="compactList">${model.actions.length ? model.actions.map((item, index) => `<li><strong>${index + 1}순위:</strong> ${escapeHtml(item)}</li>`).join("") : '<li>아직 권장 액션을 만들 수 있는 데이터가 부족합니다.</li>'}</ol>
         </section>
         <section class="productInsightBlock">
           <h3>관련 실험 제안</h3>
-          <ul class="compactList">${model.experiments.length ? model.experiments.map((item) => `<li>${escapeHtml(item)}</li>`).join("") : '<li>현재 인사이트 기준으로 바로 연결할 실험 제안이 없습니다.</li>'}</ul>
+          ${model.experiments.length ? model.experiments.map((item) => `<div class="experimentBrief">
+            ${item.brief ? `<p>${escapeHtml(item.brief)}</p>` : ""}
+            ${item.hypothesis ? `<div><strong>가설:</strong> ${escapeHtml(item.hypothesis)}</div>` : ""}
+            ${item.change ? `<div><strong>바꿀 것:</strong> ${escapeHtml(item.change)}</div>` : ""}
+            ${item.metric ? `<div><strong>확인할 지표:</strong> ${escapeHtml(item.metric)}</div>` : ""}
+          </div>`).join("") : '<div class="emptyState">현재 인사이트 기준으로 바로 연결할 실험 제안이 없습니다.</div>'}
         </section>
       </div>`;
   }
