@@ -79,9 +79,13 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const noStorePaths = [
     "/login",
+    "/login.html",
     "/editor",
+    "/editor.html",
     "/dashboard",
+    "/dashboard.html",
     "/persona-lab",
+    "/persona-lab.html",
     "/login.js",
     "/editor.js",
     "/dashboard.js",
@@ -102,6 +106,12 @@ app.use(express.json({ limit: "5mb" }));
 const dashboardRequire = createRequire(path.join(__dirname, "package.json"));
 const SDK_PACKAGE_FILE = dashboardRequire.resolve("@enejwl/ux-sdk");
 app.get("/sdk.js", (req, res) => res.sendFile(SDK_PACKAGE_FILE));
+
+// Protect document routes before static assets are served.
+app.get("/login.html", (req, res) => res.redirect("/login"));
+app.get("/editor.html", requireAuth, (req, res) => res.redirect("/editor"));
+app.get("/dashboard.html", requireAuth, (req, res) => res.redirect("/dashboard"));
+app.get("/persona-lab.html", requireAuth, (req, res) => res.redirect("/persona-lab"));
 app.use(express.static(FRONTEND_PUBLIC_DIR));
 
 // pages
