@@ -52,25 +52,26 @@ function createRedisMetricsStore({ redisRuntime }) {
     const sessionStatsKey = buildSessionStatsKey({ siteId, key: experimentKey, variant, sessionId });
     const clicksKey = buildClicksKey({ siteId, key: experimentKey, variant });
 
-    const tx = client.multi();
-    tx.hincrby(statsKey, "events", 1);
-    tx.sadd(usersKey, anonUserId);
-    tx.sadd(sessionsKey, sessionId);
-    tx.hincrby(sessionStatsKey, "total_events", 1);
+    const writes = [
+      client.hincrby(statsKey, "events", 1),
+      client.sadd(usersKey, anonUserId),
+      client.sadd(sessionsKey, sessionId),
+      client.hincrby(sessionStatsKey, "total_events", 1),
+    ];
 
     if (event.event_name === "page_view") {
-      tx.hincrby(statsKey, "page_views", 1);
-      tx.hincrby(sessionStatsKey, "page_views", 1);
+      writes.push(client.hincrby(statsKey, "page_views", 1));
+      writes.push(client.hincrby(sessionStatsKey, "page_views", 1));
     }
     if (event.event_name === "click") {
-      tx.hincrby(statsKey, "clicks", 1);
-      tx.zincrby(clicksKey, 1, event.props?.element_id || "(no_element_id)");
+      writes.push(client.hincrby(statsKey, "clicks", 1));
+      writes.push(client.zincrby(clicksKey, 1, event.props?.element_id || "(no_element_id)"));
     }
     if (goalList.includes(event.event_name)) {
-      tx.hincrby(statsKey, "conversions", 1);
+      writes.push(client.hincrby(statsKey, "conversions", 1));
     }
 
-    await tx.exec();
+    await Promise.all(writes);
   }
 
   async function getExperimentMetrics({ siteId, key, goals, experiment }) {

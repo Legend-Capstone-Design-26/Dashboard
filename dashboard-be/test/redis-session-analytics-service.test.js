@@ -20,7 +20,7 @@ function createFakeRedisRuntime(initial = {}, keyPrefix = "") {
           const regex = new RegExp(`^${prefixedPattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\*/g, ".*")}$`);
           return Array.from(data.keys()).filter((key) => regex.test(key));
         },
-        async mget(keys) { return keys.map((key) => data.get(withPrefix(key)) || null); },
+        async mget() { throw new Error("mget should not be used for Redis session reads"); },
       };
     },
   };
