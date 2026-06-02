@@ -174,6 +174,28 @@
     labelsError: null,
   };
 
+  function warnMissingDomElement(id, usage) {
+    console.warn(`[dashboard] Missing DOM element #${id}. ${usage} will not render. Check dashboard.html and dashboard.js id consistency.`);
+  }
+
+  function validateRequiredDashboardDom() {
+    const required = [
+      ["sessionsBody", sessionsBody, "Recent sessions table"],
+      ["labelSummaryBody", labelSummaryBody, "Label summary table"],
+      ["insightsList", insightsList, "AI insights section"],
+      ["labelBars", labelBars, "Label distribution bars"],
+      ["trendChartCard", trendChartCard, "Trend chart"],
+      ["journeyFlow", journeyFlow, "Journey flow"],
+      ["sdkStatusBadge", sdkStatusBadge, "SDK status badge"],
+      ["sdkStatusText", sdkStatusText, "SDK status text"],
+    ];
+    const missing = required.filter(([, element]) => !element);
+    if (!missing.length) return;
+    console.warn("[dashboard] Missing required DOM elements:", missing.map(([id, , usage]) => ({ id, usage })));
+  }
+
+  validateRequiredDashboardDom();
+
   const AGE_GROUP_LABELS = {
     teens: "10대",
     "20s": "20대",
@@ -2164,6 +2186,10 @@
 
   // ─── 렌더링: 라벨 분포 바 ───
   function renderLabelBars(summary) {
+    if (!labelBars) {
+      warnMissingDomElement("labelBars", "Label distribution bars");
+      return;
+    }
     if (state.labelsError) {
       if (labelDonutTotal) labelDonutTotal.textContent = "—";
       if (labelDonut) labelDonut.classList.add("empty");
@@ -2258,6 +2284,10 @@
 
   // ─── 렌더링: 라벨 요약 테이블 ───
   function renderLabelSummary(summary) {
+    if (!labelSummaryBody) {
+      warnMissingDomElement("labelSummaryBody", "Label summary table");
+      return;
+    }
     if (state.labelsError) {
       labelSummaryBody.innerHTML = '<tr><td colspan="6" class="emptyState">UX 라벨 데이터를 불러오지 못했습니다.<br/>Redis 또는 Kafka Consumer 상태를 확인해 주세요.</td></tr>';
       return;
@@ -2278,6 +2308,10 @@
 
   // ─── 렌더링: 최근 세션 ───
   function renderSessions(sessions) {
+    if (!sessionsBody) {
+      warnMissingDomElement("sessionsBody", "Recent sessions table");
+      return;
+    }
     if (sessionsSourceLabel) {
       sessionsSourceLabel.textContent = state.sessionsSource === "redis"
         ? "Redis read model"
@@ -2325,6 +2359,10 @@
   // ─── 렌더링: 인사이트 ───
   function renderInsights(data, eventSummary, labelSummary) {
     renderInsightGenerationButton();
+    if (!insightsList) {
+      warnMissingDomElement("insightsList", "AI insights section");
+      return;
+    }
     if (state.insightGenerationPending) {
       uxHighPriorityCount.textContent = "…";
       insightsList.innerHTML = '<div class="emptyState">선택한 기간의 AI UX 인사이트를 도출하는 중입니다.</div>';
