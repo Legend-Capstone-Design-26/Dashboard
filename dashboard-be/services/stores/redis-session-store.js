@@ -3,6 +3,8 @@ function buildAssignmentKey({ siteId, experimentKey, anonUserId }) {
 }
 
 function buildSessionKey({ siteId, sessionId }) {
+  // TODO: For Redis Cluster, migrate new keys to hash tags such as
+  // `uxsdk:{site:<siteId>}:session:<sessionId>` after existing data compatibility is handled.
   return `session:${siteId}:${sessionId}`;
 }
 
@@ -33,7 +35,7 @@ function createRedisSessionStore({ redisRuntime, sessionTtlSec, assignmentTtlSec
     const keys = await scanKeys(client, pattern);
     if (keys.length === 0) return [];
 
-    const values = await client.mget(keys);
+    const values = await Promise.all(keys.map((key) => client.get(key)));
     const items = [];
     for (let i = 0; i < keys.length; i += 1) {
       const value = values[i];
