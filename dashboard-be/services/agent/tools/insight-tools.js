@@ -9,22 +9,11 @@ function labelName(label) {
   return map[label] || label || "알 수 없음";
 }
 
-function createInsightTools({ computeLabeledSessionSummaries, computeLabelsSummary, buildInsightsInput, generateInsights, eventsFile, siteRegistryStore }) {
-  async function getLabeled({ siteId, fromTs, toTs }) {
-    const pathMappings = siteRegistryStore.getRawById(siteId)?.journey_path_mappings || null;
-    return computeLabeledSessionSummaries(eventsFile, {
-      site_id: siteId,
-      from_ts: typeof fromTs === "number" ? fromTs : undefined,
-      to_ts: typeof toTs === "number" ? toTs : undefined,
-      limit_events: 50000,
-      session_ttl_ms: 30 * 60 * 1000,
-      pathMappings,
-    });
-  }
-
+function createInsightTools({ redisSessionAnalyticsService, generateInsights }) {
   async function summarizeLabels({ siteId, fromTs, toTs }) {
-    const labeled = await getLabeled({ siteId, fromTs, toTs });
-    const summary = computeLabelsSummary(labeled);
+    if (!redisSessionAnalyticsService) throw new Error("redis_unavailable");
+    const result = await redisSessionAnalyticsService.getLabelsSummary({ siteId, fromTs, toTs });
+    const summary = Array.isArray(result?.summary) ? result.summary : [];
     const total = summary.reduce((sum, item) => sum + (Number(item.sessions) || 0), 0);
     const top = summary[0] || null;
     return {
@@ -38,8 +27,8 @@ function createInsightTools({ computeLabeledSessionSummaries, computeLabelsSumma
   }
 
   async function summarizeInsights({ siteId, fromTs, toTs }) {
-    const labeled = await getLabeled({ siteId, fromTs, toTs });
-    const input = buildInsightsInput(siteId, labeled, { perLabelRepresentatives: 2 });
+    if (!redisSessionAnalyticsService) throw new Error("redis_unavailable");
+    const input = await redisSessionAnalyticsService.buildRedisInsightsInput({ siteId, fromTs, toTs, reps: 2 });
     const result = await generateInsights(input, {});
     const insights = Array.isArray(result?.output?.insights) ? result.output.insights : [];
     const first = insights[0] || null;

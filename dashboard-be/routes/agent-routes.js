@@ -8,7 +8,7 @@ const { createAgentOrchestrator } = require("../services/agent/agent-orchestrato
 const { createFileApprovalStore } = require("../services/agent/approval-store");
 const { statusResponse } = require("../services/agent/agent-response");
 
-function createAgentRoutes({ files, middlewares = {}, analytics = {} }) {
+function createAgentRoutes({ files, middlewares = {}, analytics = {}, redisSessionAnalyticsService = null }) {
   const router = express.Router();
   const requireAuth = typeof middlewares.requireAuth === "function" ? middlewares.requireAuth : (_req, _res, next) => next();
   const requireSiteAccess = typeof middlewares.requireSiteAccess === "function" ? middlewares.requireSiteAccess : (_req, _res, next) => next();
@@ -23,9 +23,7 @@ function createAgentRoutes({ files, middlewares = {}, analytics = {} }) {
     metricsReadModel,
     siteRegistryStore,
     eventsFile: files.eventsFile,
-    computeLabeledSessionSummaries: analytics.computeLabeledSessionSummaries,
-    computeLabelsSummary: analytics.computeLabelsSummary,
-    buildInsightsInput: analytics.buildInsightsInput,
+    redisSessionAnalyticsService,
     generateInsights: analytics.generateInsights,
   });
   const orchestrator = createAgentOrchestrator({ toolRegistry, approvalStore, agentActionsFile: files.agentActionsFile });

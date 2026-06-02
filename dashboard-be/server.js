@@ -10,9 +10,9 @@ const { createAgentRoutes } = require("./routes/agent-routes");
 const { loadEnvFromFile } = require("./services/llm/config");
 const {
   createFileEventStore,
-  createCompositeEventStore,
   createKafkaEventStore,
 } = require("./services/stores/event-store");
+const { createCollectHandler } = require("./services/collector/collect-handler");
 const { createFileExperimentStore } = require("./services/stores/experiment-store");
 const { createFileSiteRegistryStore } = require("./services/stores/site-registry-store");
 const { createMetricsReadModel } = require("./services/read-models/metrics-read-model");
@@ -33,11 +33,6 @@ const {
   listOverlayRecords,
 } = require("./personas/overlay-generator");
 
-const {
-  computeLabeledSessionSummaries,
-  computeLabelsSummary,
-  buildInsightsInput
-} = require("./analytics/pipeline");
 const { generateInsights } = require("./insights/generator");
 const {
   VALID_EXPERIMENT_STATUSES,
@@ -473,13 +468,9 @@ const redisEventSummaryStore = redisRuntime ? createRedisEventSummaryStore({ red
 const redisSessionAnalyticsService = redisSessionStore
   ? createRedisSessionAnalyticsService({ redisSessionStore, redisEventSummaryStore })
   : null;
-const eventStore = kafkaRuntime
-  ? createCompositeEventStore({
-      primaryStore: fileEventStore,
-      secondaryStores: [createKafkaEventStore({ kafkaRuntime, topic: infraConfig.kafka.topicEvents })],
-      logger: (...args) => console.warn("[infra]", ...args),
-    })
-  : fileEventStore;
+const kafkaEventStore = kafkaRuntime
+  ? createKafkaEventStore({ kafkaRuntime, topic: infraConfig.kafka.topicEvents })
+  : null;
 function slugify(value) {
   return String(value || "")
     .toLowerCase()
@@ -969,20 +960,13 @@ function toInt(x) {
 }
 
 // ---------- collect endpoint ----------
-app.post("/collect", async (req, res) => {
-  const payload = req.body;
-  const events = Array.isArray(payload?.events) ? payload.events : [];
-  if (events.length === 0) return res.status(400).json({ ok: false, reason: "no events" });
-
-  try {
-    // TODO: event-summary는 Redis read model을 사용한다. file write는 legacy analytics 전환 완료 후 정리한다.
-    await eventStore.appendBatch(events, { received_at: Date.now(), request_id: rid() });
-    console.log("✅ collect:", events[events.length - 1]?.event_name, "count=", events.length);
-    return res.json({ ok: true, received: events.length });
-  } catch (error) {
-    return res.status(500).json({ ok: false, reason: `collect failed: ${String(error)}` });
-  }
-});
+app.post("/collect", createCollectHandler({
+  kafkaEventStore,
+  legacyFileEventStore: fileEventStore,
+  enableLegacyFileFallback: infraConfig.kafka.legacyFileCollectFallback,
+  createRequestId: rid,
+  logger: console,
+}));
 
 app.get("/api/sites", requireAuth, async (req, res) => {
   const sites = await listSitesForApi();
@@ -1424,7 +1408,7 @@ app.get("/api/metrics", requireAuth, requireSiteAccess, async (req, res) => {
 
 app.get("/api/realtime/sessions", requireAuth, requireSiteAccess, async (req, res) => {
   if (!redisSessionStore) {
-    return res.json({ ok: false, reason: "redis realtime session store disabled", sessions: [] });
+    return sendRedisUnavailable(res);
   }
 
   const site_id = String(req.query.site_id || "ab-sample");
@@ -1434,7 +1418,7 @@ app.get("/api/realtime/sessions", requireAuth, requireSiteAccess, async (req, re
     const sessions = await redisSessionStore.listSessionStates({ siteId: site_id, limit });
     return res.json({ ok: true, site_id, source: "redis", sessions });
   } catch (error) {
-    return res.status(500).json({ ok: false, reason: String(error) });
+    return sendRedisUnavailable(res, error);
   }
 });
 
@@ -1529,11 +1513,9 @@ app.use(
       requireSiteAccess,
     },
     analytics: {
-      computeLabeledSessionSummaries,
-      computeLabelsSummary,
-      buildInsightsInput,
       generateInsights,
     },
+    redisSessionAnalyticsService,
   })
 );
 
@@ -1563,9 +1545,9 @@ app.use(
 
 app.listen(PORT, () => {
   console.log(`✅ AB Sample running: http://localhost:${PORT}`);
-  console.log(`📦 collecting events to: ${EVENTS_FILE}`);
+  console.log(`📦 event collector: ${infraConfig.kafka.enabled ? `Kafka topic ${infraConfig.kafka.topicEvents}` : "Kafka disabled"}`);
+  console.log(`📦 legacy file collect fallback: ${infraConfig.kafka.legacyFileCollectFallback ? "enabled" : "disabled"}`);
   console.log(`🧪 experiments file: ${EXP_FILE}`);
-  console.log(`🛰️  kafka dual write: ${infraConfig.kafka.enabled ? `enabled -> ${infraConfig.kafka.topicEvents}` : "disabled"}`);
   console.log(`🧠 redis session store: ${infraConfig.redis.enabled ? "enabled" : "disabled"}`);
   console.log(`📊 dashboard: http://localhost:${PORT}/dashboard`);
   console.log(`🧩 sessions api: http://localhost:${PORT}/api/sessions`);
