@@ -3683,6 +3683,53 @@ tr:hover td { background: #f8faff; }
   .dashboardSidebar { width: 92px; }
   .dashboardMain { margin-left: 92px; }
   .sidebarLink { border-radius: 14px; }
+
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .topbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 14px;
+    min-height: auto;
+    padding: 16px 22px;
+  }
+
+  .brand {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .topbarIcon {
+    flex: 0 0 auto;
+  }
+
+  .topActions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(260px, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .topActions .selectInput {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .topActions .btnGhost,
+  .topActions .btnPrimary {
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .wrap {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
 }
 
 @media (max-width: 920px) {
@@ -3913,4 +3960,626 @@ tr:hover td { background: #f8faff; }
 .pathMappingsActions {
   display: flex;
   gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .topActions {
+    grid-template-columns: 1fr;
+  }
+
+  .topLabel,
+  .topUser {
+    white-space: normal;
+  }
+
+  .topActions .selectInput,
+  .topActions .btnGhost,
+  .topActions .btnPrimary {
+    width: 100%;
+  }
+}
+
+/* ===== Period selection emphasis ===== */
+.periodActiveSummary {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label label"
+    "value range";
+  align-items: end;
+  gap: 8px 18px;
+  margin-top: 16px;
+  padding: 20px 22px;
+  border: 1px solid rgba(199, 210, 254, 0.9);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 94% 10%, rgba(129, 140, 248, 0.26), transparent 15rem),
+    radial-gradient(circle at 5% 120%, rgba(14, 165, 233, 0.12), transparent 16rem),
+    linear-gradient(135deg, #ffffff, #f8faff 55%, #eef2ff);
+  box-shadow: 0 14px 34px rgba(79, 70, 229, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.periodActiveSummary::after {
+  content: "";
+  position: absolute;
+  right: 22px;
+  top: 18px;
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(199, 210, 254, 0.68);
+  pointer-events: none;
+}
+
+.periodActiveLabel {
+  grid-area: label;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 11px;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 12px;
+  font-weight: 820;
+  white-space: nowrap;
+}
+
+.periodActiveValue {
+  grid-area: value;
+  min-width: 0;
+  color: var(--dash-ink, #0f172a);
+  font-size: clamp(23px, 2.5vw, 34px);
+  line-height: 1.08;
+  letter-spacing: -0.052em;
+  font-weight: 830;
+  text-wrap: balance;
+}
+
+.periodActiveRange {
+  grid-area: range;
+  position: relative;
+  z-index: 1;
+  justify-self: end;
+  max-width: 340px;
+  padding: 8px 12px;
+  border: 1px solid rgba(219, 227, 239, 0.92);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 760;
+  text-align: right;
+  white-space: normal;
+}
+
+@media (max-width: 720px) {
+  .periodActiveSummary {
+    grid-template-areas:
+      "label"
+      "value"
+      "range";
+    grid-template-columns: 1fr;
+    align-items: start;
+    padding: 18px;
+  }
+
+  .periodActiveSummary::after {
+    display: none;
+  }
+
+  .periodActiveRange {
+    justify-self: start;
+    text-align: left;
+  }
+}
+
+/* ===== Phase 1: top UX focus hero + font consistency ===== */
+html,
+body,
+button,
+input,
+select,
+textarea,
+dialog,
+table,
+summary,
+code,
+pre,
+svg text {
+  font-family: var(--font-body), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.mono,
+.experimentOverlayMarker,
+.pathMappingInputRow input[type="text"] {
+  font-family: var(--font-body), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.uxFocusHero {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px;
+  padding: 30px;
+  border: 1px solid rgba(199, 210, 254, 0.82);
+  border-radius: var(--dash-radius-xl, 24px);
+  background:
+    radial-gradient(circle at 92% 18%, rgba(129, 140, 248, 0.22), transparent 18rem),
+    linear-gradient(135deg, #ffffff 0%, #f8faff 58%, #eef2ff 100%);
+  box-shadow: var(--dash-shadow-soft, 0 14px 34px rgba(15, 23, 42, 0.075));
+}
+
+.uxFocusContent {
+  min-width: 0;
+}
+
+.uxFocusEyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.uxFocusTitle {
+  margin: 14px 0 0;
+  max-width: 980px;
+  color: var(--dash-ink, #0f172a);
+  font-size: clamp(25px, 3vw, 38px);
+  line-height: 1.18;
+  letter-spacing: -0.055em;
+  font-weight: 820;
+}
+
+.uxFocusSummary {
+  margin: 14px 0 0;
+  max-width: 900px;
+  color: #334155;
+  font-size: clamp(15px, 1.35vw, 18px);
+  line-height: 1.68;
+  font-weight: 560;
+}
+
+.uxFocusMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.uxFocusMeta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid #dbe3ef;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #475569;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.uxFocusActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.uxFocusActions .btnPrimary,
+.uxFocusActions .btnGhost {
+  min-height: 42px;
+  justify-content: center;
+}
+
+#opportunitiesCard,
+#uxFocusHero {
+  scroll-margin-top: 96px;
+}
+
+@media (max-width: 920px) {
+  .uxFocusHero {
+    grid-template-columns: 1fr;
+    padding: 24px;
+  }
+
+  .uxFocusActions {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .uxFocusHero {
+    padding: 22px;
+    border-radius: 18px;
+  }
+
+  .uxFocusActions .btnPrimary,
+  .uxFocusActions .btnGhost {
+    width: 100%;
+  }
+}
+
+/* ===== Phase 2: readable experiment result modal ===== */
+.experimentDialog {
+  max-width: min(1120px, calc(100vw - 40px));
+}
+
+.experimentDialogBody {
+  gap: 20px;
+}
+
+.experimentDialog .dialogHeader h2 {
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.experimentDialog .dialogHeader .muted {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.experimentDialogHero {
+  padding-bottom: 4px;
+}
+
+.experimentDialogHero .experimentSummaryTitle {
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: 1.16;
+  letter-spacing: -0.055em;
+}
+
+.experimentResultHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: end;
+  padding: 22px;
+  border: 1px solid #c7d2fe;
+  border-radius: var(--dash-radius-xl, 24px);
+  background:
+    radial-gradient(circle at 88% 20%, rgba(99, 102, 241, 0.2), transparent 16rem),
+    linear-gradient(135deg, #ffffff 0%, #f8faff 58%, #eef2ff 100%);
+}
+
+.experimentResultEyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid #bbf7d0;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.experimentResultTitle {
+  margin: 12px 0 0;
+  color: var(--dash-ink, #0f172a);
+  font-size: clamp(21px, 2.1vw, 30px);
+  line-height: 1.22;
+  letter-spacing: -0.045em;
+  font-weight: 820;
+}
+
+.experimentResultSummary {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.72;
+  font-weight: 560;
+}
+
+.experimentResultPills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 250px;
+}
+
+.experimentResultPill {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 96px;
+  min-height: 58px;
+  padding: 9px 12px;
+  border: 1px solid var(--dash-border, #e2e8f0);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #475569;
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.experimentResultPill strong {
+  display: block;
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.experimentResultPill.positive {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.experimentResultPill.positive strong { color: #15803d; }
+
+.experimentResultPill.negative {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #991b1b;
+}
+
+.experimentResultPill.negative strong { color: #b91c1c; }
+
+.experimentResultPill.neutral {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.experimentDialogMetaGrid .summaryMiniCard {
+  padding: 18px;
+}
+
+.experimentDialogMetaGrid .summaryLabel,
+.experimentDialog .metricTitle {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.experimentDialogMetaGrid .summaryMiniValue {
+  font-size: 18px;
+}
+
+.experimentDialog .metricBlock {
+  padding: 20px;
+  border-radius: var(--dash-radius-lg, 20px);
+  background: #ffffff;
+}
+
+.experimentDialog .metricCompareRow {
+  margin: 10px 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.experimentDialog .metricCompareRow:last-of-type {
+  border-bottom: 0;
+}
+
+.experimentDialog .big {
+  font-size: clamp(20px, 1.7vw, 26px);
+  font-weight: 820;
+  color: #0f172a;
+}
+
+.experimentDialog .pill {
+  min-width: 34px;
+  min-height: 30px;
+  font-size: 12px;
+}
+
+.experimentDialog .metricDelta {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 760;
+}
+
+.experimentDialog .metricDelta.positive {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.experimentDialog .metricDelta.negative {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #991b1b;
+}
+
+.experimentDialog .metricDelta.neutral {
+  color: #475569;
+}
+
+.experimentCountsGrid {
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+}
+
+.experimentCountsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.experimentCountsTable th,
+.experimentCountsTable td {
+  padding: 10px 9px;
+  border-bottom: 1px solid #edf2f7;
+  text-align: right;
+  font-size: 14px;
+}
+
+.experimentCountsTable th:first-child,
+.experimentCountsTable td:first-child {
+  text-align: left;
+}
+
+.experimentCountsTable thead th {
+  color: #64748b;
+  background: transparent;
+  font-weight: 800;
+}
+
+.experimentCountsTable tbody th {
+  color: #0f172a;
+  font-weight: 820;
+}
+
+.experimentCountsFoot {
+  margin-top: 12px;
+  color: var(--dash-muted, #64748b);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.experimentDialog .list {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.experimentInterpretation {
+  font-size: 15px;
+  line-height: 1.75;
+  background: #ffffff;
+}
+
+.experimentHistoryPanel {
+  overflow: hidden;
+}
+
+.experimentHistorySummaryToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  cursor: pointer;
+  color: var(--dash-ink, #0f172a);
+  font-size: 16px;
+  font-weight: 820;
+  list-style: none;
+}
+
+.experimentHistorySummaryToggle::-webkit-details-marker {
+  display: none;
+}
+
+.experimentHistorySummaryToggle::after {
+  content: "펼치기";
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 6px 12px;
+  border: 1px solid #dbe3ef;
+  border-radius: 999px;
+  color: #475569;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.experimentHistoryPanel[open] .experimentHistorySummaryToggle::after {
+  content: "접기";
+}
+
+.experimentHistoryHead {
+  display: none;
+  padding: 0 20px;
+}
+
+.experimentHistoryList {
+  max-height: none;
+  padding: 0 20px 20px;
+}
+
+@media (max-width: 920px) {
+  .experimentResultHero,
+  .experimentCountsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .experimentResultPills {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .experimentDialog {
+    max-width: calc(100vw - 20px);
+  }
+
+  .experimentDialog .dialogBody {
+    padding: 16px;
+  }
+
+  .experimentResultHero {
+    padding: 18px;
+  }
+}
+
+/* Keep the experiment modal rounded by allowing only the body pane to scroll. */
+.experimentDialog {
+  overflow: hidden;
+}
+
+.experimentDialogInner {
+  height: min(88vh, 940px);
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.experimentDialogBody {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.experimentDialogBody::-webkit-scrollbar {
+  width: 10px;
+}
+
+.experimentDialogBody::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.experimentDialogBody::-webkit-scrollbar-thumb {
+  min-height: 54px;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.experimentDialogBody::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.experimentDialogBody::-webkit-scrollbar-corner {
+  background: transparent;
 }

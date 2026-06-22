@@ -2,6 +2,7 @@
 (function () {
   const DEFAULT_SITE_ID = "legend-ecommerce";
   const SITE_STORAGE_KEY = "uxsdk.dashboard.siteId";
+  const DESIGN_PREVIEW_ENABLED = new URLSearchParams(location.search).get("design_preview") === "1";
 
   const expTbody = document.getElementById("expTbody");
   const expTableWrap = document.getElementById("expTableWrap");
@@ -20,6 +21,8 @@
   const customDateRange = document.getElementById("customDateRange");
   const customFromDate = document.getElementById("customFromDate");
   const customToDate = document.getElementById("customToDate");
+  const periodActiveValue = document.getElementById("periodActiveValue");
+  const periodActiveRange = document.getElementById("periodActiveRange");
   const periodStatusText = document.getElementById("periodStatusText");
   const trendChartCard = document.getElementById("trendChartCard");
   const sdkStatusBadge = document.getElementById("sdkStatusBadge");
@@ -76,6 +79,10 @@
   const modalExperimentLead = document.getElementById("modalExperimentLead");
   const modalParticipantSessions = document.getElementById("modalParticipantSessions");
   const modalPeriodResultStatus = document.getElementById("modalPeriodResultStatus");
+  const experimentResultEyebrow = document.getElementById("experimentResultEyebrow");
+  const experimentResultTitle = document.getElementById("experimentResultTitle");
+  const experimentResultSummary = document.getElementById("experimentResultSummary");
+  const experimentResultPills = document.getElementById("experimentResultPills");
   const modalVariantAName = document.getElementById("modalVariantAName");
   const modalVariantBName = document.getElementById("modalVariantBName");
   const experimentHistoryList = document.getElementById("experimentHistoryList");
@@ -123,6 +130,11 @@
   const uxTopLabel = document.getElementById("uxTopLabel");
   const uxHighPriorityCount = document.getElementById("uxHighPriorityCount");
   const labelBars = document.getElementById("labelBars");
+  const uxFocusTitle = document.getElementById("uxFocusTitle");
+  const uxFocusSummary = document.getElementById("uxFocusSummary");
+  const uxFocusMeta = document.getElementById("uxFocusMeta");
+  const uxFocusDetailsBtn = document.getElementById("uxFocusDetailsBtn");
+  const uxFocusGenerateBtn = document.getElementById("uxFocusGenerateBtn");
   const opportunityList = document.getElementById("opportunityList");
   const labelSummaryBody = document.getElementById("labelSummaryBody");
   const sessionsBody = document.getElementById("sessionsBody");
@@ -283,6 +295,12 @@
     return new Date(`${value}T23:59:59.999`).getTime();
   }
 
+  function formatPeriodDateText(ts) {
+    if (typeof ts !== "number" || !Number.isFinite(ts)) return "—";
+    const date = new Date(ts);
+    return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+  }
+
   function getSidebarScrollOffset() {
     const topbar = document.querySelector(".topbar");
     const topbarHeight = topbar ? topbar.getBoundingClientRect().height : 0;
@@ -378,14 +396,26 @@
 
   function updatePeriodStatus() {
     syncPeriodInputs();
-    if (!periodStatusText) return;
     const range = getPeriodRange();
+    const fromText = typeof range.fromTs === "number" ? new Date(range.fromTs).toLocaleDateString("ko-KR") : "—";
+    const toText = typeof range.toTs === "number" ? new Date(range.toTs).toLocaleDateString("ko-KR") : "—";
+    const fromShort = formatPeriodDateText(range.fromTs);
+    const toShort = formatPeriodDateText(range.toTs);
+    if (periodActiveValue) {
+      periodActiveValue.textContent = state.periodPreset === "custom" && (range.fromTs == null || range.toTs == null)
+        ? "기간을 완성해 주세요"
+        : `${fromShort}부터 ${toShort}까지`;
+    }
+    if (periodActiveRange) {
+      periodActiveRange.textContent = state.periodPreset === "custom" && (range.fromTs == null || range.toTs == null)
+        ? "시작일과 종료일을 모두 입력하면 선택한 기간이 적용됩니다."
+        : `${range.label} 기준 · ${fromText} ~ ${toText}`;
+    }
+    if (!periodStatusText) return;
     if (state.periodPreset === "custom" && (range.fromTs == null || range.toTs == null)) {
       periodStatusText.textContent = "사용자 지정 기간을 선택하려면 시작일과 종료일을 모두 입력해 주세요.";
       return;
     }
-    const fromText = typeof range.fromTs === "number" ? new Date(range.fromTs).toLocaleDateString("ko-KR") : "—";
-    const toText = typeof range.toTs === "number" ? new Date(range.toTs).toLocaleDateString("ko-KR") : "—";
     periodStatusText.textContent = `${range.label} · ${fromText} ~ ${toText} 기준으로 카드와 그래프를 집계합니다.`;
   }
 
@@ -477,6 +507,86 @@
     return fmtInt(value);
   }
 
+  function metricDeltaValue(aValue, bValue, kind) {
+    const a = Number(aValue);
+    const b = Number(bValue);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    if (kind === "percent") return (b - a) * 100;
+    return b - a;
+  }
+
+  function formatMetricDelta(value, kind) {
+    if (typeof value !== "number" || !Number.isFinite(value)) return "계산 불가";
+    const sign = value > 0 ? "+" : "";
+    if (kind === "percent") return `${sign}${value.toFixed(1)}%p`;
+    if (kind === "duration") return `${sign}${fmtDuration(Math.abs(value))}`;
+    if (kind === "depth") return `${sign}${value.toFixed(1)}`;
+    return `${sign}${fmtInt(value)}`;
+  }
+
+  function metricDeltaClass(value, preferredDirection) {
+    if (typeof value !== "number" || !Number.isFinite(value) || value === 0) return "neutral";
+    const improved = preferredDirection === "lower" ? value < 0 : value > 0;
+    return improved ? "positive" : "negative";
+  }
+
+  function metricChangeText({ aValue, bValue, kind, preferredDirection, positiveText, negativeText }) {
+    const delta = metricDeltaValue(aValue, bValue, kind);
+    if (delta == null) return "차이값 계산 불가";
+    const cls = metricDeltaClass(delta, preferredDirection);
+    const label = cls === "positive" ? positiveText : cls === "negative" ? negativeText : "변화 거의 없음";
+    return `${formatMetricDelta(delta, kind)} · ${label}`;
+  }
+
+  function setMetricDelta(el, options) {
+    if (!el) return;
+    const delta = metricDeltaValue(options.aValue, options.bValue, options.kind);
+    el.className = `metricDelta ${metricDeltaClass(delta, options.preferredDirection)}`;
+    el.textContent = metricChangeText(options);
+  }
+
+  function renderExperimentResultHero(metrics) {
+    if (!experimentResultTitle || !experimentResultSummary || !experimentResultPills) return;
+    if (!metrics?.ok) {
+      if (experimentResultEyebrow) experimentResultEyebrow.textContent = "결과 요약";
+      experimentResultTitle.textContent = "실험 결과를 불러오지 못했습니다";
+      experimentResultSummary.textContent = "잠시 후 다시 시도하거나 Redis/Kafka Consumer 상태를 확인해 주세요.";
+      experimentResultPills.innerHTML = "";
+      return;
+    }
+
+    const cvrDelta = metricDeltaValue(metrics.A?.cvr, metrics.B?.cvr, "percent");
+    const bounceDelta = metricDeltaValue(metrics.A?.bounce_rate, metrics.B?.bounce_rate, "percent");
+    const ctrDelta = metricDeltaValue(metrics.A?.ctr, metrics.B?.ctr, "percent");
+    const cvrClass = metricDeltaClass(cvrDelta, "higher");
+    const bounceClass = metricDeltaClass(bounceDelta, "lower");
+    const ctrClass = metricDeltaClass(ctrDelta, "higher");
+    const bLooksBetter = [cvrClass, bounceClass, ctrClass].filter((cls) => cls === "positive").length >= 2;
+
+    if (experimentResultEyebrow) experimentResultEyebrow.textContent = bLooksBetter ? "Variant B 우세" : "결과 요약";
+    experimentResultTitle.textContent = bLooksBetter
+      ? "Variant B가 더 좋은 흐름을 보입니다"
+      : "두 variant의 차이를 더 확인해야 합니다";
+    experimentResultSummary.textContent = bLooksBetter
+      ? "CTA 개선안 적용 후 핵심 행동은 증가하고, 구매 전 이탈 흐름은 감소한 것으로 보입니다. 통계적 유의성 검정은 아직 수행하지 않았습니다."
+      : "현재 수집된 데이터만으로는 뚜렷한 우세를 단정하기 어렵습니다. 표본과 기간을 더 확보해 비교해 주세요.";
+
+    const pills = [
+      { label: "전환율", value: formatMetricDelta(cvrDelta, "percent"), cls: cvrClass },
+      { label: "이탈률", value: formatMetricDelta(bounceDelta, "percent"), cls: bounceClass },
+      { label: "클릭률", value: formatMetricDelta(ctrDelta, "percent"), cls: ctrClass },
+    ];
+    experimentResultPills.innerHTML = pills.map((pill) => `<span class="experimentResultPill ${escapeHtml(pill.cls)}"><strong>${escapeHtml(pill.value)}</strong>${escapeHtml(pill.label)}</span>`).join("");
+  }
+
+  function renderCountsTable(metrics) {
+    const rows = [["A안", metrics.A], ["B안", metrics.B]];
+    return `<table class="experimentCountsTable">
+      <thead><tr><th>구분</th><th>방문자</th><th>세션</th><th>화면</th><th>클릭</th><th>전환</th></tr></thead>
+      <tbody>${rows.map(([label, item]) => `<tr><th>${escapeHtml(label)}</th><td>${fmtInt(item?.users)}</td><td>${fmtInt(item?.sessions)}</td><td>${fmtInt(item?.page_views)}</td><td>${fmtInt(item?.clicks)}</td><td>${fmtInt(item?.conversions)}</td></tr>`).join("")}</tbody>
+    </table><div class="experimentCountsFoot">이벤트 합계 ${fmtInt(metrics.totals?.events)}건 · 목표 ${(metrics.goals || []).map(escapeHtml).join(", ") || "없음"}</div>`;
+  }
+
   function getMetricDeltaText(aValue, bValue, kind, preferredDirection) {
     if (typeof aValue !== "number" || !isFinite(aValue) || typeof bValue !== "number" || !isFinite(bValue)) {
       return "선택 기간 데이터가 부족해 차이값을 계산하지 못했습니다.";
@@ -528,6 +638,16 @@
 
   // ─── 인증 ───
   async function fetchAuthMe() {
+    if (DESIGN_PREVIEW_ENABLED) {
+      return {
+        id: "design-preview-admin",
+        username: "design_preview",
+        display_name: "Design Preview",
+        is_admin: false,
+        allowed_site_ids: [getCurrentSiteId()],
+        default_site_id: getCurrentSiteId(),
+      };
+    }
     const r = await fetch("/api/auth/me");
     if (r.status === 401) {
       location.href = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
@@ -571,8 +691,167 @@
 
   function getCurrentSiteId() { return state.siteId || DEFAULT_SITE_ID; }
 
+  function previewNow() {
+    return Date.now();
+  }
+
+  function buildDesignPreviewData() {
+    const now = previewNow();
+    const day = 24 * 60 * 60 * 1000;
+    const siteId = getCurrentSiteId() || "fake_tifof";
+    const labelSummary = [
+      { label: "ux_friction_dropper", sessions: 38, share: 0.29, metrics: { avg_duration_ms: 183000, avg_depth: 4.2, checkout_complete_rate: 0.08 } },
+      { label: "over_explorer", sessions: 34, share: 0.26, metrics: { avg_duration_ms: 256000, avg_depth: 6.1, checkout_complete_rate: 0.12 } },
+      { label: "checkout_abandoner", sessions: 28, share: 0.21, metrics: { avg_duration_ms: 142000, avg_depth: 4.8, checkout_complete_rate: 0.02 } },
+      { label: "price_sensitive_dropper", sessions: 20, share: 0.15, metrics: { avg_duration_ms: 198000, avg_depth: 5.4, checkout_complete_rate: 0.1 } },
+      { label: "window_shopper", sessions: 12, share: 0.09, metrics: { avg_duration_ms: 67000, avg_depth: 2.1, checkout_complete_rate: 0 } },
+    ];
+    const sessions = [
+      { summary: { site_id: siteId, session_id: "s_cta_idle_9381", duration_ms: 294000, page_views: 6, clicks: 13, depth: 5, max_step: "product", checkout_entered: false, checkout_complete: false, paths: ["/", "/collection/sneakers", "/detail/air-runner-42"] }, label: { label: "ux_friction_dropper", confidence: 0.91 } },
+      { summary: { site_id: siteId, session_id: "s_option_rage_1842", duration_ms: 218000, page_views: 4, clicks: 18, depth: 3, max_step: "product", checkout_entered: false, checkout_complete: false, paths: ["/detail/linen-shirt", "/detail/linen-shirt#option"] }, label: { label: "ux_friction_dropper", confidence: 0.88 } },
+      { summary: { site_id: siteId, session_id: "s_cart_drop_5530", duration_ms: 176000, page_views: 5, clicks: 9, depth: 4, max_step: "cart", checkout_entered: true, checkout_complete: false, paths: ["/detail/desk-lamp", "/cart", "/checkout"] }, label: { label: "checkout_abandoner", confidence: 0.84 } },
+      { summary: { site_id: siteId, session_id: "s_over_explore_2109", duration_ms: 386000, page_views: 11, clicks: 7, depth: 9, max_step: "browse", checkout_entered: false, checkout_complete: false, paths: ["/", "/collection", "/search?q=bag", "/detail/cross-bag"] }, label: { label: "over_explorer", confidence: 0.77 } },
+      { summary: { site_id: siteId, session_id: "s_price_compare_7712", duration_ms: 232000, page_views: 7, clicks: 11, depth: 6, max_step: "product", checkout_entered: false, checkout_complete: false, paths: ["/detail/wool-coat", "/detail/wool-coat#delivery"] }, label: { label: "price_sensitive_dropper", confidence: 0.73 } },
+      { summary: { site_id: siteId, session_id: "s_purchase_0084", duration_ms: 154000, page_views: 5, clicks: 8, depth: 5, max_step: "purchase", checkout_entered: true, checkout_complete: true, paths: ["/detail/cup", "/cart", "/checkout", "/order-complete"] }, label: { label: "over_explorer", confidence: 0.62 } },
+    ];
+    const trend = Array.from({ length: 7 }, (_, index) => ({
+      ts: now - ((6 - index) * day),
+      session_count: [42, 48, 51, 58, 62, 71, 76][index],
+      event_count: [318, 354, 391, 442, 480, 536, 574][index],
+    }));
+    const eventSummary = {
+      ok: true,
+      source: "design_preview",
+      fallback_used: false,
+      site_id: siteId,
+      total_events: 3180,
+      top_pages: [
+        { path: "/detail/air-runner-42", count: 146 },
+        { path: "/collection/sneakers", count: 112 },
+        { path: "/cart", count: 64 },
+      ],
+      top_elements: [
+        { element_id: "product-option-size", count: 96 },
+        { element_id: "add-to-cart", count: 72 },
+        { element_id: "sticky-mobile-cta", count: 54 },
+      ],
+      page_flow: [
+        { from: "/collection/sneakers", to: "/detail/air-runner-42", count: 84 },
+        { from: "/detail/air-runner-42", to: "/cart", count: 32 },
+        { from: "/cart", to: "/checkout", count: 21 },
+      ],
+      trend,
+      journey: {
+        ok: true,
+        total_sessions: 132,
+        steps: [
+          { key: "home", label: "홈", step_index: 0, entered_sessions: 132, next_step_sessions: 118, next_step_rate: 0.89, drop_rate: 0.11, high_drop: false },
+          { key: "browse", label: "상품 목록", step_index: 1, entered_sessions: 118, next_step_sessions: 91, next_step_rate: 0.77, drop_rate: 0.23, high_drop: false },
+          { key: "product", label: "상품 상세", step_index: 2, entered_sessions: 91, next_step_sessions: 38, next_step_rate: 0.42, drop_rate: 0.58, high_drop: true },
+          { key: "cart", label: "장바구니", step_index: 3, entered_sessions: 38, next_step_sessions: 24, next_step_rate: 0.63, drop_rate: 0.37, high_drop: false },
+          { key: "checkout", label: "결제", step_index: 4, entered_sessions: 24, next_step_sessions: 15, next_step_rate: 0.63, drop_rate: 0.37, high_drop: false },
+          { key: "purchase", label: "구매 완료", step_index: 5, entered_sessions: 15, next_step_sessions: 0, next_step_rate: null, drop_rate: null, high_drop: false },
+        ],
+      },
+      sdk_status: { status: "normal", label: "정상", last_event_ts: now - 74000, recent_events_5m: 42 },
+      funnel: { detail_page_view: 91, checkout_page_view: 24, checkout_complete: 15, checkout_completion_rate: 0.625 },
+    };
+    const experiments = [
+      {
+        id: "preview-exp-cta",
+        site_id: siteId,
+        key: "exp_product_cta_sticky_preview",
+        status: "running",
+        url_prefix: "/detail",
+        version: 3,
+        updated_at: now - (2 * 60 * 60 * 1000),
+        published_at: now - (2 * day),
+        hypothesis: "옵션 선택 직후 CTA를 고정하고 문구를 명확히 하면 CTA 이전 정체와 반복 클릭이 줄어든다.",
+        traffic: { A: 50, B: 50 },
+        goals: ["add_to_cart", "checkout_complete"],
+        variants: {
+          A: [{ name: "기존 상품 상세" }],
+          B: [
+            { name: "Sticky CTA + 명확한 문구", type: "dom_mutation", selector: "#add-to-cart", actions: [{ type: "set_text", value: "선택한 상품 담기" }], rationale: { intent: "옵션 선택 후 다음 행동 유도 강화", expected_effect: "CTA 이전 정체 시간 감소", primary_metric: "add_to_cart_click_rate" } },
+            { type: "inject_css", selector: ".product-cta", rationale: { intent: "모바일 하단 CTA 고정", expected_effect: "핵심 행동 접근성 증가", primary_metric: "idle_before_cta_ms" } },
+          ],
+        },
+        history: [
+          { id: "preview-exp-cta-v2", key: "exp_product_cta_sticky_preview", status: "paused", url_prefix: "/detail", version: 2, updated_at: now - (4 * day), hypothesis: "CTA 색상 강조로 장바구니 클릭률을 높인다.", variants: { A: [], B: [{ type: "dom_mutation", actions: [{ type: "set_style", styles: { backgroundColor: "#4f46e5" } }] }] }, goals: ["add_to_cart"] },
+          { id: "preview-exp-cta-v1", key: "exp_product_cta_sticky_preview", status: "draft", url_prefix: "/detail", version: 1, updated_at: now - (6 * day), hypothesis: "버튼 문구를 변경한다.", variants: { A: [], B: [{ type: "dom_mutation", actions: [{ type: "set_text", value: "장바구니 담기" }] }] }, goals: ["add_to_cart"] },
+        ],
+      },
+      { id: "preview-exp-option", site_id: siteId, key: "draft_option_visibility_preview", status: "draft", url_prefix: "/detail", version: 1, updated_at: now - (35 * 60 * 1000), hypothesis: "옵션 영역 설명과 선택 상태를 더 명확하게 만든다.", traffic: { A: 50, B: 50 }, goals: ["add_to_cart"], variants: { A: [], B: [{ name: "옵션 선택 안내 강화", type: "dom_mutation", actions: [{ type: "set_text", value: "사이즈를 선택하면 바로 담을 수 있어요" }] }] }, history: [] },
+    ];
+    const metrics = {
+      ok: true,
+      source: "design_preview",
+      site_id: siteId,
+      key: "exp_product_cta_sticky_preview",
+      goals: ["add_to_cart", "checkout_complete"],
+      experiment: { id: "preview-exp-cta", status: "running", url_prefix: "/detail", version: 3, published_at: now - (2 * day) },
+      A: { users: 214, sessions: 236, page_views: 612, clicks: 438, conversions: 51, cvr: 0.216, ctr: 0.215, bounce_rate: 0.431, avg_duration_ms: 184000, avg_depth: 4.1, top_clicked_elements: [{ element_id: "product-option-size", element_label: "옵션 선택", count: 96 }, { element_id: "add-to-cart", element_label: "장바구니", count: 51 }] },
+      B: { users: 221, sessions: 242, page_views: 638, clicks: 512, conversions: 71, cvr: 0.293, ctr: 0.294, bounce_rate: 0.356, avg_duration_ms: 151000, avg_depth: 4.8, top_clicked_elements: [{ element_id: "sticky-mobile-cta", element_label: "선택한 상품 담기", count: 91 }, { element_id: "product-option-size", element_label: "옵션 선택", count: 74 }] },
+      totals: { events: 3180 },
+    };
+    const insights = {
+      ok: true,
+      source: "design_preview",
+      fallback_used: false,
+      output: {
+        status: "ready",
+        summary: {
+          headline: "상품 상세 페이지의 CTA 이전 구간에서 UX 마찰 가능성이 반복 관찰됩니다.",
+          plain_explanation: "사용자가 옵션을 고른 뒤 장바구니 버튼 근처에서 오래 머물거나 같은 영역을 반복 클릭한 뒤 구매하지 않고 나가는 흐름이 많습니다.",
+          top_priority_reason: "상품 상세 → 장바구니 이동률이 42%이고, CTA 이전 정체/반복 클릭 세션 비율이 높습니다.",
+        },
+        insights: [
+          {
+            title: "상품 상세 CTA 이전 정체",
+            label: "ux_friction_dropper",
+            priority: "high",
+            where: "상품 상세 / 옵션 선택 하단 CTA",
+            possible_causes: ["옵션 선택 후 다음 행동 버튼이 충분히 눈에 띄지 않을 수 있습니다."],
+            recommended_actions: ["옵션 선택 직후 CTA를 강조하고 모바일에서는 sticky CTA로 고정해 보세요."],
+            validation_methods: ["CTA 이전 평균 정체 시간과 장바구니 클릭률을 개선 전후로 비교하세요."],
+            evidence: ["CTA 이전 평균 정체 시간 12.4초", "반복 클릭 세션 비율 18.2%", "상품 상세 단계 이탈률 58%"],
+            evidence_bullets: ["상품 상세 진입 91세션 중 장바구니 이동 38세션", "옵션 영역 근처 반복 클릭이 대표 마찰 세션에서 관찰됨", "장바구니 버튼 클릭 전 이탈 세션 증가"],
+            impact: { primary_metric: "idle_before_cta_ms", affected_sessions: 38, share: 0.29 },
+            next_best_action: "장바구니 버튼 문구를 '선택한 상품 담기'로 바꾸고, 옵션 선택 완료 후 버튼을 시각적으로 강조하세요.",
+            risk_note: "원인을 단정하기보다 대표 세션과 상품 상세 UI 상태를 함께 확인해야 합니다.",
+            evidence_level: "high",
+            recommended_experiments: [{ hypothesis: "CTA를 더 명확하게 만들면 장바구니 클릭률이 증가한다.", change: "버튼 문구 변경 + 모바일 sticky CTA", primary_metric: "add_to_cart_click_rate" }],
+          },
+          {
+            title: "장바구니 진입 후 결제 전 이탈",
+            label: "checkout_abandoner",
+            priority: "medium",
+            where: "장바구니 / 결제 진입",
+            possible_causes: ["배송비, 쿠폰, 결제 조건 정보가 늦게 노출될 가능성이 있습니다."],
+            recommended_actions: ["장바구니 상단에 배송비/혜택 안내를 먼저 노출해 보세요."],
+            validation_methods: ["장바구니 → 결제 이동률과 구매 전 이탈률을 비교하세요."],
+            evidence: ["구매 전 이탈률 43.1%", "결제 진입 후 완료율 62.5%"],
+            impact: { primary_metric: "checkout_complete / sessions", affected_sessions: 28, share: 0.21 },
+            recommended_experiments: [{ hypothesis: "장바구니에서 비용 정보를 먼저 보여주면 결제 이탈이 줄어든다.", change: "배송비/쿠폰 안내 블록 상단 고정", primary_metric: "checkout_complete / sessions" }],
+          },
+        ],
+        next_steps: ["상품 상세 대표 마찰 세션 확인", "CTA 강조안으로 A/B 실험 생성", "정체 시간/반복 클릭률/장바구니 클릭률 비교"],
+      },
+    };
+    return { siteId, labelSummary, sessions, eventSummary, experiments, metrics, insights };
+  }
+
+  function getDesignPreviewData() {
+    if (!state.designPreviewData) state.designPreviewData = buildDesignPreviewData();
+    return state.designPreviewData;
+  }
+
   // ─── API ───
   async function fetchSites() {
+    if (DESIGN_PREVIEW_ENABLED) {
+      const data = getDesignPreviewData();
+      return [{ site_id: data.siteId, name: "Design Preview Store", preview_targets: [{ label: "상품 상세 미리보기", live_url: "/preview/design-preview/detail/air-runner-42" }] }];
+    }
     const r = await fetch("/api/sites");
     const j = await r.json();
     if (!j?.ok) throw new Error(j?.reason || "sites fetch failed");
@@ -597,6 +876,7 @@
   }
 
   async function fetchExperiments() {
+    if (DESIGN_PREVIEW_ENABLED) return getDesignPreviewData().experiments;
     const r = await fetch(`/api/experiments?site_id=${encodeURIComponent(getCurrentSiteId())}`);
     const j = await r.json();
     if (!j?.ok) throw new Error("experiments fetch failed");
@@ -604,6 +884,12 @@
   }
 
   async function setStatus(id, status) {
+    if (DESIGN_PREVIEW_ENABLED) {
+      const data = getDesignPreviewData();
+      const experiment = data.experiments.find((item) => item.id === id) || data.experiments[0];
+      if (experiment) experiment.status = status;
+      return experiment;
+    }
     const siteId = getCurrentSiteId();
     async function request(replaceRunning = false) {
       const r = await fetch(`/api/experiments/${encodeURIComponent(id)}?site_id=${encodeURIComponent(siteId)}`, {
@@ -624,6 +910,9 @@
   }
 
   async function saveDraftExperiment(payload) {
+    if (DESIGN_PREVIEW_ENABLED) {
+      return { id: `preview-draft-${Date.now()}`, status: "draft", version: 1, updated_at: Date.now(), ...payload };
+    }
     const r = await fetch("/api/experiments/draft", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -635,12 +924,18 @@
   }
 
   async function deleteExp(id) {
+    if (DESIGN_PREVIEW_ENABLED) {
+      const data = getDesignPreviewData();
+      data.experiments = data.experiments.filter((item) => item.id !== id);
+      return;
+    }
     const r = await fetch(`/api/experiments/${encodeURIComponent(id)}?site_id=${encodeURIComponent(getCurrentSiteId())}`, { method: "DELETE" });
     const j = await r.json();
     if (!j?.ok) throw new Error(j?.reason || "delete failed");
   }
 
   async function fetchMetrics(key) {
+    if (DESIGN_PREVIEW_ENABLED) return { ...getDesignPreviewData().metrics, key: key || getDesignPreviewData().metrics.key };
     const { query } = buildPeriodQuery();
     const params = new URLSearchParams(query);
     params.set("site_id", getCurrentSiteId());
@@ -656,6 +951,7 @@
   }
 
   async function fetchPersonas() {
+    if (DESIGN_PREVIEW_ENABLED) return [];
     const r = await fetch(`/api/personas?site_id=${encodeURIComponent(getCurrentSiteId())}`);
     const j = await r.json();
     if (!j?.ok) throw new Error(j?.reason || "personas fetch failed");
@@ -663,6 +959,7 @@
   }
 
   async function fetchPersonaOverlays() {
+    if (DESIGN_PREVIEW_ENABLED) return [];
     const r = await fetch(`/api/persona-overlays?site_id=${encodeURIComponent(getCurrentSiteId())}`);
     const j = await r.json();
     if (!j?.ok) throw new Error(j?.reason || "persona overlays fetch failed");
@@ -670,6 +967,7 @@
   }
 
   async function generatePersonaOverlay(experimentKey, personaId) {
+    if (DESIGN_PREVIEW_ENABLED) throw new Error("design preview mode에서는 오버레이를 생성하지 않습니다.");
     const r = await fetch("/api/persona-overlays/generate", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -685,6 +983,7 @@
   }
 
   async function fetchEventSummary() {
+    if (DESIGN_PREVIEW_ENABLED) return getDesignPreviewData().eventSummary;
     const { query } = buildPeriodQuery();
     const suffix = query ? `&${query}` : "";
     const r = await fetch(`/api/event-summary?site_id=${encodeURIComponent(getCurrentSiteId())}${suffix}`);
@@ -694,6 +993,11 @@
   }
 
   async function fetchSessions() {
+    if (DESIGN_PREVIEW_ENABLED) {
+      state.sessionsSource = "design_preview";
+      state.sessionsError = null;
+      return getDesignPreviewData().sessions;
+    }
     const siteId = encodeURIComponent(getCurrentSiteId());
     const { query } = buildPeriodQuery();
     const suffix = query ? `&${query}` : "";
@@ -709,6 +1013,10 @@
   }
 
   async function fetchLabelsSummary() {
+    if (DESIGN_PREVIEW_ENABLED) {
+      state.labelsError = null;
+      return getDesignPreviewData().labelSummary;
+    }
     const { query } = buildPeriodQuery();
     const suffix = query ? `&${query}` : "";
     const r = await fetch(`/api/labels/summary?site_id=${encodeURIComponent(getCurrentSiteId())}${suffix}`);
@@ -722,6 +1030,7 @@
   }
 
   async function fetchInsights(periodAware) {
+    if (DESIGN_PREVIEW_ENABLED) return getDesignPreviewData().insights;
     const suffix = periodAware ? (() => {
       const { query } = buildPeriodQuery();
       return query ? `&${query}` : "";
@@ -2125,12 +2434,15 @@
     topA.textContent = topB.textContent = "…";
 
     if (!metrics?.ok) {
+      renderExperimentResultHero(metrics);
       countsBox.textContent = String(metrics?.reason || "결과를 불러오지 못했습니다.");
       topA.textContent = topB.textContent = "클릭 데이터 없음";
       if (experimentInterpretation) experimentInterpretation.textContent = "현재 실험 결과를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
       if (experimentMetricsDialog && !experimentMetricsDialog.open) experimentMetricsDialog.showModal();
       return;
     }
+
+    renderExperimentResultHero(metrics);
 
     cvrA.textContent = formatMetricValue(metrics.A?.cvr, "percent");
     cvrB.textContent = formatMetricValue(metrics.B?.cvr, "percent");
@@ -2143,17 +2455,13 @@
     depthA.textContent = formatMetricValue(metrics.A?.avg_depth, "depth");
     depthB.textContent = formatMetricValue(metrics.B?.avg_depth, "depth");
 
-    cvrDelta.textContent = getMetricDeltaText(metrics.A?.cvr, metrics.B?.cvr, "percent", "higher");
-    brDelta.textContent = getMetricDeltaText(metrics.A?.bounce_rate, metrics.B?.bounce_rate, "percent", "lower");
-    durationDelta.textContent = getMetricDeltaText(metrics.A?.avg_duration_ms, metrics.B?.avg_duration_ms, "duration", "higher");
-    depthDelta.textContent = getMetricDeltaText(metrics.A?.avg_depth, metrics.B?.avg_depth, "depth", "higher");
-    ctrDelta.textContent = getMetricDeltaText(metrics.A?.ctr, metrics.B?.ctr, "percent", "higher");
+    setMetricDelta(cvrDelta, { aValue: metrics.A?.cvr, bValue: metrics.B?.cvr, kind: "percent", preferredDirection: "higher", positiveText: "전환 증가", negativeText: "전환 감소" });
+    setMetricDelta(brDelta, { aValue: metrics.A?.bounce_rate, bValue: metrics.B?.bounce_rate, kind: "percent", preferredDirection: "lower", positiveText: "이탈 감소", negativeText: "이탈 증가" });
+    setMetricDelta(durationDelta, { aValue: metrics.A?.avg_duration_ms, bValue: metrics.B?.avg_duration_ms, kind: "duration", preferredDirection: "higher", positiveText: "체류 증가", negativeText: "체류 감소" });
+    setMetricDelta(depthDelta, { aValue: metrics.A?.avg_depth, bValue: metrics.B?.avg_depth, kind: "depth", preferredDirection: "higher", positiveText: "방문 깊이 증가", negativeText: "방문 깊이 감소" });
+    setMetricDelta(ctrDelta, { aValue: metrics.A?.ctr, bValue: metrics.B?.ctr, kind: "percent", preferredDirection: "higher", positiveText: "클릭 증가", negativeText: "클릭 감소" });
 
-    countsBox.textContent =
-      `대상 ${state.selectedExperimentAudience === "real_user" ? "실제 사용자" : state.selectedExperimentAudience === "synthetic_agent" ? (state.selectedExperimentPersonaId || "전체 에이전트") : "전체"}\n` +
-      `A안 · 방문자 ${fmtInt(metrics.A?.users)}명 · 세션 ${fmtInt(metrics.A?.sessions)} · 화면 ${fmtInt(metrics.A?.page_views)} · 클릭 ${fmtInt(metrics.A?.clicks)} · 전환 ${fmtInt(metrics.A?.conversions)}\n` +
-      `B안 · 방문자 ${fmtInt(metrics.B?.users)}명 · 세션 ${fmtInt(metrics.B?.sessions)} · 화면 ${fmtInt(metrics.B?.page_views)} · 클릭 ${fmtInt(metrics.B?.clicks)} · 전환 ${fmtInt(metrics.B?.conversions)}\n` +
-      `이벤트 합계 ${fmtInt(metrics.totals?.events)}건 · 목표 ${(metrics.goals || []).join(", ") || "없음"}`;
+    countsBox.innerHTML = renderCountsTable(metrics);
 
     topA.textContent = renderTop(metrics.A?.top_clicked_elements);
     topB.textContent = renderTop(metrics.B?.top_clicked_elements);
@@ -2233,6 +2541,80 @@
     `).join("");
   }
 
+  function getTopOpportunityHeroModel(labelSummary, eventSummary) {
+    const data = state.generatedInsightData;
+    const output = data?.output || {};
+    const summary = output.summary && typeof output.summary === "object" ? output.summary : {};
+    const insights = Array.isArray(output.insights) ? output.insights : [];
+    const first = insights[0] || null;
+    const firstCause = Array.isArray(first?.possible_causes) ? first.possible_causes[0] : "";
+    const firstAction = Array.isArray(first?.recommended_actions) ? first.recommended_actions[0] : "";
+    const title = String(summary.headline || first?.title || "오늘 먼저 볼 UX 포인트").trim();
+    const body = String(summary.plain_explanation || summary.top_priority_reason || first?.plain_explanation || firstCause || firstAction || "").trim();
+    const period = getPeriodRange().label;
+
+    if (state.insightGenerationPending) {
+      return {
+        title: "오늘 먼저 볼 UX 포인트를 도출하는 중입니다",
+        body: "선택한 기간의 세션, 행동 유형, 사용자 흐름을 바탕으로 가장 먼저 확인할 문제 후보를 정리하고 있습니다.",
+        metaItems: [`${period} 기준`, "AI 인사이트 생성 중"],
+        tone: "loading",
+      };
+    }
+
+    if (state.insightGenerationError && !data) {
+      return {
+        title: "인사이트 생성에 실패했습니다",
+        body: "Redis, Kafka Consumer, LLM 설정 상태를 확인한 뒤 다시 시도해 주세요.",
+        metaItems: [`${period} 기준`, "생성 실패"],
+        tone: "error",
+      };
+    }
+
+    if (!data || output.status !== "ready" || !insights.length) {
+      const labels = mergeLabelSummary(labelSummary).filter((item) => Number(item.sessions) > 0);
+      const top = labels.slice().sort((a, b) => b.sessions - a.sessions)[0] || null;
+      return {
+        title: "오늘 먼저 볼 UX 포인트",
+        body: top
+          ? `${labelName(top.label)} 유형이 ${fmtPct(top.share)}로 가장 높습니다. 인사이트 도출을 누르면 문제 후보와 권장 액션을 더 자세히 정리합니다.`
+          : "인사이트 도출 버튼을 누르면 선택한 기간의 핵심 UX 포인트가 여기에 표시됩니다.",
+        metaItems: [`${period} 기준`, eventSummary?.total_events ? `이벤트 ${fmtInt(eventSummary.total_events)}건` : "세션과 행동 패턴 요약"],
+        tone: "empty",
+      };
+    }
+
+    const priorityKo = { high: "우선순위 높음", medium: "우선순위 보통", low: "우선순위 낮음" };
+    const affectedSessions = Number(first?.impact?.affected_sessions);
+    const share = Number(first?.impact?.share);
+    const metaItems = [
+      `${period} 기준`,
+      first?.priority ? priorityKo[first.priority] || first.priority : "우선 확인 포인트",
+      Number.isFinite(affectedSessions) ? `영향 세션 ${fmtInt(affectedSessions)}건` : "",
+      Number.isFinite(share) ? `비중 ${fmtPct(share)}` : "",
+      first?.where ? String(first.where) : "",
+    ].filter(Boolean);
+
+    return {
+      title,
+      body: body || "수집된 행동 패턴에서 우선 확인할 UX 문제 후보가 감지되었습니다.",
+      metaItems,
+      tone: first?.priority || "ready",
+    };
+  }
+
+  function renderTopOpportunityHero(labelSummary, eventSummary) {
+    if (!uxFocusTitle || !uxFocusSummary || !uxFocusMeta) return;
+    const model = getTopOpportunityHeroModel(labelSummary, eventSummary);
+    uxFocusTitle.textContent = model.title;
+    uxFocusSummary.textContent = model.body;
+    uxFocusMeta.innerHTML = model.metaItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("");
+    if (uxFocusGenerateBtn) {
+      uxFocusGenerateBtn.disabled = state.insightGenerationPending;
+      uxFocusGenerateBtn.textContent = state.insightGenerationPending ? "도출 중…" : "인사이트 도출";
+    }
+  }
+
   function getGeneratedInsightItems() {
     return Array.isArray(state.generatedInsightData?.output?.insights) ? state.generatedInsightData.output.insights : [];
   }
@@ -2254,6 +2636,7 @@
   function renderGeneratedInsightSections() {
     renderInsights(state.generatedInsightData, state.lastEventSummary, state.lastLabelSummary);
     renderOpportunities(getGeneratedInsightItems());
+    renderTopOpportunityHero(state.lastLabelSummary, state.lastEventSummary);
   }
 
   // ─── 렌더링: 라벨 요약 테이블 ───
@@ -2279,7 +2662,9 @@
   // ─── 렌더링: 최근 세션 ───
   function renderSessions(sessions) {
     if (sessionsSourceLabel) {
-      sessionsSourceLabel.textContent = state.sessionsSource === "redis"
+      sessionsSourceLabel.textContent = state.sessionsSource === "design_preview"
+        ? "Design preview data"
+        : state.sessionsSource === "redis"
         ? "Redis read model"
         : "최근 방문 기록";
     }
@@ -2469,6 +2854,11 @@
     state.userFetchError = usersResult.error;
     state.lastEventSummary = eventSummary?.ok ? eventSummary : null;
     state.lastLabelSummary = labelSummary;
+    if (DESIGN_PREVIEW_ENABLED && !state.generatedInsightData) {
+      state.generatedInsightData = getDesignPreviewData().insights;
+      state.insightGenerationError = null;
+      state.insightGenerationPending = false;
+    }
     syncNewUserSiteIds();
 
     if (!state.selectedExperimentKey && exps.length > 0) {
@@ -2500,6 +2890,7 @@
     renderLabelSummary(labelSummary);
     renderUxOverview(labelSummary, state.generatedInsightData, eventSummary?.ok ? eventSummary : null);
     renderOpportunities(getGeneratedInsightItems());
+    renderTopOpportunityHero(labelSummary, eventSummary?.ok ? eventSummary : null);
     if (eventSummary?.ok) {
       renderTrendChart(eventSummary);
       renderJourneyFlow(eventSummary);
@@ -2606,6 +2997,25 @@
 
   if (generateInsightsBtn) {
     generateInsightsBtn.addEventListener("click", () => {
+      generateInsights().catch((error) => {
+        state.insightGenerationPending = false;
+        state.insightGenerationError = String(error);
+        renderGeneratedInsightSections();
+      });
+    });
+  }
+
+  if (uxFocusDetailsBtn) {
+    uxFocusDetailsBtn.addEventListener("click", () => {
+      const target = document.getElementById("opportunitiesCard");
+      if (!target) return;
+      const top = target.getBoundingClientRect().top + window.scrollY - getSidebarScrollOffset();
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    });
+  }
+
+  if (uxFocusGenerateBtn) {
+    uxFocusGenerateBtn.addEventListener("click", () => {
       generateInsights().catch((error) => {
         state.insightGenerationPending = false;
         state.insightGenerationError = String(error);
