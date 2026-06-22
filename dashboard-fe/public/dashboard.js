@@ -130,6 +130,9 @@
   const uxTopLabel = document.getElementById("uxTopLabel");
   const uxHighPriorityCount = document.getElementById("uxHighPriorityCount");
   const labelBars = document.getElementById("labelBars");
+  const labelModeToggle = document.getElementById("labelModeToggle");
+  const clusteringNotice = document.getElementById("clusteringNotice");
+  const labelsModeHint = document.getElementById("labelsModeHint");
   const uxFocusTitle = document.getElementById("uxFocusTitle");
   const uxFocusSummary = document.getElementById("uxFocusSummary");
   const uxFocusMeta = document.getElementById("uxFocusMeta");
@@ -184,6 +187,9 @@
     lastLabelSummary: [],
     sessionsError: null,
     labelsError: null,
+    labelMode: "rule_base",
+    clusteringFallbackUsed: false,
+    clusteringTaxonomy: null,
   };
 
   function warnMissingDomElement(id, usage) {
@@ -1041,7 +1047,24 @@
     }
     const { query } = buildPeriodQuery();
     const suffix = query ? `&${query}` : "";
-    const r = await fetch(`/api/labels/summary?site_id=${encodeURIComponent(getCurrentSiteId())}${suffix}`);
+    const siteParam = `site_id=${encodeURIComponent(getCurrentSiteId())}`;
+
+    if (state.labelMode === "clustering") {
+      const r = await fetch(`/api/labels/clustering-summary?${siteParam}${suffix}`);
+      const j = await r.json().catch(() => ({ ok: false, reason: "clustering summary failed" }));
+      if (!j?.ok) {
+        state.labelsError = j;
+        state.clusteringFallbackUsed = false;
+        state.clusteringTaxonomy = null;
+        return [];
+      }
+      state.labelsError = null;
+      state.clusteringFallbackUsed = j.fallback_used || false;
+      state.clusteringTaxonomy = j.taxonomy || null;
+      return j.summary || [];
+    }
+
+    const r = await fetch(`/api/labels/summary?${siteParam}${suffix}`);
     const j = await r.json().catch(() => ({ ok: false, reason: "labels summary failed" }));
     if (!j?.ok) {
       state.labelsError = j;
@@ -2041,6 +2064,17 @@
     return list.slice(0, 5).map((x, index) => `${index + 1}. ${String(x.element_label || x.element_id || "(unknown)")} · ${fmtInt(x.count)}회`).join("\n");
   }
 
+  function toClusteringDisplaySummary(summary) {
+    const list = Array.isArray(summary) ? summary.filter((item) => item.sessions > 0) : [];
+    return list.map((item, index) => ({
+      label: item.label,
+      color: LABEL_COLORS[index % LABEL_COLORS.length],
+      sessions: Number(item.sessions) || 0,
+      share: typeof item.share === "number" ? item.share : 0,
+      metrics: item.metrics || { avg_duration_ms: 0, avg_depth: 0, checkout_complete_rate: 0 },
+    }));
+  }
+
   function mergeLabelSummary(summary) {
     const byLabel = new Map(Array.isArray(summary) ? summary.map((item) => [item.label, item]) : []);
     return LABEL_ORDER.map((label, index) => {
@@ -2504,19 +2538,29 @@
       labelBars.innerHTML = '<div class="emptyState">UX 라벨 데이터를 불러오지 못했습니다.<br/>Redis 또는 Kafka Consumer 상태를 확인해 주세요.</div>';
       return;
     }
-    const fullSummary = mergeLabelSummary(summary);
+    const isClustering = state.labelMode === "clustering";
+    const fullSummary = isClustering ? toClusteringDisplaySummary(summary) : mergeLabelSummary(summary);
     const totalSessions = fullSummary.reduce((sum, item) => sum + item.sessions, 0);
     if (labelDonutTotal) labelDonutTotal.textContent = fmtInt(totalSessions);
     if (labelDonut) {
       labelDonut.classList.toggle("empty", totalSessions === 0);
       labelDonut.style.setProperty("--donut-bg", buildDonutGradient(fullSummary));
     }
+
+    if (isClustering && fullSummary.length === 0) {
+      labelBars.innerHTML = '<div class="emptyState">아직 클러스터링 데이터가 없습니다.<br/>세션이 100개 이상 쌓이면 자동으로 학습합니다.</div>';
+      return;
+    }
+
     labelBars.innerHTML = fullSummary.map((item) => {
       const share = typeof item.share === "number" ? item.share : 0;
       const pct = Math.max(0, Math.min(100, share * 100));
+      const desc = isClustering
+        ? (state.clusteringFallbackUsed ? "규칙 기반 분류 (학습 데이터 부족)" : "비지도 학습으로 발견된 유형")
+        : (item.sessions === 0 ? "아직 감지되지 않음" : labelDescription(item.label));
       return `<div class="barRow ${item.sessions === 0 ? "mutedBar" : ""}">
-        <div class="barMeta"><span>${escapeHtml(labelName(item.label))}</span><span class="mono">${fmtInt(item.sessions)} / ${fmtPct(share)}</span></div>
-        <div class="labelDescription">${escapeHtml(item.sessions === 0 ? "아직 감지되지 않음" : labelDescription(item.label))}</div>
+        <div class="barMeta"><span>${escapeHtml(item.label)}</span><span class="mono">${fmtInt(item.sessions)} / ${fmtPct(share)}</span></div>
+        <div class="labelDescription">${escapeHtml(desc)}</div>
         <div class="barTrack"><div class="barFill" style="width:${pct.toFixed(2)}%;background:${escapeHtml(item.color)}"></div></div>
       </div>`;
     }).join("");
@@ -2671,16 +2715,46 @@
       warnMissingDomElement("labelSummaryBody", "Label summary table");
       return;
     }
+
+    const isClustering = state.labelMode === "clustering";
+
+    if (labelsModeHint) {
+      labelsModeHint.textContent = isClustering
+        ? "비지도 학습 클러스터 기반 세션 분포"
+        : "세션 수·비중·체류·방문 깊이·결제까지 갔는지";
+    }
+    if (clusteringNotice) {
+      if (isClustering && state.clusteringFallbackUsed) {
+        clusteringNotice.hidden = false;
+        clusteringNotice.textContent = "⚠️  아직 클러스터링 학습 데이터가 부족합니다 (100 세션 미만). 현재는 규칙 기반 분류를 대신 사용합니다.";
+      } else if (isClustering && state.clusteringTaxonomy) {
+        const count = Object.values(state.clusteringTaxonomy).filter((e) => e.status === "active").length;
+        clusteringNotice.hidden = false;
+        clusteringNotice.textContent = `✅  비지도 학습 활성화 — LLM이 ${count}개 유형 발견`;
+      } else {
+        clusteringNotice.hidden = true;
+      }
+    }
+
     if (state.labelsError) {
       labelSummaryBody.innerHTML = '<tr><td colspan="6" class="emptyState">UX 라벨 데이터를 불러오지 못했습니다.<br/>Redis 또는 Kafka Consumer 상태를 확인해 주세요.</td></tr>';
       return;
     }
-    if (!Array.isArray(summary) || !summary.length) {
-      labelSummaryBody.innerHTML = '<tr><td colspan="6" class="emptyState">세션 데이터가 없어요.</td></tr>';
+
+    const displaySummary = isClustering
+      ? (Array.isArray(summary) ? summary.filter((item) => item.sessions > 0) : [])
+      : summary;
+
+    if (!Array.isArray(displaySummary) || !displaySummary.length) {
+      const msg = isClustering
+        ? "아직 클러스터링 데이터가 없어요. 세션이 100개 이상 쌓이면 자동으로 학습합니다."
+        : "세션 데이터가 없어요.";
+      labelSummaryBody.innerHTML = `<tr><td colspan="6" class="emptyState">${msg}</td></tr>`;
       return;
     }
-    labelSummaryBody.innerHTML = summary.map((item) => `<tr>
-      <td><span class="badge label">${escapeHtml(labelName(item.label))}</span></td>
+
+    labelSummaryBody.innerHTML = displaySummary.map((item) => `<tr>
+      <td><span class="badge label">${escapeHtml(item.label)}</span></td>
       <td class="mono">${fmtInt(item.sessions)}</td>
       <td class="mono">${fmtPct(item.share)}</td>
       <td class="mono">${fmtDuration(item.metrics?.avg_duration_ms)}</td>
@@ -3373,6 +3447,25 @@
   function closePathMappingsDialog() {
     if (!pathMappingsDialog?.open) return;
     pathMappingsDialog.close();
+  }
+
+  if (labelModeToggle) {
+    labelModeToggle.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-mode]");
+      if (!btn) return;
+      const mode = btn.dataset.mode;
+      if (mode === state.labelMode) return;
+      state.labelMode = mode;
+      labelModeToggle.querySelectorAll(".toggleBtn").forEach((b) => {
+        const active = b.dataset.mode === mode;
+        b.classList.toggle("active", active);
+        b.setAttribute("aria-pressed", String(active));
+      });
+      const labelSummary = await fetchLabelsSummary().catch(() => []);
+      state.lastLabelSummary = labelSummary;
+      renderLabelBars(labelSummary);
+      renderLabelSummary(labelSummary);
+    });
   }
 
   if (pathMappingsBtn) pathMappingsBtn.addEventListener("click", openPathMappingsDialog);

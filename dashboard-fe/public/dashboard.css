@@ -4583,3 +4583,48 @@ svg text {
 .experimentDialogBody::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* ===== 분류 방식 토글 ===== */
+.labelModeToggle {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.labelModeToggle .toggleBtn {
+  background: transparent;
+  border: none;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.labelModeToggle .toggleBtn:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.labelModeToggle .toggleBtn.active {
+  background: var(--color-text);
+  color: #ffffff;
+}
+
+/* ===== 클러스터링 알림 배너 ===== */
+.clusteringNotice {
+  padding: 10px 14px;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: #f0f6ff;
+  border: 1px solid #c7d9f7;
+  font-size: 13px;
+  color: #2563eb;
+}

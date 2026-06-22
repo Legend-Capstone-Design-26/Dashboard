@@ -43,8 +43,8 @@ const siteRegistryStore = createFileSiteRegistryStore({ sitesFile: SITES_FILE })
 
 // LLM 어댑터: callOpenAIChat 시그니처를 orchestrator 가 기대하는 형태로 맞춘다
 function makeLlmAdapter() {
-  const { openaiApiKey } = getLlmConfig();
-  return async (prompt) => callOpenAIChat(prompt, { apiKey: openaiApiKey });
+  const apiKey = process.env.UX_INSIGHTS_API_KEY || getLlmConfig().openaiApiKey;
+  return async (prompt) => callOpenAIChat(prompt, { apiKey });
 }
 
 // 세션 종료(dwell_time) 이벤트를 감지해 세션 수를 카운트하고 클러스터링 트리거를 확인한다.
