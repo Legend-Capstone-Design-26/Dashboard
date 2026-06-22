@@ -1,6 +1,6 @@
 const path = require("path");
 const { ensureJsonlFile } = require("../services/data-store");
-const { loadEnvFromFile } = require("../services/llm/config");
+const { loadEnvFromFile, getLlmConfig } = require("../services/llm/config");
 const { getInfraConfig } = require("../services/runtime/infra-config");
 const { createKafkaRuntime } = require("../services/runtime/kafka");
 const { createRedisRuntime } = require("../services/runtime/redis");
@@ -10,6 +10,9 @@ const { createRedisMetricsStore } = require("../services/stores/redis-metrics-st
 const { createRedisEventSummaryStore } = require("../services/stores/redis-event-summary-store");
 const { createFileSiteRegistryStore } = require("../services/stores/site-registry-store");
 const { mergeSessionState, extractVariantAssignments } = require("../services/analytics/session-state");
+const { runClustering, shouldRecluster } = require("../analytics/clustering/clusteringOrchestrator");
+const { getSessionCount, incrementSessionCount, getLastClusteredCount } = require("../analytics/clustering/clusterStore");
+const { callOpenAIChat } = require("../insights/openaiProvider");
 
 loadEnvFromFile();
 
@@ -37,6 +40,37 @@ const redisSessionStore = redisRuntime
 const redisMetricsStore = redisRuntime ? createRedisMetricsStore({ redisRuntime }) : null;
 const redisEventSummaryStore = redisRuntime ? createRedisEventSummaryStore({ redisRuntime }) : null;
 const siteRegistryStore = createFileSiteRegistryStore({ sitesFile: SITES_FILE });
+
+// LLM 어댑터: callOpenAIChat 시그니처를 orchestrator 가 기대하는 형태로 맞춘다
+function makeLlmAdapter() {
+  const { openaiApiKey } = getLlmConfig();
+  return async (prompt) => callOpenAIChat(prompt, { apiKey: openaiApiKey });
+}
+
+// 세션 종료(dwell_time) 이벤트를 감지해 세션 수를 카운트하고 클러스터링 트리거를 확인한다.
+// 클러스터링은 무거운 작업이므로 await 하지 않고 백그라운드에서 실행한다.
+async function maybeTriggerClustering(siteId) {
+  if (!redisRuntime) return;
+  try {
+    const current  = await incrementSessionCount(redisRuntime, siteId);
+    const last     = await getLastClusteredCount(redisRuntime, siteId);
+    if (!shouldRecluster(last, current)) return;
+
+    const sessions = await redisSessionStore.listSessionStates({ siteId, limit: 2000 });
+    if (sessions.length === 0) return;
+
+    const callLlm = makeLlmAdapter();
+    runClustering(sessions, siteId, redisRuntime, callLlm)
+      .then((result) => {
+        if (!result.skipped) {
+          console.log(`[clustering] site=${siteId} k=${result.k} taxonomy=${Object.keys(result.taxonomy || {}).join(", ")}`);
+        }
+      })
+      .catch((err) => console.warn("[clustering] background error", err));
+  } catch (err) {
+    console.warn("[clustering] trigger error", err);
+  }
+}
 
 async function mirrorEventToRedis(event) {
   if (!redisSessionStore && !redisEventSummaryStore) return;
@@ -76,6 +110,11 @@ async function mirrorEventToRedis(event) {
       sessionId: event.session_id,
       state: next,
     });
+
+    // dwell_time 은 세션 종료 신호이므로 이 시점에 세션 수를 카운트한다
+    if (event.event_name === "dwell_time") {
+      maybeTriggerClustering(event.site_id);
+    }
   }
 }
 
