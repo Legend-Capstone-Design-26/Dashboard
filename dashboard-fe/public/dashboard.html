@@ -59,6 +59,20 @@
 
       <main class="wrap">
 
+    <!-- ===== 오늘 먼저 볼 UX 포인트 ===== -->
+    <section class="uxFocusHero" id="uxFocusHero" aria-labelledby="uxFocusTitle">
+      <div class="uxFocusContent">
+        <div class="uxFocusEyebrow">먼저 볼 만한 포인트</div>
+        <h1 class="uxFocusTitle" id="uxFocusTitle">오늘 먼저 볼 UX 포인트</h1>
+        <p class="uxFocusSummary" id="uxFocusSummary">인사이트 도출 버튼을 누르면 선택한 기간의 핵심 UX 포인트가 여기에 표시됩니다.</p>
+        <div class="uxFocusMeta" id="uxFocusMeta">선택한 기간 기준으로 세션과 행동 패턴을 요약합니다.</div>
+      </div>
+      <div class="uxFocusActions">
+        <button class="btnPrimary" id="uxFocusDetailsBtn" type="button">자세히 보기</button>
+        <button class="btnGhost" id="uxFocusGenerateBtn" type="button">인사이트 도출</button>
+      </div>
+    </section>
+
     <!-- ===== 0. 기간 설정 ===== -->
     <section class="card periodCard">
       <div class="cardHead periodHead">
@@ -87,6 +101,11 @@
             </label>
           </div>
         </div>
+      </div>
+      <div class="periodActiveSummary" id="periodActiveSummary">
+        <div class="periodActiveLabel">현재 보고 있는 기간</div>
+        <div class="periodActiveValue" id="periodActiveValue">기간을 계산 중입니다.</div>
+        <div class="periodActiveRange" id="periodActiveRange">최근 7일 기준</div>
       </div>
       <div class="summaryHint" id="periodStatusText">최근 7일 기준으로 주요 지표를 집계합니다.</div>
       <div class="sdkStatusInline" id="sdkStatusInline">
@@ -164,7 +183,7 @@
           </div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" id="opportunitiesCard">
         <div class="cardHead">
           <h2>먼저 볼 만한 포인트</h2>
           <div class="muted">매일 오전 08:00 기준으로 업데이트되는 우선 확인 항목</div>
@@ -445,6 +464,15 @@
           </div>
         </div>
 
+        <section class="experimentResultHero" id="experimentResultHero" aria-live="polite">
+          <div>
+            <div class="experimentResultEyebrow" id="experimentResultEyebrow">결과 요약</div>
+            <h3 class="experimentResultTitle" id="experimentResultTitle">결과를 계산 중입니다.</h3>
+            <p class="experimentResultSummary" id="experimentResultSummary">전환율, 이탈률, 클릭률을 비교해 어느 variant가 더 나은 흐름을 보이는지 정리합니다.</p>
+          </div>
+          <div class="experimentResultPills" id="experimentResultPills"></div>
+        </section>
+
         <div class="experimentDialogMetaGrid">
           <div class="summaryMiniCard">
             <div class="summaryLabel">총 참여 세션 수</div>
@@ -517,15 +545,19 @@
 
         <div class="experimentInterpretation" id="experimentInterpretation">현재 수집된 데이터 기준 해석을 준비 중입니다.</div>
 
-        <section class="experimentHistoryPanel">
-          <div class="dialogSectionHead">
+        <details class="experimentHistoryPanel">
+          <summary class="experimentHistorySummaryToggle">
+            <span>버전 히스토리</span>
+            <span class="muted">이전 버전으로 되돌릴 수 있습니다.</span>
+          </summary>
+          <div class="dialogSectionHead experimentHistoryHead">
             <h3>버전 히스토리</h3>
             <div class="muted">이전 버전으로 되돌릴 수 있습니다.</div>
           </div>
           <div id="experimentHistoryList" class="experimentHistoryList">
             <div class="emptyState compactEmpty">히스토리를 불러오는 중입니다.</div>
           </div>
-        </section>
+        </details>
 
       </div>
     </div>
