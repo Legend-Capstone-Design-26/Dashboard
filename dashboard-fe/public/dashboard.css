@@ -4291,57 +4291,188 @@ svg text {
 }
 
 .experimentResultPills {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(108px, 1fr));
   gap: 10px;
-  min-width: 250px;
+  align-items: stretch;
+  width: min(100%, 440px);
+  min-width: 0;
 }
 
+.experimentResultKpiCard,
 .experimentResultPill {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 96px;
-  min-height: 58px;
-  padding: 9px 12px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 12px 14px;
   border: 1px solid var(--dash-border, #e2e8f0);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.82);
   color: #475569;
   font-size: 12px;
   font-weight: 760;
-  line-height: 1.35;
+  line-height: 1.25;
+  gap: 4px;
 }
 
+.experimentResultKpiLabel {
+  color: currentColor;
+  font-size: 12px;
+  font-weight: 780;
+  opacity: 0.82;
+}
+
+.experimentResultKpiValue,
 .experimentResultPill strong {
   display: block;
   color: #0f172a;
   font-size: 18px;
   line-height: 1.1;
-  margin-bottom: 4px;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
 }
 
+.experimentResultKpiCaption {
+  color: currentColor;
+  font-size: 12px;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.experimentResultKpiCard.positive,
 .experimentResultPill.positive {
   border-color: #bbf7d0;
   background: #f0fdf4;
   color: #166534;
 }
 
+.experimentResultKpiCard.positive .experimentResultKpiValue,
 .experimentResultPill.positive strong { color: #15803d; }
 
+.experimentResultKpiCard.negative,
 .experimentResultPill.negative {
   border-color: #fecaca;
-  background: #fff7f7;
+  background: #fef2f2;
   color: #991b1b;
 }
 
+.experimentResultKpiCard.negative .experimentResultKpiValue,
 .experimentResultPill.negative strong { color: #b91c1c; }
 
+.experimentResultKpiCard.neutral,
 .experimentResultPill.neutral {
   border-color: #e2e8f0;
   background: #f8fafc;
   color: #475569;
+}
+
+/* Statistic-card treatment: keep cards quiet and reserve semantic color for badges. */
+.experimentResultKpiCard {
+  position: relative;
+  justify-content: flex-start;
+  min-height: 72px;
+  padding: 10px 12px;
+  border-color: #e5eaf3;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #64748b;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.experimentResultKpiCard::before {
+  content: none;
+  display: none;
+}
+
+.experimentResultKpiCard.positive,
+.experimentResultKpiCard.negative,
+.experimentResultKpiCard.neutral {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.experimentResultKpiCard.positive {
+  border-color: rgba(34, 197, 94, 0.26);
+}
+
+.experimentResultKpiCard.negative {
+  border-color: rgba(239, 68, 68, 0.26);
+}
+
+.experimentResultKpiCard.neutral {
+  border-color: #e5eaf3;
+}
+
+.experimentResultKpiTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.experimentResultKpiLabel {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 1;
+}
+
+.experimentResultKpiBadge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 7px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.experimentResultKpiBadge.positive {
+  border-color: #abefc6;
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.experimentResultKpiBadge.negative {
+  border-color: #fecdca;
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.experimentResultKpiBadge.neutral {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.experimentResultKpiValue,
+.experimentResultKpiCard.positive .experimentResultKpiValue,
+.experimentResultKpiCard.negative .experimentResultKpiValue {
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 19px;
+  font-weight: 850;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.experimentResultKpiCaption {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .experimentDialogMetaGrid .summaryMiniCard {
@@ -4388,29 +4519,31 @@ svg text {
 
 .experimentDialog .metricDelta {
   margin-top: 12px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  background: #f8fafc;
+  border-radius: 999px;
+  background: #ffffff;
   color: #475569;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.45;
-  font-weight: 760;
+  font-weight: 820;
 }
 
 .experimentDialog .metricDelta.positive {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
+  border-color: #abefc6;
+  background: #ecfdf3;
+  color: #067647;
 }
 
 .experimentDialog .metricDelta.negative {
-  border-color: #fecaca;
-  background: #fff7f7;
-  color: #991b1b;
+  border-color: #fecdca;
+  background: #fef3f2;
+  color: #b42318;
 }
 
 .experimentDialog .metricDelta.neutral {
+  border-color: #e2e8f0;
+  background: #f8fafc;
   color: #475569;
 }
 
@@ -4521,7 +4654,7 @@ svg text {
   }
 
   .experimentResultPills {
-    justify-content: flex-start;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     min-width: 0;
   }
 }
@@ -4537,6 +4670,10 @@ svg text {
 
   .experimentResultHero {
     padding: 18px;
+  }
+
+  .experimentResultPills {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -4582,4 +4719,608 @@ svg text {
 
 .experimentDialogBody::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* ===== Meeting updates: trend + period, opportunity split ===== */
+.trendPeriodPanel {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  gap: 22px;
+  align-items: stretch;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.trendPeriodChartPane {
+  min-width: 0;
+}
+
+.trendPeriodChartHead {
+  align-items: flex-start;
+}
+
+.periodPickerPane {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e6edf7;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 88% 4%, rgba(59, 130, 246, 0.16), transparent 9rem),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+}
+
+.periodPickerHead {
+  margin-bottom: 14px;
+}
+
+.periodPickerHead h2 {
+  margin: 0;
+  color: var(--dash-ink, #0f172a);
+  font-size: 16px;
+  letter-spacing: -0.025em;
+}
+
+.periodSelectFallback {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.periodPresetTabs {
+  display: inline-flex;
+  width: 100%;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: #eef2f7;
+}
+
+.periodPresetTab {
+  flex: 1 1 0;
+  min-height: 34px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 780;
+  letter-spacing: -0.015em;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.periodPresetTab:hover {
+  color: #1d4ed8;
+}
+
+.periodPresetTab.is-active {
+  background: #ffffff;
+  color: #1d4ed8;
+  box-shadow: 0 7px 18px rgba(30, 64, 175, 0.12);
+}
+
+.periodPickerPane .periodActiveSummary {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "label"
+    "value"
+    "range";
+  align-items: start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 17px;
+  border-color: #d7e5ff;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.periodPickerPane .periodActiveSummary::after {
+  right: 15px;
+  top: 15px;
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  background:
+    linear-gradient(#3b82f6 0 8px, #ffffff 8px 100%);
+  border-color: #bfdbfe;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.periodPickerPane .periodActiveLabel {
+  min-height: 25px;
+  padding: 0 10px;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+}
+
+.periodPickerPane .periodActiveValue {
+  padding-right: 48px;
+  font-size: clamp(19px, 1.9vw, 23px);
+  line-height: 1.18;
+  letter-spacing: -0.045em;
+  font-weight: 820;
+}
+
+.periodPickerPane .periodActiveRange {
+  justify-self: stretch;
+  max-width: none;
+  padding: 9px 11px;
+  border-color: #dbeafe;
+  background: rgba(255, 255, 255, 0.78);
+  color: #475569;
+  font-size: 12px;
+  text-align: left;
+}
+
+.periodPickerPane .dateRangeInputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.periodPickerPane .dateRangeInputs[hidden] {
+  display: none;
+}
+
+.periodPickerPane .filterField {
+  min-width: 0;
+}
+
+.periodPickerPane .dateInput {
+  width: 100%;
+  min-width: 0;
+  border-color: #bfdbfe;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.06);
+}
+
+.periodPickerPane #periodStatusText {
+  margin-top: 12px;
+  line-height: 1.55;
+}
+
+.periodPickerPane .sdkStatusInline {
+  display: grid;
+  gap: 8px;
+  margin-top: 13px;
+  padding-top: 13px;
+}
+
+.chartSidePanel {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.38fr) minmax(300px, 0.82fr);
+  gap: 20px;
+}
+
+.chartSidePanel > .card,
+.chartSidePanel > .card:first-child,
+.chartSidePanel > .card:last-child {
+  grid-column: auto;
+  min-height: 374px;
+}
+
+#opportunitiesCard {
+  min-height: 374px;
+}
+
+.labelShareCard .distributionLayout {
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.labelShareCard .distributionDonut {
+  width: 150px;
+  height: 150px;
+}
+
+.metricDirectionHint {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  margin-left: 6px;
+  padding: 0 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 780;
+  vertical-align: middle;
+}
+
+@media (max-width: 1120px) {
+  .trendPeriodPanel,
+  .chartSidePanel {
+    grid-template-columns: 1fr;
+  }
+
+  .periodPickerPane .dateRangeInputs {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboardMain,
+  .wrap {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .wrap {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .uxFocusHero,
+  .trendPeriodPanel,
+  .chartSidePanel > .card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .uxFocusTitle,
+  .uxFocusSummary,
+  .trendPeriodChartHead .muted,
+  .periodPickerPane .muted,
+  .cardHead .muted,
+  .summaryHint {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .uxFocusTitle {
+    max-width: 100%;
+    font-size: 22px;
+    line-height: 1.24;
+    letter-spacing: -0.045em;
+    word-break: break-all;
+  }
+
+  .uxFocusSummary {
+    max-width: 100%;
+    font-size: 14px;
+    word-break: break-all;
+  }
+
+  .uxFocusActions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .uxFocusActions .btnPrimary,
+  .uxFocusActions .btnGhost {
+    max-width: 100%;
+  }
+
+  .trendPeriodPanel {
+    padding: 18px;
+  }
+
+  .periodPickerPane {
+    padding: 15px;
+    border-radius: 18px;
+  }
+
+  .periodPresetTabs,
+  .periodPickerPane .dateRangeInputs,
+  .labelShareCard .distributionLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .periodPresetTabs {
+    display: grid;
+  }
+
+  .periodPickerPane .periodActiveValue {
+    padding-right: 0;
+  }
+
+  .periodPickerPane .periodActiveSummary::after {
+    display: none;
+  }
+}
+
+/* ===== Integrated trend period controls ===== */
+.trendPeriodPanel {
+  grid-column: 1 / -1;
+  display: block;
+  min-height: 0;
+  padding: 24px 26px 22px;
+  overflow: visible;
+}
+
+.trendPanelHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+
+.trendPanelTitleBlock {
+  min-width: 0;
+}
+
+.trendPeriodControls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  min-width: min(100%, 460px);
+}
+
+.periodSegmented {
+  display: inline-flex;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid #e6edf7;
+  border-radius: 999px;
+  background: #f1f5f9;
+}
+
+.periodSegmentButton {
+  min-width: 50px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 780;
+  letter-spacing: -0.015em;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.periodSegmentButton:hover {
+  color: #1d4ed8;
+}
+
+.periodSegmentButton.is-active {
+  background: #ffffff;
+  color: #1d4ed8;
+  box-shadow: 0 7px 18px rgba(30, 64, 175, 0.12);
+}
+
+.periodRangeControl {
+  position: relative;
+  min-width: 218px;
+}
+
+.periodRangeTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 38px 0 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 13px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 780;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.06);
+  cursor: pointer;
+}
+
+.periodRangeTrigger::after {
+  content: "";
+  position: absolute;
+  right: 13px;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background:
+    linear-gradient(#3b82f6 0 4px, transparent 4px 100%),
+    linear-gradient(#eff6ff, #eff6ff);
+  border: 1px solid #93c5fd;
+}
+
+.periodRangeInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.periodMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin: 4px 0 10px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.periodMetaRow #periodActiveRange {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 820;
+}
+
+.trendPeriodPanel .legendDot.sessions,
+.trendPeriodPanel .trendTooltipDot {
+  background: #6366f1;
+}
+
+.trendPeriodPanel .legendDot.events,
+.trendPeriodPanel .trendTooltipDot.events {
+  background: #14b8a6;
+}
+
+.trendPeriodPanel > .chartLegend {
+  width: fit-content;
+  margin: 0 0 6px auto;
+}
+
+.trendPeriodPanel .trendChartCard {
+  min-height: 260px;
+  padding-top: 0;
+}
+
+.trendPeriodPanel .sdkStatusInline {
+  margin-top: 10px;
+}
+
+.flatpickr-calendar {
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.16);
+  color: #0f172a;
+  font-family: var(--font-body), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+
+.flatpickr-calendar.multiMonth {
+  width: auto !important;
+  max-width: min(calc(100vw - 32px), 650px);
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-months .flatpickr-month {
+  height: 46px;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-innerContainer {
+  gap: 10px;
+  padding: 0 10px 10px;
+}
+
+.flatpickr-calendar.multiMonth .flatpickr-rContainer {
+  padding: 0;
+}
+
+.flatpickr-calendar.multiMonth .dayContainer {
+  padding: 0 4px 4px;
+}
+
+.flatpickr-months {
+  padding: 8px 10px 0;
+}
+
+.flatpickr-current-month,
+.flatpickr-monthDropdown-months,
+.flatpickr-weekday,
+.flatpickr-day {
+  font-family: inherit;
+}
+
+.flatpickr-weekday {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.flatpickr-day {
+  border-radius: 999px;
+  color: #334155;
+}
+
+.flatpickr-day.today {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.flatpickr-day:hover {
+  background: #eff6ff;
+  border-color: #eff6ff;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange:hover,
+.flatpickr-day.endRange:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.flatpickr-day.inRange,
+.flatpickr-day.prevMonthDay.inRange,
+.flatpickr-day.nextMonthDay.inRange {
+  background: #dbeafe;
+  border-color: #dbeafe;
+  color: #1e3a8a;
+  box-shadow: -5px 0 0 #dbeafe, 5px 0 0 #dbeafe;
+}
+
+@media (max-width: 640px) {
+  .flatpickr-calendar.multiMonth {
+    max-width: calc(100vw - 24px);
+  }
+}
+
+@media (max-width: 920px) {
+  .trendPanelHead {
+    grid-template-columns: 1fr;
+  }
+
+  .trendPeriodControls {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .trendPeriodPanel > .chartLegend {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .trendPeriodPanel {
+    padding: 18px;
+  }
+
+  .trendPeriodControls,
+  .periodSegmented,
+  .periodRangeControl,
+  .periodRangeTrigger {
+    width: 100%;
+  }
+
+  .periodSegmentButton {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .periodMetaRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
