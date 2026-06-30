@@ -11,31 +11,22 @@ function createFakeRedisRuntime() {
     async connect() {
       return {
         multi() {
-          const ops = [];
-          return {
-            hincrby(key, field, inc) { ops.push(["hincrby", key, field, inc]); return this; },
-            sadd(key, value) { ops.push(["sadd", key, value]); return this; },
-            zincrby(key, inc, member) { ops.push(["zincrby", key, inc, member]); return this; },
-            async exec() {
-              for (const op of ops) {
-                const [type, key, a, b] = op;
-                if (type === "hincrby") {
-                  const map = hashes.get(key) || new Map();
-                  map.set(a, (Number(map.get(a) || 0) + Number(b)));
-                  hashes.set(key, map);
-                } else if (type === "sadd") {
-                  const set = sets.get(key) || new Set();
-                  set.add(a);
-                  sets.set(key, set);
-                } else if (type === "zincrby") {
-                  const map = zsets.get(key) || new Map();
-                  map.set(b, (Number(map.get(b) || 0) + Number(a)));
-                  zsets.set(key, map);
-                }
-              }
-              return [];
-            },
-          };
+          throw new Error("multi should not be used with Redis Cluster keys");
+        },
+        async hincrby(key, field, inc) {
+          const map = hashes.get(key) || new Map();
+          map.set(field, (Number(map.get(field) || 0) + Number(inc)));
+          hashes.set(key, map);
+        },
+        async sadd(key, value) {
+          const set = sets.get(key) || new Set();
+          set.add(value);
+          sets.set(key, set);
+        },
+        async zincrby(key, inc, member) {
+          const map = zsets.get(key) || new Map();
+          map.set(member, (Number(map.get(member) || 0) + Number(inc)));
+          zsets.set(key, map);
         },
         async hgetall(key) {
           const map = hashes.get(key) || new Map();

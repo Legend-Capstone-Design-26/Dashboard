@@ -1,11 +1,12 @@
 const Redis = require("ioredis");
 
-function createRedisRuntime({ url, keyPrefix }) {
+function createRedisRuntime({ url, keyPrefix, RedisCtor = Redis }) {
   let client = null;
+  let connectPromise = null;
 
   function getClient() {
     if (!client) {
-      client = new Redis(url, {
+      client = new RedisCtor(url, {
         lazyConnect: true,
         keyPrefix: keyPrefix ? `${keyPrefix}:` : undefined,
         maxRetriesPerRequest: 1,
@@ -16,9 +17,18 @@ function createRedisRuntime({ url, keyPrefix }) {
 
   async function connect() {
     const redis = getClient();
-    if (redis.status !== "ready") {
-      await redis.connect();
+    if (["ready", "connect", "connecting", "reconnecting"].includes(redis.status)) {
+      if (connectPromise) await connectPromise;
+      return redis;
     }
+    if (connectPromise) {
+      await connectPromise;
+      return redis;
+    }
+    connectPromise = redis.connect().finally(() => {
+      connectPromise = null;
+    });
+    await connectPromise;
     return redis;
   }
 
@@ -26,6 +36,7 @@ function createRedisRuntime({ url, keyPrefix }) {
     if (!client) return;
     await client.quit();
     client = null;
+    connectPromise = null;
   }
 
   return {
