@@ -25,7 +25,11 @@ const { createRedisEventSummaryStore } = require("./services/stores/redis-event-
 const {
   createRedisSessionAnalyticsService,
   redisUnavailableResponse,
+  normalizeRedisSessionStateToSummary,
 } = require("./services/analytics/redis-session-analytics-service");
+const { createClusteringLabeler } = require("./analytics/clusteringLabeler");
+const { computeLabelsSummary } = require("./analytics/pipeline");
+const { loadTaxonomy } = require("./analytics/clustering/clusterStore");
 const { listPersonas, getPersona } = require("./personas");
 const {
   generateOverlay,
@@ -478,6 +482,7 @@ const redisEventSummaryStore = redisRuntime ? createRedisEventSummaryStore({ red
 const redisSessionAnalyticsService = redisSessionStore
   ? createRedisSessionAnalyticsService({ redisSessionStore, redisEventSummaryStore })
   : null;
+const clusteringLabeler = redisRuntime ? createClusteringLabeler({ redisRuntime }) : null;
 const kafkaEventStore = kafkaRuntime
   ? createKafkaEventStore({ kafkaRuntime, topic: infraConfig.kafka.topicEvents })
   : null;
@@ -1466,6 +1471,42 @@ app.get("/api/labels/summary", requireAuth, requireSiteAccess, async (req, res) 
   try {
     const result = await redisSessionAnalyticsService.getLabelsSummary({ siteId: site_id, fromTs: from_ts, toTs: to_ts, limit: limit_sessions });
     return res.json(result);
+  } catch (e) {
+    return sendRedisUnavailable(res, e);
+  }
+});
+
+app.get("/api/labels/clustering-summary", requireAuth, requireSiteAccess, async (req, res) => {
+  const site_id = String(req.query.site_id || "ab-sample");
+  const from_ts = toNum(req.query.from_ts);
+  const to_ts = toNum(req.query.to_ts);
+  const limit = Math.max(1, Math.min(1000, toInt(req.query.limit_sessions) ?? 1000));
+
+  if (!redisSessionStore || !clusteringLabeler) return sendRedisUnavailable(res);
+
+  try {
+    const states = await redisSessionStore.listSessionStates({ siteId: site_id, limit, fromTs: from_ts, toTs: to_ts });
+
+    const labeled = await Promise.all(
+      states.map(async (state) => {
+        const summary = normalizeRedisSessionStateToSummary(state);
+        const labelResult = await clusteringLabeler.labelSession(state);
+        return { summary, label: labelResult };
+      })
+    );
+
+    const summary = computeLabelsSummary(labeled);
+    const taxonomy = await loadTaxonomy(redisRuntime, site_id);
+    const fallbackUsed = !taxonomy || Object.keys(taxonomy).length === 0;
+
+    return res.json({
+      ok: true,
+      source: "clustering",
+      fallback_used: fallbackUsed,
+      site_id,
+      summary,
+      taxonomy: taxonomy || null,
+    });
   } catch (e) {
     return sendRedisUnavailable(res, e);
   }
