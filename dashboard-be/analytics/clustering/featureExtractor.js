@@ -20,15 +20,6 @@ const FEATURE_KEYS = [
   "checkout_completed",     // boolean → 0 / 1
 ];
 
-// Min-Max 정규화 후 곱해지는 가중치.
-// 구매 전환 관련 신호가 유형군을 가장 잘 구분하므로 높게 설정한다.
-const FEATURE_WEIGHTS = {
-  checkout_completed:    2.0,
-  checkout_started:      1.5,
-  payment_attempt_count: 1.5,
-  cart_add_count:        1.2,
-  wishlist_count:        1.2,
-};
 
 // ─── Vector Extraction ────────────────────────────────────────────────────────
 
@@ -70,9 +61,7 @@ function buildNormParams(rawVectors) {
 function applyNorm(rawVector, normParams) {
   return rawVector.map((value, i) => {
     const normalized = (value - normParams.mins[i]) / normParams.ranges[i];
-    const clamped    = Math.max(0, Math.min(1, normalized));
-    const weight     = FEATURE_WEIGHTS[FEATURE_KEYS[i]] || 1.0;
-    return clamped * weight;
+    return Math.max(0, Math.min(1, normalized));
   });
 }
 
@@ -96,7 +85,6 @@ function computeRawMean(sessionStates) {
 
 module.exports = {
   FEATURE_KEYS,
-  FEATURE_WEIGHTS,
   extractRawVector,
   buildNormParams,
   applyNorm,

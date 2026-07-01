@@ -7,7 +7,7 @@
  *   3. K-Means 클러스터링 (Elbow + Silhouette 로 최적 K 탐색)
  *   4. 실제 OpenAI API 호출로 클러스터 명칭 부여
  *
- * 실행: node scripts/test-clustering.js
+ * 실행: node scripts/validate-clustering.js
  * 필요: dashboard-be/.env 에 OPENAI_API_KEY 설정
  */
 

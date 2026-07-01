@@ -18,6 +18,9 @@
   const quickTestHint = document.getElementById("quickTestHint");
   const sessionsSourceLabel = document.getElementById("sessionsSourceLabel");
   const periodPreset = document.getElementById("periodPreset");
+  const periodPresetButtons = Array.from(document.querySelectorAll("[data-period-preset]"));
+  const periodRangeTrigger = document.getElementById("periodRangeTrigger");
+  const periodRangeInput = document.getElementById("periodRangeInput");
   const customDateRange = document.getElementById("customDateRange");
   const customFromDate = document.getElementById("customFromDate");
   const customToDate = document.getElementById("customToDate");
@@ -166,7 +169,7 @@
     users: [],
     userFetchError: null,
     newUserSiteIds: [],
-    periodPreset: "7d",
+    periodPreset: "weekly",
     customFromDate: "",
     customToDate: "",
     selectedExperimentMetrics: null,
@@ -191,6 +194,7 @@
     clusteringFallbackUsed: false,
     clusteringTaxonomy: null,
   };
+  let periodRangePicker = null;
 
   function warnMissingDomElement(id, usage) {
     console.warn(`[dashboard] Missing DOM element #${id}. ${usage} will not render. Check dashboard.html and dashboard.js id consistency.`);
@@ -329,6 +333,24 @@
     return `${date.getMonth() + 1}월 ${date.getDate()}일`;
   }
 
+  function formatCompactDate(ts) {
+    if (typeof ts !== "number" || !Number.isFinite(ts)) return "—";
+    const date = new Date(ts);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}.${month}.${day}`;
+  }
+
+  function normalizePeriodPreset(value) {
+    const raw = String(value || "").trim();
+    if (raw === "today") return "daily";
+    if (raw === "7d") return "weekly";
+    if (raw === "30d") return "monthly";
+    if (["daily", "weekly", "monthly", "custom"].includes(raw)) return raw;
+    return "weekly";
+  }
+
   function getSidebarScrollOffset() {
     const topbar = document.querySelector(".topbar");
     const topbarHeight = topbar ? topbar.getBoundingClientRect().height : 0;
@@ -382,36 +404,47 @@
   }
 
   function syncPeriodInputs() {
+    state.periodPreset = normalizePeriodPreset(state.periodPreset);
     const today = new Date();
     const defaultTo = toDateInputValue(today);
     const defaultFrom = toDateInputValue(new Date(today.getTime() - (6 * 24 * 60 * 60 * 1000)));
     if (!state.customFromDate) state.customFromDate = defaultFrom;
     if (!state.customToDate) state.customToDate = defaultTo;
     if (periodPreset) periodPreset.value = state.periodPreset;
+    periodPresetButtons.forEach((button) => {
+      const isActive = normalizePeriodPreset(button.dataset.periodPreset) === state.periodPreset;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-selected", isActive ? "true" : "false");
+      button.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
     if (customFromDate) customFromDate.value = state.customFromDate;
     if (customToDate) customToDate.value = state.customToDate;
     if (customDateRange) customDateRange.hidden = state.periodPreset !== "custom";
+    if (periodRangeInput && !periodRangePicker) {
+      periodRangeInput.value = [state.customFromDate, state.customToDate].filter(Boolean).join(" ~ ");
+    }
   }
 
   function getPeriodRange() {
+    state.periodPreset = normalizePeriodPreset(state.periodPreset);
     const now = Date.now();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (state.periodPreset === "today") {
-      return { label: "오늘", fromTs: today.getTime(), toTs: now };
+    if (state.periodPreset === "daily") {
+      return { label: "오늘", fromTs: today.getTime(), toTs: now, bucket: "hour" };
     }
-    if (state.periodPreset === "30d") {
-      return { label: "최근 30일", fromTs: now - (29 * 24 * 60 * 60 * 1000), toTs: now };
+    if (state.periodPreset === "monthly") {
+      return { label: "최근 30일", fromTs: now - (29 * 24 * 60 * 60 * 1000), toTs: now, bucket: "day" };
     }
     if (state.periodPreset === "custom") {
       const fromTs = parseDateRangeStart(state.customFromDate);
       const toTs = parseDateRangeEnd(state.customToDate);
       if (typeof fromTs === "number" && typeof toTs === "number" && fromTs <= toTs) {
-        return { label: "사용자 지정 기간", fromTs, toTs };
+        return { label: "사용자 지정 기간", fromTs, toTs, bucket: "day" };
       }
-      return { label: "사용자 지정 기간", fromTs: null, toTs: null };
+      return { label: "사용자 지정 기간", fromTs: null, toTs: null, bucket: "day" };
     }
-    return { label: "최근 7일", fromTs: now - (6 * 24 * 60 * 60 * 1000), toTs: now };
+    return { label: "최근 7일", fromTs: now - (6 * 24 * 60 * 60 * 1000), toTs: now, bucket: "day" };
   }
 
   function buildPeriodQuery() {
@@ -427,17 +460,20 @@
     const range = getPeriodRange();
     const fromText = typeof range.fromTs === "number" ? new Date(range.fromTs).toLocaleDateString("ko-KR") : "—";
     const toText = typeof range.toTs === "number" ? new Date(range.toTs).toLocaleDateString("ko-KR") : "—";
-    const fromShort = formatPeriodDateText(range.fromTs);
-    const toShort = formatPeriodDateText(range.toTs);
+    const fromShort = formatCompactDate(range.fromTs);
+    const toShort = formatCompactDate(range.toTs);
     if (periodActiveValue) {
       periodActiveValue.textContent = state.periodPreset === "custom" && (range.fromTs == null || range.toTs == null)
-        ? "기간을 완성해 주세요"
-        : `${fromShort}부터 ${toShort}까지`;
+        ? "기간 선택"
+        : `${fromShort} ~ ${toShort}`;
     }
     if (periodActiveRange) {
       periodActiveRange.textContent = state.periodPreset === "custom" && (range.fromTs == null || range.toTs == null)
         ? "시작일과 종료일을 모두 입력하면 선택한 기간이 적용됩니다."
-        : `${range.label} 기준 · ${fromText} ~ ${toText}`;
+        : `${range.label} 기준`;
+    }
+    if (periodRangeTrigger) {
+      periodRangeTrigger.setAttribute("aria-label", state.periodPreset === "custom" ? "사용자 지정 기간 선택" : `${range.label} 기간 선택`);
     }
     if (!periodStatusText) return;
     if (state.periodPreset === "custom" && (range.fromTs == null || range.toTs == null)) {
@@ -543,8 +579,16 @@
     return b - a;
   }
 
-  function formatMetricDelta(value, kind) {
-    if (typeof value !== "number" || !Number.isFinite(value)) return "계산 불가";
+  function formatMetricDelta(value, kind, options = {}) {
+    if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+    const useAbsoluteDirection = Boolean(options.useAbsoluteDirection);
+    if (useAbsoluteDirection) {
+      const direction = value < 0 ? "감소" : value > 0 ? "증가" : "변화 없음";
+      if (kind === "percent") return `${Math.abs(value).toFixed(1)}%p ${direction}`;
+      if (kind === "duration") return `${fmtDuration(Math.abs(value))} ${direction}`;
+      if (kind === "depth") return `${Math.abs(value).toFixed(1)} ${direction}`;
+      return `${fmtInt(Math.abs(value))} ${direction}`;
+    }
     const sign = value > 0 ? "+" : "";
     if (kind === "percent") return `${sign}${value.toFixed(1)}%p`;
     if (kind === "duration") return `${sign}${fmtDuration(Math.abs(value))}`;
@@ -558,19 +602,53 @@
     return improved ? "positive" : "negative";
   }
 
-  function metricChangeText({ aValue, bValue, kind, preferredDirection, positiveText, negativeText }) {
+  function buildMetricDeltaDisplay({
+    aValue,
+    bValue,
+    kind,
+    metricLabel,
+    preferredDirection = "higher",
+    positiveText,
+    negativeText,
+    neutralText,
+  }) {
     const delta = metricDeltaValue(aValue, bValue, kind);
-    if (delta == null) return "차이값 계산 불가";
-    const cls = metricDeltaClass(delta, preferredDirection);
-    const label = cls === "positive" ? positiveText : cls === "negative" ? negativeText : "변화 거의 없음";
-    return `${formatMetricDelta(delta, kind)} · ${label}`;
+    if (delta == null) {
+      return {
+        tone: "neutral",
+        valueText: "—",
+        caption: "데이터 부족",
+        label: metricLabel || "지표",
+        badgeText: "보류",
+        direction: "none",
+      };
+    }
+
+    const tone = metricDeltaClass(delta, preferredDirection);
+    const badgeText = tone === "positive" ? "개선" : tone === "negative" ? "악화" : "변화 없음";
+    const useAbsoluteDirection = preferredDirection === "lower" || kind === "duration";
+    return {
+      tone,
+      valueText: formatMetricDelta(delta, kind, { useAbsoluteDirection }),
+      caption: tone === "positive" ? positiveText : tone === "negative" ? negativeText : (neutralText || `${metricLabel || "지표"} 변화 없음`),
+      label: metricLabel || "지표",
+      badgeText,
+      direction: delta > 0 ? "up" : delta < 0 ? "down" : "none",
+    };
+  }
+
+  function metricChangeText(options) {
+    const display = buildMetricDeltaDisplay(options);
+    if (display.valueText === "—") return display.caption;
+    return `${display.valueText} · ${display.caption}`;
   }
 
   function setMetricDelta(el, options) {
     if (!el) return;
-    const delta = metricDeltaValue(options.aValue, options.bValue, options.kind);
-    el.className = `metricDelta ${metricDeltaClass(delta, options.preferredDirection)}`;
+    const display = buildMetricDeltaDisplay(options);
+    el.className = `metricDelta ${display.tone}`;
     el.textContent = metricChangeText(options);
+    el.setAttribute("aria-label", `${display.label} ${el.textContent}`);
   }
 
   function renderExperimentResultHero(metrics) {
@@ -583,13 +661,12 @@
       return;
     }
 
-    const cvrDelta = metricDeltaValue(metrics.A?.cvr, metrics.B?.cvr, "percent");
-    const bounceDelta = metricDeltaValue(metrics.A?.bounce_rate, metrics.B?.bounce_rate, "percent");
-    const ctrDelta = metricDeltaValue(metrics.A?.ctr, metrics.B?.ctr, "percent");
-    const cvrClass = metricDeltaClass(cvrDelta, "higher");
-    const bounceClass = metricDeltaClass(bounceDelta, "lower");
-    const ctrClass = metricDeltaClass(ctrDelta, "higher");
-    const bLooksBetter = [cvrClass, bounceClass, ctrClass].filter((cls) => cls === "positive").length >= 2;
+    const kpis = [
+      buildMetricDeltaDisplay({ aValue: metrics.A?.cvr, bValue: metrics.B?.cvr, kind: "percent", metricLabel: "전환율", preferredDirection: "higher", positiveText: "전환율 증가", negativeText: "전환율 감소" }),
+      buildMetricDeltaDisplay({ aValue: metrics.A?.bounce_rate, bValue: metrics.B?.bounce_rate, kind: "percent", metricLabel: "이탈률", preferredDirection: "lower", positiveText: "이탈률 개선", negativeText: "이탈률 악화" }),
+      buildMetricDeltaDisplay({ aValue: metrics.A?.ctr, bValue: metrics.B?.ctr, kind: "percent", metricLabel: "클릭률", preferredDirection: "higher", positiveText: "클릭률 증가", negativeText: "클릭률 감소" }),
+    ];
+    const bLooksBetter = kpis.filter((kpi) => kpi.tone === "positive").length >= 2;
 
     if (experimentResultEyebrow) experimentResultEyebrow.textContent = bLooksBetter ? "Variant B 우세" : "결과 요약";
     experimentResultTitle.textContent = bLooksBetter
@@ -599,12 +676,16 @@
       ? "CTA 개선안 적용 후 핵심 행동은 증가하고, 구매 전 이탈 흐름은 감소한 것으로 보입니다. 통계적 유의성 검정은 아직 수행하지 않았습니다."
       : "현재 수집된 데이터만으로는 뚜렷한 우세를 단정하기 어렵습니다. 표본과 기간을 더 확보해 비교해 주세요.";
 
-    const pills = [
-      { label: "전환율", value: formatMetricDelta(cvrDelta, "percent"), cls: cvrClass },
-      { label: "이탈률", value: formatMetricDelta(bounceDelta, "percent"), cls: bounceClass },
-      { label: "클릭률", value: formatMetricDelta(ctrDelta, "percent"), cls: ctrClass },
-    ];
-    experimentResultPills.innerHTML = pills.map((pill) => `<span class="experimentResultPill ${escapeHtml(pill.cls)}"><strong>${escapeHtml(pill.value)}</strong>${escapeHtml(pill.label)}</span>`).join("");
+    experimentResultPills.innerHTML = kpis.map((kpi) => `
+      <span class="experimentResultKpiCard ${escapeHtml(kpi.tone)}" aria-label="${escapeHtml(`${kpi.label} ${kpi.valueText}, ${kpi.caption}`)}">
+        <span class="experimentResultKpiTop">
+          <span class="experimentResultKpiLabel">${escapeHtml(kpi.label)}</span>
+          <span class="experimentResultKpiBadge ${escapeHtml(kpi.tone)}">${escapeHtml(kpi.badgeText)}</span>
+        </span>
+        <strong class="experimentResultKpiValue">${escapeHtml(kpi.valueText)}</strong>
+        <span class="experimentResultKpiCaption">${escapeHtml(kpi.caption)}</span>
+      </span>
+    `).join("");
   }
 
   function renderCountsTable(metrics) {
@@ -723,6 +804,37 @@
     return Date.now();
   }
 
+  function buildPreviewTrend() {
+    const range = getPeriodRange();
+    const now = previewNow();
+    const hour = 60 * 60 * 1000;
+    const day = 24 * hour;
+    const fromTs = typeof range.fromTs === "number" ? range.fromTs : now - (6 * day);
+    const toTs = typeof range.toTs === "number" ? range.toTs : now;
+    const fromDay = new Date(fromTs);
+    fromDay.setHours(0, 0, 0, 0);
+    const toDay = new Date(toTs);
+    toDay.setHours(0, 0, 0, 0);
+    const span = Math.max(hour, toTs - fromTs);
+    const daySpan = Math.max(0, toDay.getTime() - fromDay.getTime());
+    const count = range.bucket === "hour"
+      ? 8
+      : Math.min(30, Math.max(2, Math.floor(daySpan / day) + 1));
+
+    return Array.from({ length: count }, (_, index) => {
+      const ratio = count === 1 ? 0 : index / (count - 1);
+      const ts = range.bucket === "hour"
+        ? fromTs + (span * ratio)
+        : fromDay.getTime() + (index * day);
+      const wave = Math.sin(index / Math.max(1, count - 1) * Math.PI) * 8;
+      return {
+        ts,
+        session_count: Math.round(38 + (index * 4.8) + wave),
+        event_count: Math.round(285 + (index * 34) + (wave * 12)),
+      };
+    });
+  }
+
   function buildDesignPreviewData() {
     const now = previewNow();
     const day = 24 * 60 * 60 * 1000;
@@ -742,11 +854,7 @@
       { summary: { site_id: siteId, session_id: "s_price_compare_7712", duration_ms: 232000, page_views: 7, clicks: 11, depth: 6, max_step: "product", checkout_entered: false, checkout_complete: false, paths: ["/detail/wool-coat", "/detail/wool-coat#delivery"] }, label: { label: "price_sensitive_dropper", confidence: 0.73 } },
       { summary: { site_id: siteId, session_id: "s_purchase_0084", duration_ms: 154000, page_views: 5, clicks: 8, depth: 5, max_step: "purchase", checkout_entered: true, checkout_complete: true, paths: ["/detail/cup", "/cart", "/checkout", "/order-complete"] }, label: { label: "over_explorer", confidence: 0.62 } },
     ];
-    const trend = Array.from({ length: 7 }, (_, index) => ({
-      ts: now - ((6 - index) * day),
-      session_count: [42, 48, 51, 58, 62, 71, 76][index],
-      event_count: [318, 354, 391, 442, 480, 536, 574][index],
-    }));
+    const trend = buildPreviewTrend();
     const eventSummary = {
       ok: true,
       source: "design_preview",
@@ -871,6 +979,12 @@
 
   function getDesignPreviewData() {
     if (!state.designPreviewData) state.designPreviewData = buildDesignPreviewData();
+    const trend = buildPreviewTrend();
+    state.designPreviewData.eventSummary = {
+      ...state.designPreviewData.eventSummary,
+      trend,
+      total_events: trend.reduce((sum, item) => sum + (Number(item.event_count) || 0), 0),
+    };
     return state.designPreviewData;
   }
 
@@ -2132,13 +2246,16 @@
 
     const labels = trend.map((item) => {
       const date = new Date(item.ts);
-      return state.periodPreset === "today"
+      return normalizePeriodPreset(state.periodPreset) === "daily"
         ? date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })
         : date.toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" });
     });
-    const maxAxisLabels = state.periodPreset === "today"
+    const normalizedPreset = normalizePeriodPreset(state.periodPreset);
+    const maxAxisLabels = normalizedPreset === "daily"
       ? (window.innerWidth <= 640 ? 6 : 8)
-      : (window.innerWidth <= 640 ? 5 : 7);
+      : normalizedPreset === "custom"
+        ? (window.innerWidth <= 640 ? 6 : 10)
+        : (window.innerWidth <= 640 ? 5 : 7);
     const axisStep = count <= maxAxisLabels ? 1 : Math.ceil((count - 1) / (maxAxisLabels - 1));
     const axisLabels = labels.map((label, index) => {
       const visible = count <= maxAxisLabels
@@ -2163,13 +2280,13 @@
             return `<line x1="${padX}" y1="${y}" x2="${width - padX}" y2="${y}" stroke="#e8eef6" stroke-width="1" stroke-dasharray="4 5" />`;
           }).join("")}
           <line x1="${padX}" y1="${height - padBottom}" x2="${width - padX}" y2="${height - padBottom}" stroke="#dbe3ef" stroke-width="1" />
-          <polyline fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="${toPolyline(sessions)}"></polyline>
+          <polyline fill="none" stroke="#6366f1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="${toPolyline(sessions)}"></polyline>
           <polyline fill="none" stroke="#14b8a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${toPolyline(events)}"></polyline>
           ${trend.map((item, index) => `
             <g class="trendPointGroup" tabindex="0" data-index="${index}" data-tooltip="${escapeHtml(tooltipHtml(index))}" data-x="${pointX(index)}" data-y="${Math.min(pointY(sessions[index]), pointY(events[index]))}">
               <line class="trendHoverLine" x1="${pointX(index)}" y1="${padTop}" x2="${pointX(index)}" y2="${height - padBottom}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 4" />
-              <circle class="trendHoverPoint" cx="${pointX(index)}" cy="${pointY(sessions[index])}" r="7" fill="rgba(59,130,246,.18)"></circle>
-              <circle cx="${pointX(index)}" cy="${pointY(sessions[index])}" r="4.5" fill="#3b82f6"></circle>
+              <circle class="trendHoverPoint" cx="${pointX(index)}" cy="${pointY(sessions[index])}" r="7" fill="rgba(99,102,241,.18)"></circle>
+              <circle cx="${pointX(index)}" cy="${pointY(sessions[index])}" r="4.5" fill="#6366f1"></circle>
               <circle class="trendHoverPoint" cx="${pointX(index)}" cy="${pointY(events[index])}" r="6" fill="rgba(20,184,166,.18)"></circle>
               <circle cx="${pointX(index)}" cy="${pointY(events[index])}" r="3.8" fill="#14b8a6"></circle>
               <rect class="trendHoverBand" x="${Math.max(0, pointX(index) - (usableWidth / Math.max(count - 1, 1) / 2))}" y="0" width="${Math.max(28, usableWidth / Math.max(count - 1, 1))}" height="${height}" fill="transparent"></rect>
@@ -2511,11 +2628,11 @@
     depthA.textContent = formatMetricValue(metrics.A?.avg_depth, "depth");
     depthB.textContent = formatMetricValue(metrics.B?.avg_depth, "depth");
 
-    setMetricDelta(cvrDelta, { aValue: metrics.A?.cvr, bValue: metrics.B?.cvr, kind: "percent", preferredDirection: "higher", positiveText: "전환 증가", negativeText: "전환 감소" });
-    setMetricDelta(brDelta, { aValue: metrics.A?.bounce_rate, bValue: metrics.B?.bounce_rate, kind: "percent", preferredDirection: "lower", positiveText: "이탈 감소", negativeText: "이탈 증가" });
-    setMetricDelta(durationDelta, { aValue: metrics.A?.avg_duration_ms, bValue: metrics.B?.avg_duration_ms, kind: "duration", preferredDirection: "higher", positiveText: "체류 증가", negativeText: "체류 감소" });
-    setMetricDelta(depthDelta, { aValue: metrics.A?.avg_depth, bValue: metrics.B?.avg_depth, kind: "depth", preferredDirection: "higher", positiveText: "방문 깊이 증가", negativeText: "방문 깊이 감소" });
-    setMetricDelta(ctrDelta, { aValue: metrics.A?.ctr, bValue: metrics.B?.ctr, kind: "percent", preferredDirection: "higher", positiveText: "클릭 증가", negativeText: "클릭 감소" });
+    setMetricDelta(cvrDelta, { aValue: metrics.A?.cvr, bValue: metrics.B?.cvr, kind: "percent", metricLabel: "전환율", preferredDirection: "higher", positiveText: "전환율 증가", negativeText: "전환율 감소" });
+    setMetricDelta(brDelta, { aValue: metrics.A?.bounce_rate, bValue: metrics.B?.bounce_rate, kind: "percent", metricLabel: "이탈률", preferredDirection: "lower", positiveText: "이탈률 개선", negativeText: "이탈률 악화" });
+    setMetricDelta(durationDelta, { aValue: metrics.A?.avg_duration_ms, bValue: metrics.B?.avg_duration_ms, kind: "duration", metricLabel: "평균 체류 시간", preferredDirection: "higher", positiveText: "체류 시간 증가", negativeText: "체류 시간 감소" });
+    setMetricDelta(depthDelta, { aValue: metrics.A?.avg_depth, bValue: metrics.B?.avg_depth, kind: "depth", metricLabel: "평균 방문 페이지 수", preferredDirection: "higher", positiveText: "방문 깊이 증가", negativeText: "방문 깊이 감소" });
+    setMetricDelta(ctrDelta, { aValue: metrics.A?.ctr, bValue: metrics.B?.ctr, kind: "percent", metricLabel: "클릭률", preferredDirection: "higher", positiveText: "클릭률 증가", negativeText: "클릭률 감소" });
 
     countsBox.innerHTML = renderCountsTable(metrics);
 
@@ -3277,16 +3394,86 @@
     });
   }
 
+  function refreshPeriodRangePicker(triggerChange = false) {
+    if (!periodRangePicker) return;
+    const dates = [state.customFromDate, state.customToDate].filter(Boolean);
+    periodRangePicker.setDate(dates, triggerChange);
+  }
+
+  function applyPeriodChange({ shouldRender = true } = {}) {
+    resetGeneratedInsights();
+    renderGeneratedInsightSections();
+    updatePeriodStatus();
+    const range = getPeriodRange();
+    if (shouldRender && (state.periodPreset !== "custom" || (range.fromTs != null && range.toTs != null))) {
+      if (experimentMetricsDialog?.open) experimentMetricsDialog.close();
+      render().catch((e) => alert(String(e)));
+    }
+  }
+
+  function applyPeriodPresetChange(value, options = {}) {
+    state.periodPreset = normalizePeriodPreset(value);
+    applyPeriodChange({ shouldRender: options.shouldRender !== false });
+    if (options.openPicker) {
+      periodRangePicker?.open();
+    }
+  }
+
+  function applyCustomDateRange(fromDate, toDate) {
+    state.periodPreset = "custom";
+    state.customFromDate = toDateInputValue(fromDate);
+    state.customToDate = toDateInputValue(toDate);
+    if (customFromDate) customFromDate.value = state.customFromDate;
+    if (customToDate) customToDate.value = state.customToDate;
+    applyPeriodChange();
+  }
+
+  function initPeriodRangePicker() {
+    if (!periodRangeInput || !window.flatpickr) return;
+    if (periodRangePicker) return;
+    periodRangePicker = window.flatpickr(periodRangeInput, {
+      mode: "range",
+      locale: window.flatpickr.l10ns?.ko || "ko",
+      dateFormat: "Y-m-d",
+      conjunction: " ~ ",
+      showMonths: window.innerWidth <= 640 ? 1 : 2,
+      defaultDate: [state.customFromDate, state.customToDate].filter(Boolean),
+      disableMobile: true,
+      onChange(selectedDates) {
+        if (!Array.isArray(selectedDates) || selectedDates.length !== 2) return;
+        applyCustomDateRange(selectedDates[0], selectedDates[1]);
+      },
+    });
+  }
+
   if (periodPreset) {
     periodPreset.addEventListener("change", () => {
-      state.periodPreset = String(periodPreset.value || "7d");
-      resetGeneratedInsights();
-      renderGeneratedInsightSections();
-      updatePeriodStatus();
-      const range = getPeriodRange();
-      if (state.periodPreset !== "custom" || (range.fromTs != null && range.toTs != null)) {
-        if (experimentMetricsDialog?.open) experimentMetricsDialog.close();
-        render().catch((e) => alert(String(e)));
+      applyPeriodPresetChange(periodPreset.value);
+    });
+  }
+
+  periodPresetButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextPreset = normalizePeriodPreset(button.dataset.periodPreset);
+      applyPeriodPresetChange(nextPreset, { openPicker: nextPreset === "custom" });
+    });
+  });
+
+  if (periodRangeTrigger) {
+    periodRangeTrigger.addEventListener("click", () => {
+      if (state.periodPreset !== "custom") {
+        state.periodPreset = "custom";
+        applyPeriodChange({ shouldRender: false });
+      }
+      periodRangePicker?.open();
+    });
+  }
+
+  if (periodRangeInput) {
+    periodRangeInput.addEventListener("click", () => {
+      if (state.periodPreset !== "custom") {
+        state.periodPreset = "custom";
+        applyPeriodChange({ shouldRender: false });
       }
     });
   }
@@ -3294,9 +3481,8 @@
   if (customFromDate) {
     customFromDate.addEventListener("change", () => {
       state.customFromDate = String(customFromDate.value || "");
-      resetGeneratedInsights();
-      renderGeneratedInsightSections();
-      updatePeriodStatus();
+      refreshPeriodRangePicker(false);
+      applyPeriodChange({ shouldRender: false });
       const range = getPeriodRange();
       if (state.periodPreset === "custom" && range.fromTs != null && range.toTs != null) {
         if (experimentMetricsDialog?.open) experimentMetricsDialog.close();
@@ -3308,9 +3494,8 @@
   if (customToDate) {
     customToDate.addEventListener("change", () => {
       state.customToDate = String(customToDate.value || "");
-      resetGeneratedInsights();
-      renderGeneratedInsightSections();
-      updatePeriodStatus();
+      refreshPeriodRangePicker(false);
+      applyPeriodChange({ shouldRender: false });
       const range = getPeriodRange();
       if (state.periodPreset === "custom" && range.fromTs != null && range.toTs != null) {
         if (experimentMetricsDialog?.open) experimentMetricsDialog.close();
@@ -3608,6 +3793,7 @@
   localStorage.setItem(SITE_STORAGE_KEY, getCurrentSiteId());
   setSiteInUrl(getCurrentSiteId());
   syncPeriodInputs();
+  initPeriodRangePicker();
   updatePeriodStatus();
   updateSiteContextUI();
   updateActiveSidebarFromScroll();

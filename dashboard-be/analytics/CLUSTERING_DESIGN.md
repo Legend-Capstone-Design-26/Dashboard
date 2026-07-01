@@ -35,7 +35,7 @@
 
 ### 2-1. 피처 벡터 (Feature Vector)
 
-각 세션을 숫자 배열로 표현한 것.  
+각 세션을 숫자 배열로 표현한 것.
 `sessionSummary.js`가 이미 아래 피처들을 추출해주고 있다.
 
 ```
@@ -61,7 +61,7 @@
 
 ### 2-2. 피처 정규화 (Min-Max Normalization)
 
-피처들의 단위와 스케일이 다르기 때문에 정규화가 필요하다.  
+피처들의 단위와 스케일이 다르기 때문에 정규화가 필요하다.
 정규화 없이 클러스터링하면 `duration_ms`(0~300,000) 같은 큰 값이 결과를 지배한다.
 
 ```
@@ -69,16 +69,9 @@ normalized = (value - min) / (max - min)
 → 모든 피처를 0~1 범위로 통일
 ```
 
-**가중치 설계 (도메인 기반):**  
-정규화 후 checkout 관련 피처에 추가 가중치를 준다.  
-구매 전환 여부가 유형군을 가르는 가장 강력한 신호이기 때문이다.
-
-```
-checkout_complete      × 2.0
-checkout_entered       × 1.5
-payment_attempt_count  × 1.5
-cart_add_count         × 1.2
-```
+모든 피처는 정규화 후 동등한 가중치(× 1.0)로 처리한다.
+결제 관련 피처에 높은 가중치를 주면 결제 여부로만 클러스터가 분리되어
+탐색형·가격탐색형 등 결제 미진입 유형군이 하나로 뭉치는 문제가 생긴다.
 
 ### 2-3. K-Means 클러스터링
 
@@ -93,7 +86,7 @@ N개의 세션을 K개의 그룹으로 나누는 알고리즘.
 
 ### 2-4. Centroid (무게중심)
 
-클러스터에 속한 세션들의 피처 평균값.  
+클러스터에 속한 세션들의 피처 평균값.
 클러스터를 하나의 대표 벡터로 압축한 것.
 
 ```
@@ -115,7 +108,7 @@ centroid_A = [5.0, 36.7, 3.0, ...]
 
 ### 2-6. 코사인 유사도 (Cosine Similarity)
 
-두 벡터의 방향이 얼마나 같은지 측정. 값이 1에 가까울수록 유사.  
+두 벡터의 방향이 얼마나 같은지 측정. 값이 1에 가까울수록 유사.
 재클러스터링 시 새 centroid가 기존 taxonomy의 어떤 유형과 유사한지 판단하는 데 사용.
 
 ```
@@ -129,7 +122,7 @@ similarity = (A · B) / (|A| × |B|)
 
 ### 2-7. Taxonomy (유형군 목록)
 
-클러스터링 수학 결과와 UX에 노출되는 유형명을 분리하는 레이어.  
+클러스터링 수학 결과와 UX에 노출되는 유형명을 분리하는 레이어.
 K가 바뀌어도 사용자에게 보이는 유형명이 안정적으로 유지되도록 한다.
 
 ```json
@@ -259,20 +252,30 @@ K가 바뀌어도 사용자에게 보이는 유형명이 안정적으로 유지�
 
 ---
 
-## 4. 파일 구조 (구현 예정)
+## 4. 파일 구조
 
 ```
 dashboard-be/
   analytics/
-    labeler.js              ← 기존 rule-base (Phase 1 fallback으로 유지)
-    sessionSummary.js       ← 피처 추출 (기존, 수정 없음)
+    labeler.js                    ← 기존 rule-base (Phase 1 fallback으로 유지)
+    sessionSummary.js             ← 피처 추출 (기존, 수정 없음)
+    clusteringLabeler.js          ← rule-base labeler를 대체하는 새 인터페이스
+                                    Phase 3 실시간 배정(assignToCluster) 포함
+                                    taxonomy 없으면 labeler.js로 fallback
     clustering/
-      featureExtractor.js   ← Redis에서 피처 로드 + 정규화
-      kmeans.js             ← K-Means 실행 + 최적 K 탐색
-      taxonomyMapper.js     ← 신/구 클러스터 매핑 알고리즘
-      clusterAssigner.js    ← 실시간 배정 (Phase 3)
-      clusteringWorker.js   ← Phase 2/4 배치 작업 진입점
-    clusteringLabeler.js    ← rule-base labeler를 대체하는 새 인터페이스
+      featureExtractor.js         ← 피처 벡터 추출 + Min-Max 정규화 + 가중치 적용
+      kmeans.js                   ← K-Means++ 초기화, K-Means 실행, Silhouette/Elbow 기반 최적 K 탐색
+      taxonomyMapper.js           ← 코사인 유사도로 신/구 클러스터 매핑, deprecated 탐지
+      llmNamer.js                 ← 클러스터 프로파일 → LLM 명칭 부여 / 애매한 매핑 판단
+      clusterStore.js             ← taxonomy, normParams, 세션 카운트 Redis 저장/로드
+      clusteringOrchestrator.js   ← Phase 2/4 배치 작업 진입점 (runClustering)
+                                    Cold Start 판단, 최적 K 결정, taxonomy 업데이트 총괄
+
+  workers/
+    event-consumer.js           ← Kafka 이벤트 소비 + Phase 4 트리거
+                                  dwell_time 이벤트(세션 종료 신호) 수신 시
+                                  incrementSessionCount → shouldRecluster 체크 →
+                                  조건 충족 시 runClustering을 await 없이 백그라운드 실행
 ```
 
 ---
