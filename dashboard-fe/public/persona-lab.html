@@ -78,10 +78,56 @@
           <div class="labControlGrid">
             <label class="filterField vertical" for="experimentSelect"><span>실험</span><select id="experimentSelect" class="selectInput"><option value="">불러오는 중…</option></select></label>
             <label class="filterField vertical" for="ageGroupSelect"><span>나이대</span><select id="ageGroupSelect" class="selectInput"><option value="">전체 나이대</option></select></label>
+            <label class="filterField vertical" for="occupationGroupSelect"><span>직업군</span><select id="occupationGroupSelect" class="selectInput"><option value="">전체 직업군</option></select></label>
             <label class="filterField vertical" for="styleSelect"><span>행동 유형</span><select id="styleSelect" class="selectInput"><option value="">전체 유형</option></select></label>
             <label class="filterField vertical" for="personaSelect"><span>대표 페르소나</span><select id="personaSelect" class="selectInput"><option value="">페르소나 선택</option></select></label>
           </div>
+          <div id="matchedAgentSummary" class="matchedAgentSummary" aria-live="polite"></div>
           <div class="summaryHint" id="labStatus">실험실을 초기화하는 중입니다.</div>
+        </section>
+
+        <section class="card overlayLabCard">
+          <div class="overlayBuilderHead">
+            <div>
+              <h2>UI/UX 반응 오버레이</h2>
+              <div class="muted">선택한 페르소나가 variant B 변경에 어떻게 반응할지 전이 multiplier로 생성합니다.</div>
+            </div>
+            <button class="btnPrimary" id="generateOverlayBtn" type="button">오버레이 생성</button>
+          </div>
+          <div id="overlayPreview" class="overlayBuilderPreview"><div class="emptyState compactEmpty">아직 생성된 오버레이가 없습니다.</div></div>
+        </section>
+
+        <section class="card transitionAnalysisCard" aria-labelledby="transitionAnalysisTitle">
+          <div class="cardHead">
+            <div>
+              <h2 id="transitionAnalysisTitle">선택 agent 전이확률 분석</h2>
+              <div class="muted">현재 cohort 필터 기준으로 A안 baseline 전이확률과 B안 변경 후 전이확률을 비교합니다.</div>
+            </div>
+            <button class="btnPrimary" id="analyzeTransitionsBtn" type="button">전이확률 확인하기</button>
+          </div>
+          <div class="summaryHint" id="transitionAnalysisStatus">실험과 cohort 필터를 선택한 뒤 분석하세요.</div>
+          <div id="transitionAnalysisResults" class="transitionAnalysisResults" hidden><div class="emptyState compactEmpty">아직 전이확률 분석 결과가 없습니다.</div></div>
+        </section>
+
+        <section class="card simulationLabCard" aria-labelledby="simulationLabTitle">
+          <div class="cardHead">
+            <div>
+              <h2 id="simulationLabTitle">가상 agent로 돌려보기</h2>
+              <div class="muted">현재 실험과 페르소나 필터를 기준으로 synthetic persona simulation을 실행합니다.</div>
+            </div>
+            <button class="btnPrimary" id="runSimulationBtn" type="button">시뮬레이션 실행</button>
+          </div>
+          <div class="simulationActionRow">
+            <label class="filterField vertical" for="simulationSampleSize">
+              <span>샘플 수</span>
+              <input id="simulationSampleSize" class="selectInput simulationSampleInput" type="number" min="20" max="50000" step="10" value="1000" />
+            </label>
+            <div class="simulationContext" id="simulationContext" aria-live="polite"></div>
+          </div>
+          <div class="summaryHint" id="simulationStatus">실험을 선택한 뒤 샘플 수를 정하고 실행하세요.</div>
+          <div id="simulationResults" class="simulationResults">
+            <div class="emptyState compactEmpty">가상 agent 실행 결과가 아직 없습니다. 결과는 synthetic persona simulation이며 실제 사용자 행동의 증명은 아닙니다.</div>
+          </div>
         </section>
 
         <section class="twoCol personaLabMainGrid">
@@ -104,17 +150,6 @@
             </div>
             <div id="experimentSummary" class="experimentSummaryLab"><div class="emptyState">실험을 선택하세요.</div></div>
           </div>
-        </section>
-
-        <section class="card overlayLabCard">
-          <div class="overlayBuilderHead">
-            <div>
-              <h2>UI/UX 반응 오버레이</h2>
-              <div class="muted">선택한 페르소나가 variant B 변경에 어떻게 반응할지 전이 multiplier로 생성합니다.</div>
-            </div>
-            <button class="btnPrimary" id="generateOverlayBtn" type="button">오버레이 생성</button>
-          </div>
-          <div id="overlayPreview" class="overlayBuilderPreview"><div class="emptyState compactEmpty">아직 생성된 오버레이가 없습니다.</div></div>
         </section>
 
         <section class="card previewLabCard">

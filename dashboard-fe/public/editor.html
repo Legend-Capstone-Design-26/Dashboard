@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>실험 에디터</title>
+  <title>화면 편집기</title>
   <link rel="stylesheet" href="/theme.css" />
   <link rel="stylesheet" href="/editor.css" />
 </head>
@@ -13,12 +13,12 @@
   <header class="topbar">
     <div class="topbarLeft">
       <div class="logo"></div>
-      <span class="topbarTitle">실험 에디터</span>
+      <span class="topbarTitle">화면 편집기</span>
       <div class="seg">
-        <button id="variantABtn" class="segBtn active">원본 (A)</button>
-        <button id="variantBBtn" class="segBtn">변경안 (B)</button>
+        <button id="variantABtn" class="segBtn active">원본 화면 (A)</button>
+        <button id="variantBBtn" class="segBtn">편집 화면 (B)</button>
       </div>
-      <button id="togglePickBtn" class="btnToggle is-on" data-state="on">선택모드 ON</button>
+      <button id="togglePickBtn" class="btnToggle is-on" data-state="on">요소 선택 켜짐</button>
     </div>
     <div class="topbarRight">
       <span class="topbarUser" id="authUserLabel"></span>
@@ -35,14 +35,14 @@
 
         <!-- 대상 설정 -->
         <div class="panelSection">
-          <div class="panelSectionHead">대상 설정</div>
+          <div class="panelSectionHead">편집할 화면 설정</div>
           <div class="fieldRow">
-            <label class="fieldLabel">미리보기 URL</label>
+            <label class="fieldLabel">편집 화면</label>
             <div class="targetSelectRow">
               <select id="targetSelect">
                 <option value="">불러오는 중…</option>
               </select>
-              <button id="editTargetsBtn" class="btnIcon" type="button" title="경로 편집">&#9881;</button>
+              <button id="editTargetsBtn" class="btnIcon" type="button" title="편집 화면 관리">&#9881;</button>
             </div>
           </div>
           <div class="fieldRow">
@@ -54,17 +54,17 @@
             <div class="infoRow" style="padding:10px 12px;"><span class="infoVal mono" id="experimentVersionText">—</span></div>
           </div>
           <div class="fieldRow">
-            <label class="fieldLabel">적용 경로</label>
+            <label class="fieldLabel">실험 적용 경로</label>
             <input id="urlPrefix" type="text" placeholder="예: /checkout" />
           </div>
-          <button id="reloadBtn" class="btnGhost btnBlock">미리보기 새로고침</button>
+          <button id="reloadBtn" class="btnGhost btnBlock">화면 새로고침</button>
         </div>
 
         <!-- 선택한 요소 -->
         <div class="panelSection">
           <div class="panelSectionHead">선택한 요소</div>
           <div class="infoCard">
-            <div class="infoRow"><span class="infoKey">이름</span><span class="infoVal" id="elementNameText">요소를 클릭해 선택하세요</span></div>
+            <div class="infoRow"><span class="infoKey">요소</span><span class="infoVal" id="elementNameText">오른쪽 화면에서 요소를 클릭해 선택하세요</span></div>
             <div class="infoRow"><span class="infoKey">상태</span><span class="infoVal" id="statusText">대기 중</span></div>
             <div class="infoRow"><span class="infoKey">텍스트</span><span class="infoVal" id="textText">—</span></div>
             <div class="infoRow"><span class="infoKey">크기</span><span class="infoVal mono" id="rectText">—</span></div>
@@ -79,15 +79,15 @@
 
         <!-- 변경 만들기 -->
         <div class="panelSection">
-          <div class="panelSectionHead">변경안 (B) 만들기</div>
-          <p class="panelDesc">요소를 클릭한 뒤, 원하는 작업을 선택하세요.</p>
+          <div class="panelSectionHead">편집 내용 만들기</div>
+          <p class="panelDesc">오른쪽 화면에서 요소를 선택한 뒤 바꿀 내용을 고르세요.</p>
 
           <div class="intentGroup" id="intentGroup">
-            <button type="button" class="intentBtn active" data-mode="text">문구 바꾸기</button>
-            <button type="button" class="intentBtn" data-mode="style">스타일 조정</button>
-            <button type="button" class="intentBtn" data-mode="visibility">보이기/숨기기</button>
-            <button type="button" class="intentBtn" data-mode="link">링크 바꾸기</button>
-            <button type="button" class="intentBtn" data-mode="advanced">고급 편집</button>
+            <button type="button" class="intentBtn active" data-mode="text">문구 변경</button>
+            <button type="button" class="intentBtn" data-mode="style">모양 조정</button>
+            <button type="button" class="intentBtn" data-mode="visibility">노출 설정</button>
+            <button type="button" class="intentBtn" data-mode="link">이동 주소 변경</button>
+            <button type="button" class="intentBtn" data-mode="advanced">개발자 편집</button>
           </div>
 
           <!-- 문구 -->
@@ -140,9 +140,9 @@
             <div class="panelHint">링크나 버튼의 이동 주소를 바꿀 때 사용합니다.</div>
           </div>
 
-          <!-- 고급 편집 -->
+          <!-- 개발자 편집 -->
           <details class="techDetails" id="advancedEditorBox" style="display:none;">
-            <summary>고급 편집</summary>
+            <summary>개발자 편집</summary>
             <div class="fieldRow topGap">
               <label class="fieldLabel formLabel">액션</label>
               <select id="actionType">
@@ -175,38 +175,38 @@
 
           <!-- 액션 버튼 -->
           <div class="actionBar">
-            <button id="addChangeBtn" class="btnPrimary btnBlock">변경 추가</button>
+            <button id="addChangeBtn" class="btnPrimary btnBlock">편집 내용 추가</button>
             <div class="actionBarRow">
-              <button id="applyNowBtn" class="btnGhost">미리보기 적용</button>
-              <button id="realApplyBtn" class="btnPrimary">실제 적용 (서버 저장)</button>
+              <button id="applyNowBtn" class="btnGhost">편집 화면 확인</button>
+              <button id="realApplyBtn" class="btnPrimary">실제 저장</button>
             </div>
             <div class="actionBarRow">
               <button id="openRealBtn" class="btnGhost">실제 페이지 열기</button>
-              <button id="clearChangesBtn" class="btnDanger">모두 삭제</button>
+              <button id="clearChangesBtn" class="btnDanger">편집 내용 삭제</button>
             </div>
           </div>
           <div class="panelHint">
-            <b>미리보기 적용</b>: iframe에서만 임시로 확인 (저장 안 됨)<br/>
-            <b>실제 적용</b>: 서버에 저장 → SDK가 방문자에게 A/B 자동 실행
+            <b>편집 화면 확인</b>: 오른쪽 화면에서만 임시로 확인합니다. 저장되지 않습니다.<br/>
+            <b>실제 저장</b>: 서버에 저장해 방문자에게 A/B 실험으로 실행합니다.
           </div>
         </div>
 
         <!-- 변경 요약 -->
         <div class="panelSection">
-          <div class="panelSectionHead">변경 요약</div>
+          <div class="panelSectionHead">편집 내용 요약</div>
           <div id="changesList" class="changes"></div>
         </div>
 
         <!-- 고급 (JSON/디버그) -->
         <details class="panelSection techDetails">
-          <summary>고급 보기 (JSON / 디버그)</summary>
+          <summary>개발자 보기 (JSON / 로그)</summary>
           <div class="advancedBody">
             <div class="actionBarRow" style="margin-bottom:var(--space-2);">
               <button id="exportJsonBtn" class="btnGhost">JSON 내보내기</button>
               <button id="copyJsonBtn" class="btnGhost">복사</button>
             </div>
             <textarea id="jsonBox" class="mono" rows="6" spellcheck="false"></textarea>
-            <div class="panelSectionHead" style="margin-top:var(--space-3);">디버그 로그</div>
+            <div class="panelSectionHead" style="margin-top:var(--space-3);">작업 로그</div>
             <div class="mono logBox" id="logBox"></div>
           </div>
         </details>
@@ -227,8 +227,8 @@
     <div id="editorCopilotRoot" class="copilotCard floatingCopilot is-collapsed">
       <div class="floatingCopilotHead">
         <div>
-          <div class="floatingCopilotTitle">AI 분석 도우미</div>
-          <div class="muted">선택 요소 기준 제안</div>
+          <div class="floatingCopilotTitle">AI 편집 도우미</div>
+          <div class="muted">선택한 요소 기준 제안</div>
         </div>
         <div class="floatingCopilotHeadBtns">
           <button class="iconBtn" type="button" id="editorCopilotToggleBtn" aria-expanded="false">열기</button>
@@ -241,21 +241,21 @@
       </div>
 
       <div class="quickPillRow">
-        <button class="btnGhost" type="button" data-q="지금 선택한 요소 기준으로 Variant B 아이디어를 제안해줘">선택 요소 제안</button>
+        <button class="btnGhost" type="button" data-q="지금 선택한 요소 기준으로 변경안 아이디어를 제안해줘">선택 요소 제안</button>
         <button class="btnGhost" type="button" data-q="현재 페이지 전환을 높이기 위한 실험 초안을 만들어줘">페이지 개선안</button>
-        <button class="btnGhost" type="button" data-q="현재 Variant B 변경을 더 좋게 다듬을 방법을 알려줘">현재 변경 개선</button>
+        <button class="btnGhost" type="button" data-q="현재 편집 내용을 더 좋게 다듬을 방법을 알려줘">현재 편집 개선</button>
       </div>
 
       <div class="chatMessages"></div>
 
       <div class="chatComposer">
         <textarea class="chatInput" rows="3" placeholder="예: 선택한 버튼을 더 잘 눌리게 만들 실험 초안을 제안해줘"></textarea>
-        <button class="btnPrimary chatSendBtn" type="button">보내기</button>
+        <button class="btnPrimary chatSendBtn" type="button">요청하기</button>
       </div>
 
       <div class="chatMetaRow">
         <div class="muted chatStatus">준비 중…</div>
-        <button class="btnGhost" type="button" id="applyImportedDraftBtn" disabled>가져온 초안 적용</button>
+        <button class="btnGhost" type="button" id="applyImportedDraftBtn" disabled>가져온 초안 확인</button>
       </div>
     </div>
   </section>
@@ -264,11 +264,11 @@
   <div id="targetsModal" class="targetsModalBackdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="targetsModalTitle">
     <div class="targetsModalDialog">
       <div class="targetsModalHeader">
-        <span id="targetsModalTitle" class="targetsModalTitle">미리보기 경로 편집</span>
+        <span id="targetsModalTitle" class="targetsModalTitle">편집 화면 관리</span>
         <button id="targetsModalCloseBtn" class="btnIcon" type="button" title="닫기">&#10005;</button>
       </div>
       <div class="targetsModalBody">
-        <p class="targetsModalDesc">운영자 사이트의 실제 경로에 맞게 미리보기 경로를 등록하세요. 저장하면 에디터 드롭다운에 반영됩니다.</p>
+        <p class="targetsModalDesc">운영자 사이트의 실제 경로에 맞게 편집할 화면을 등록하세요. 저장하면 화면 선택 목록에 반영됩니다.</p>
         <table class="targetsTable">
           <thead>
             <tr>
