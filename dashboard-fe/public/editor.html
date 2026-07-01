@@ -70,9 +70,9 @@
             <div class="infoRow"><span class="infoKey">크기</span><span class="infoVal mono" id="rectText">—</span></div>
             <details class="techDetails">
               <summary>기술 정보</summary>
-              <div class="infoRow"><span class="infoKey">Selector</span><span class="infoVal mono" id="selectorText">—</span></div>
+              <div class="infoRow"><span class="infoKey">Selector (공통)</span><span class="infoVal mono" id="selectorText">—</span></div>
+              <div class="infoRow"><span class="infoKey">Selector (개별)</span><span class="infoVal mono" id="uniqueSelectorText">—</span></div>
               <div class="infoRow"><span class="infoKey">Tag</span><span class="infoVal mono" id="tagText">—</span></div>
-              <div class="infoRow"><span class="infoKey">Track ID</span><span class="infoVal mono" id="trackIdText">—</span></div>
             </details>
           </div>
         </div>
@@ -172,6 +172,16 @@
               <textarea id="styleValue" rows="4" placeholder='예: width: 320px; font-size: 18px;'></textarea>
             </div>
           </details>
+
+          <!-- 적용 범위 선택 -->
+          <div class="fieldRow">
+            <label class="fieldLabel">적용 범위</label>
+            <div class="choiceGroup">
+              <label class="choiceCard"><input type="radio" name="applyScope" value="single" checked /> <span>개별 적용</span></label>
+              <label class="choiceCard"><input type="radio" name="applyScope" value="all" /> <span>전체 적용</span></label>
+            </div>
+          </div>
+          <div class="panelHint" id="scopeHint" style="display:none;"></div>
 
           <!-- 액션 버튼 -->
           <div class="actionBar">

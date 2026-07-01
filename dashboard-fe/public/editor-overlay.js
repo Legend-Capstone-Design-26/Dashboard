@@ -219,9 +219,6 @@
   function buildSelector(el) {
     if (!(el instanceof Element)) return null;
 
-    const tid = el.getAttribute("data-track-id");
-    if (tid) return `[data-track-id="${attrEscape(tid)}"]`;
-
     if (el.id) return `#${cssEscape(el.id)}`;
 
     const tag = el.tagName.toLowerCase();
@@ -249,14 +246,49 @@
     return parts.join(" > ");
   }
 
+  // 특정 요소 하나만 정확히 가리키는 selector 생성
+  // 가장 가까운 고유 조상(data-track-id / id)에서 nth-child 경로로 연결
+  function buildUniqueSelector(el) {
+    if (!(el instanceof Element)) return null;
+
+    const parts = [];
+    let cur = el;
+    let depth = 0;
+
+    while (cur && cur.tagName && depth < 10) {
+      const t = cur.tagName.toLowerCase();
+      const parent = cur.parentElement;
+
+      if (!parent) {
+        parts.unshift(t);
+        break;
+      }
+
+      const idx = Array.from(parent.children).indexOf(cur) + 1;
+      parts.unshift(`${t}:nth-child(${idx})`);
+
+      // 부모에 id가 있으면 거기서 멈춤
+      if (parent.id) {
+        parts.unshift(`#${cssEscape(parent.id)}`);
+        break;
+      }
+
+      cur = parent;
+      depth++;
+    }
+
+    return parts.join(" > ");
+  }
+
   function getElementInfo(el) {
     const selector = buildSelector(el);
+    const uniqueSelector = buildUniqueSelector(el);
     const rect = el.getBoundingClientRect();
     const text = (el.innerText || "").trim().slice(0, 120);
     return {
       selector,
+      uniqueSelector,
       tag: el.tagName ? el.tagName.toLowerCase() : null,
-      track_id: el.getAttribute("data-track-id") || null,
       text: text || null,
       rect: { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.width), h: Math.round(rect.height) }
     };

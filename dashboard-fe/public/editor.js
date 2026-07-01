@@ -18,10 +18,12 @@
   const elementNameText = document.getElementById("elementNameText");
   const statusText = document.getElementById("statusText");
   const selectorText = document.getElementById("selectorText");
+  const uniqueSelectorText = document.getElementById("uniqueSelectorText");
   const tagText = document.getElementById("tagText");
-  const trackIdText = document.getElementById("trackIdText");
   const textText = document.getElementById("textText");
   const rectText = document.getElementById("rectText");
+  const scopeHint = document.getElementById("scopeHint");
+  const applyScopeInputs = () => Array.from(document.querySelectorAll('input[name="applyScope"]'));
   const logBox = document.getElementById("logBox");
 
   const actionType = document.getElementById("actionType");
@@ -246,12 +248,39 @@
   function renderSelected(info) {
     elementNameText.textContent = getFriendlyElementName(info);
     selectorText.textContent = info?.selector || "—";
+    if (uniqueSelectorText) {
+      uniqueSelectorText.textContent = info?.uniqueSelector || info?.selector || "—";
+    }
     tagText.textContent = info?.tag || "—";
-    trackIdText.textContent = info?.track_id || "—";
     textText.textContent = info?.text || "—";
     rectText.textContent = info?.rect
       ? `x:${info.rect.x} y:${info.rect.y} w:${info.rect.w} h:${info.rect.h}`
       : "—";
+  }
+
+  function getActiveSelector() {
+    const scope = applyScopeInputs().find((r) => r.checked)?.value || "single";
+    if (scope === "single") {
+      return lastSelected?.uniqueSelector || lastSelected?.selector;
+    }
+    return lastSelected?.selector;
+  }
+
+  function updateScopeHint() {
+    if (!scopeHint || !lastSelected) return;
+    const hasDiff = lastSelected.uniqueSelector &&
+      lastSelected.selector !== lastSelected.uniqueSelector;
+    if (hasDiff) {
+      const scope = applyScopeInputs().find((r) => r.checked)?.value || "single";
+      if (scope === "all") {
+        scopeHint.style.display = "block";
+        scopeHint.textContent = `주의: "${lastSelected.selector}" 와 일치하는 요소가 여러 개일 수 있습니다. 개별 적용으로 바꾸면 이 요소만 변경됩니다.`;
+      } else {
+        scopeHint.style.display = "none";
+      }
+    } else {
+      scopeHint.style.display = "none";
+    }
   }
 
   function prettifyToken(value) {
@@ -283,17 +312,10 @@
       div: "영역"
     };
     const tagLabel = tagLabelMap[tag] || (tag ? `${tag} 요소` : "요소");
-    const readableTrack = prettifyToken(info?.track_id);
     const readableText = truncateText(info?.text, 26);
 
-    if (readableText && (tag === "button" || tag === "a")) {
-      return `"${readableText}" ${tagLabel}`;
-    }
     if (readableText) {
       return `"${readableText}" ${tagLabel}`;
-    }
-    if (readableTrack) {
-      return `${readableTrack} ${tagLabel}`;
     }
     return `선택한 ${tagLabel}`;
   }
@@ -647,7 +669,7 @@
       const value = (actionValue.value || "").trim();
       if (!value) { alert("새 문구를 입력하세요."); return null; }
       return withChangeMeta({
-        selector: lastSelected.selector,
+        selector: getActiveSelector(),
         actions: [{ type: "set_text", value }]
       }, lastSelected);
     }
@@ -656,7 +678,7 @@
       const built = buildStyleObjectFromControls();
       if (!built.ok) { alert(built.reason); return null; }
       return withChangeMeta({
-        selector: lastSelected.selector,
+        selector: getActiveSelector(),
         actions: [{ type: "set_style", styles: built.styles }]
       }, lastSelected);
     }
@@ -664,7 +686,7 @@
     if (currentComposerMode === "visibility") {
       const type = getVisibilityMode();
       return withChangeMeta({
-        selector: lastSelected.selector,
+        selector: getActiveSelector(),
         actions: [{ type }]
       }, lastSelected);
     }
@@ -679,7 +701,7 @@
         actions.push({ type: "set_attr", name: "title", value: label });
       }
       return withChangeMeta({
-        selector: lastSelected.selector,
+        selector: getActiveSelector(),
         actions
       }, lastSelected);
     }
@@ -692,7 +714,7 @@
       return withChangeMeta({ type: "inject_css", css }, lastSelected);
     }
 
-    const selector = lastSelected.selector;
+    const selector = getActiveSelector();
     if (!selector) { alert("selector가 없습니다."); return null; }
 
     if (type === "hide" || type === "show") {
@@ -792,7 +814,6 @@
     const info = {
       selector: change.selector,
       tag: change.tag || null,
-      track_id: change.track_id || null,
       text: change.text || change.element_name || "",
       rect: change.rect || null,
       page: change.page || null,
@@ -1060,6 +1081,10 @@
     btn.addEventListener("click", () => setComposerMode(btn.dataset.mode || "text"));
   });
 
+  applyScopeInputs().forEach((radio) => {
+    radio.addEventListener("change", () => updateScopeHint());
+  });
+
   togglePickBtn.addEventListener("click", () => setPickMode(!pickMode));
   variantABtn.addEventListener("click", () => setVariant("A"));
   variantBBtn.addEventListener("click", () => setVariant("B"));
@@ -1189,6 +1214,7 @@
       lastSelected = data;
       renderSelected(lastSelected);
       updateEditorCopilotMeta();
+      updateScopeHint();
       if (lastSelected.text) actionValue.placeholder = `예: ${lastSelected.text.slice(0, 30)}...`;
       log(`selected -> ${data.selector}`);
       return;
