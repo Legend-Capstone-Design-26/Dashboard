@@ -1,0 +1,2194 @@
+{
+  "artifact_type": "population-segments",
+  "metadata": {
+    "dataset": "nvidia/Nemotron-Personas-Korea",
+    "config": "default",
+    "split": "train",
+    "generated_at": "2026-06-26T18:54:39.442Z",
+    "scanned_row_count": 1000000,
+    "observed_num_rows_total": 1000000,
+    "scan_complete": true,
+    "next_offset": 1000000,
+    "page_length": 100,
+    "features": [
+      {
+        "name": "uuid",
+        "dtype": "string"
+      },
+      {
+        "name": "professional_persona",
+        "dtype": "string"
+      },
+      {
+        "name": "sports_persona",
+        "dtype": "string"
+      },
+      {
+        "name": "arts_persona",
+        "dtype": "string"
+      },
+      {
+        "name": "travel_persona",
+        "dtype": "string"
+      },
+      {
+        "name": "culinary_persona",
+        "dtype": "string"
+      },
+      {
+        "name": "family_persona",
+        "dtype": "string"
+      },
+      {
+        "name": "persona",
+        "dtype": "string"
+      },
+      {
+        "name": "cultural_background",
+        "dtype": "string"
+      },
+      {
+        "name": "skills_and_expertise",
+        "dtype": "string"
+      },
+      {
+        "name": "skills_and_expertise_list",
+        "dtype": "string"
+      },
+      {
+        "name": "hobbies_and_interests",
+        "dtype": "string"
+      },
+      {
+        "name": "hobbies_and_interests_list",
+        "dtype": "string"
+      },
+      {
+        "name": "career_goals_and_ambitions",
+        "dtype": "string"
+      },
+      {
+        "name": "sex",
+        "dtype": "string"
+      },
+      {
+        "name": "age",
+        "dtype": "int64"
+      },
+      {
+        "name": "marital_status",
+        "dtype": "string"
+      },
+      {
+        "name": "military_status",
+        "dtype": "string"
+      },
+      {
+        "name": "family_type",
+        "dtype": "string"
+      },
+      {
+        "name": "housing_type",
+        "dtype": "string"
+      },
+      {
+        "name": "education_level",
+        "dtype": "string"
+      },
+      {
+        "name": "bachelors_field",
+        "dtype": "string"
+      },
+      {
+        "name": "occupation",
+        "dtype": "string"
+      },
+      {
+        "name": "district",
+        "dtype": "string"
+      },
+      {
+        "name": "province",
+        "dtype": "string"
+      },
+      {
+        "name": "country",
+        "dtype": "string"
+      }
+    ]
+  },
+  "segments": [
+    {
+      "group_id": "60plus__retired__brand_loyal",
+      "age_group": "60plus",
+      "occupation_group": "retired",
+      "style_key": "brand_loyal",
+      "population_count": 115542,
+      "population_weight": 0.115542
+    },
+    {
+      "group_id": "60plus__retired__comparison",
+      "age_group": "60plus",
+      "occupation_group": "retired",
+      "style_key": "comparison",
+      "population_count": 66673,
+      "population_weight": 0.066673
+    },
+    {
+      "group_id": "50s__other__brand_loyal",
+      "age_group": "50s",
+      "occupation_group": "other",
+      "style_key": "brand_loyal",
+      "population_count": 45606,
+      "population_weight": 0.045606
+    },
+    {
+      "group_id": "50s__other__comparison",
+      "age_group": "50s",
+      "occupation_group": "other",
+      "style_key": "comparison",
+      "population_count": 37332,
+      "population_weight": 0.037332
+    },
+    {
+      "group_id": "40s__other__brand_loyal",
+      "age_group": "40s",
+      "occupation_group": "other",
+      "style_key": "brand_loyal",
+      "population_count": 36354,
+      "population_weight": 0.036354
+    },
+    {
+      "group_id": "40s__other__comparison",
+      "age_group": "40s",
+      "occupation_group": "other",
+      "style_key": "comparison",
+      "population_count": 33550,
+      "population_weight": 0.03355
+    },
+    {
+      "group_id": "30s__other__comparison",
+      "age_group": "30s",
+      "occupation_group": "other",
+      "style_key": "comparison",
+      "population_count": 29478,
+      "population_weight": 0.029478
+    },
+    {
+      "group_id": "30s__other__brand_loyal",
+      "age_group": "30s",
+      "occupation_group": "other",
+      "style_key": "brand_loyal",
+      "population_count": 27094,
+      "population_weight": 0.027094
+    },
+    {
+      "group_id": "60plus__laborer__brand_loyal",
+      "age_group": "60plus",
+      "occupation_group": "laborer",
+      "style_key": "brand_loyal",
+      "population_count": 26630,
+      "population_weight": 0.02663
+    },
+    {
+      "group_id": "60plus__other__brand_loyal",
+      "age_group": "60plus",
+      "occupation_group": "other",
+      "style_key": "brand_loyal",
+      "population_count": 23097,
+      "population_weight": 0.023097
+    },
+    {
+      "group_id": "20s__student__comparison",
+      "age_group": "20s",
+      "occupation_group": "student",
+      "style_key": "comparison",
+      "population_count": 22512,
+      "population_weight": 0.022512
+    },
+    {
+      "group_id": "20s__student__brand_loyal",
+      "age_group": "20s",
+      "occupation_group": "student",
+      "style_key": "brand_loyal",
+      "population_count": 22272,
+      "population_weight": 0.022272
+    },
+    {
+      "group_id": "50s__laborer__brand_loyal",
+      "age_group": "50s",
+      "occupation_group": "laborer",
+      "style_key": "brand_loyal",
+      "population_count": 16189,
+      "population_weight": 0.016189
+    },
+    {
+      "group_id": "30s__office_worker__comparison",
+      "age_group": "30s",
+      "occupation_group": "office_worker",
+      "style_key": "comparison",
+      "population_count": 14371,
+      "population_weight": 0.014371
+    },
+    {
+      "group_id": "60plus__service_worker__brand_loyal",
+      "age_group": "60plus",
+      "occupation_group": "service_worker",
+      "style_key": "brand_loyal",
+      "population_count": 13088,
+      "population_weight": 0.013088
+    },
+    {
+      "group_id": "50s__service_worker__brand_loyal",
+      "age_group": "50s",
+      "occupation_group": "service_worker",
+      "style_key": "brand_loyal",
+      "population_count": 12717,
+      "population_weight": 0.012717
+    },
+    {
+      "group_id": "20s__other__brand_loyal",
+      "age_group": "20s",
+      "occupation_group": "other",
+      "style_key": "brand_loyal",
+      "population_count": 12642,
+      "population_weight": 0.012642
+    },
+    {
+      "group_id": "40s__office_worker__comparison",
+      "age_group": "40s",
+      "occupation_group": "office_worker",
+      "style_key": "comparison",
+      "population_count": 12588,
+      "population_weight": 0.012588
+    },
+    {
+      "group_id": "40s__office_worker__brand_loyal",
+      "age_group": "40s",
+      "occupation_group": "office_worker",
+      "style_key": "brand_loyal",
+      "population_count": 11708,
+      "population_weight": 0.011708
+    },
+    {
+      "group_id": "60plus__laborer__comparison",
+      "age_group": "60plus",
+      "occupation_group": "laborer",
+      "style_key": "comparison",
+      "population_count": 11612,
+      "population_weight": 0.011612
+    },
+    {
+      "group_id": "30s__office_worker__brand_loyal",
+      "age_group": "30s",
+      "occupation_group": "office_worker",
+      "style_key": "brand_loyal",
+      "population_count": 11020,
+      "population_weight": 0.01102
+    },
+    {
+      "group_id": "50s__office_worker__comparison",
+      "age_group": "50s",
+      "occupation_group": "office_worker",
+      "style_key": "comparison",
+      "population_count": 10591,
+      "population_weight": 0.010591
+    },
+    {
+      "group_id": "50s__laborer__comparison",
+      "age_group": "50s",
+      "occupation_group": "laborer",
+      "style_key": "comparison",
+      "population_count": 10284,
+      "population_weight": 0.010284
+    },
+    {
+      "group_id": "50s__office_worker__brand_loyal",
+      "age_group": "50s",
+      "occupation_group": "office_worker",
+      "style_key": "brand_loyal",
+      "population_count": 10256,
+      "population_weight": 0.010256
+    },
+    {
+      "group_id": "20s__other__comparison",
+      "age_group": "20s",
+      "occupation_group": "other",
+      "style_key": "comparison",
+      "population_count": 10037,
+      "population_weight": 0.010037
+    },
+    {
+      "group_id": "40s__laborer__brand_loyal",
+      "age_group": "40s",
+      "occupation_group": "laborer",
+      "style_key": "brand_loyal",
+      "population_count": 9532,
+      "population_weight": 0.009532
+    },
+    {
+      "group_id": "60plus__other__comparison",
+      "age_group": "60plus",
+      "occupation_group": "other",
+      "style_key": "comparison",
+      "population_count": 9400,
+      "population_weight": 0.0094
+    },
+    {
+      "group_id": "40s__service_worker__brand_loyal",
+      "age_group": "40s",
+      "occupation_group": "service_worker",
+      "style_key": "brand_loyal",
+      "population_count": 9317,
+      "population_weight": 0.009317
+    },
+    {
+      "group_id": "40s__professional__brand_loyal",
+      "age_group": "40s",
+      "occupation_group": "professional",
+      "style_key": "brand_loyal",
+      "population_count": 8966,
+      "population_weight": 0.008966
+    },
+    {
+      "group_id": "30s__professional__comparison",
+      "age_group": "30s",
+      "occupation_group": "professional",
+      "style_key": "comparison",
+      "population_count": 8186,
+      "population_weight": 0.008186
+    },
+    {
+      "group_id": "30s__professional__brand_loyal",
+      "age_group": "30s",
+      "occupation_group": "professional",
+      "style_key": "brand_loyal",
+      "population_count": 8111,
+      "population_weight": 0.008111
+    },
+    {
+      "group_id": "20s__office_worker__comparison",
+      "age_group": "20s",
+      "occupation_group": "office_worker",
+      "style_key": "comparison",
+      "population_count": 8006,
+      "population_weight": 0.008006
+    },
+    {
+      "group_id": "60plus__retired__price_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "retired",
+      "style_key": "price_sensitive",
+      "population_count": 7904,
+      "population_weight": 0.007904
+    },
+    {
+      "group_id": "40s__professional__comparison",
+      "age_group": "40s",
+      "occupation_group": "professional",
+      "style_key": "comparison",
+      "population_count": 7750,
+      "population_weight": 0.00775
+    },
+    {
+      "group_id": "50s__professional__brand_loyal",
+      "age_group": "50s",
+      "occupation_group": "professional",
+      "style_key": "brand_loyal",
+      "population_count": 7400,
+      "population_weight": 0.0074
+    },
+    {
+      "group_id": "50s__service_worker__comparison",
+      "age_group": "50s",
+      "occupation_group": "service_worker",
+      "style_key": "comparison",
+      "population_count": 7110,
+      "population_weight": 0.00711
+    },
+    {
+      "group_id": "30s__service_worker__brand_loyal",
+      "age_group": "30s",
+      "occupation_group": "service_worker",
+      "style_key": "brand_loyal",
+      "population_count": 7015,
+      "population_weight": 0.007015
+    },
+    {
+      "group_id": "20s__office_worker__brand_loyal",
+      "age_group": "20s",
+      "occupation_group": "office_worker",
+      "style_key": "brand_loyal",
+      "population_count": 6717,
+      "population_weight": 0.006717
+    },
+    {
+      "group_id": "20s__student__impulsive",
+      "age_group": "20s",
+      "occupation_group": "student",
+      "style_key": "impulsive",
+      "population_count": 6482,
+      "population_weight": 0.006482
+    },
+    {
+      "group_id": "40s__service_worker__comparison",
+      "age_group": "40s",
+      "occupation_group": "service_worker",
+      "style_key": "comparison",
+      "population_count": 6119,
+      "population_weight": 0.006119
+    },
+    {
+      "group_id": "40s__laborer__comparison",
+      "age_group": "40s",
+      "occupation_group": "laborer",
+      "style_key": "comparison",
+      "population_count": 6086,
+      "population_weight": 0.006086
+    },
+    {
+      "group_id": "20s__service_worker__brand_loyal",
+      "age_group": "20s",
+      "occupation_group": "service_worker",
+      "style_key": "brand_loyal",
+      "population_count": 5978,
+      "population_weight": 0.005978
+    },
+    {
+      "group_id": "60plus__retired__impulsive",
+      "age_group": "60plus",
+      "occupation_group": "retired",
+      "style_key": "impulsive",
+      "population_count": 5905,
+      "population_weight": 0.005905
+    },
+    {
+      "group_id": "20s__student__review_oriented",
+      "age_group": "20s",
+      "occupation_group": "student",
+      "style_key": "review_oriented",
+      "population_count": 5873,
+      "population_weight": 0.005873
+    },
+    {
+      "group_id": "50s__professional__comparison",
+      "age_group": "50s",
+      "occupation_group": "professional",
+      "style_key": "comparison",
+      "population_count": 5854,
+      "population_weight": 0.005854
+    },
+    {
+      "group_id": "60plus__retired__review_oriented",
+      "age_group": "60plus",
+      "occupation_group": "retired",
+      "style_key": "review_oriented",
+      "population_count": 5838,
+      "population_weight": 0.005838
+    },
+    {
+      "group_id": "30s__other__review_oriented",
+      "age_group": "30s",
+      "occupation_group": "other",
+      "style_key": "review_oriented",
+      "population_count": 5684,
+      "population_weight": 0.005684
+    },
+    {
+      "group_id": "30s__laborer__brand_loyal",
+      "age_group": "30s",
+      "occupation_group": "laborer",
+      "style_key": "brand_loyal",
+      "population_count": 5559,
+      "population_weight": 0.005559
+    },
+    {
+      "group_id": "40s__other__review_oriented",
+      "age_group": "40s",
+      "occupation_group": "other",
+      "style_key": "review_oriented",
+      "population_count": 5491,
+      "population_weight": 0.005491
+    },
+    {
+      "group_id": "60plus__service_worker__comparison",
+      "age_group": "60plus",
+      "occupation_group": "service_worker",
+      "style_key": "comparison",
+      "population_count": 5363,
+      "population_weight": 0.005363
+    },
+    {
+      "group_id": "50s__other__review_oriented",
+      "age_group": "50s",
+      "occupation_group": "other",
+      "style_key": "review_oriented",
+      "population_count": 5301,
+      "population_weight": 0.005301
+    },
+    {
+      "group_id": "30s__service_worker__comparison",
+      "age_group": "30s",
+      "occupation_group": "service_worker",
+      "style_key": "comparison",
+      "population_count": 5236,
+      "population_weight": 0.005236
+    },
+    {
+      "group_id": "60plus__office_worker__comparison",
+      "age_group": "60plus",
+      "occupation_group": "office_worker",
+      "style_key": "comparison",
+      "population_count": 4876,
+      "population_weight": 0.004876
+    },
+    {
+      "group_id": "50s__other__impulsive",
+      "age_group": "50s",
+      "occupation_group": "other",
+      "style_key": "impulsive",
+      "population_count": 4787,
+      "population_weight": 0.004787
+    },
+    {
+      "group_id": "60plus__office_worker__brand_loyal",
+      "age_group": "60plus",
+      "occupation_group": "office_worker",
+      "style_key": "brand_loyal",
+      "population_count": 4541,
+      "population_weight": 0.004541
+    },
+    {
+      "group_id": "40s__other__impulsive",
+      "age_group": "40s",
+      "occupation_group": "other",
+      "style_key": "impulsive",
+      "population_count": 4463,
+      "population_weight": 0.004463
+    },
+    {
+      "group_id": "20s__professional__brand_loyal",
+      "age_group": "20s",
+      "occupation_group": "professional",
+      "style_key": "brand_loyal",
+      "population_count": 4445,
+      "population_weight": 0.004445
+    },
+    {
+      "group_id": "20s__other__impulsive",
+      "age_group": "20s",
+      "occupation_group": "other",
+      "style_key": "impulsive",
+      "population_count": 4172,
+      "population_weight": 0.004172
+    },
+    {
+      "group_id": "30s__laborer__comparison",
+      "age_group": "30s",
+      "occupation_group": "laborer",
+      "style_key": "comparison",
+      "population_count": 4119,
+      "population_weight": 0.004119
+    },
+    {
+      "group_id": "20s__service_worker__comparison",
+      "age_group": "20s",
+      "occupation_group": "service_worker",
+      "style_key": "comparison",
+      "population_count": 4106,
+      "population_weight": 0.004106
+    },
+    {
+      "group_id": "20s__laborer__brand_loyal",
+      "age_group": "20s",
+      "occupation_group": "laborer",
+      "style_key": "brand_loyal",
+      "population_count": 3824,
+      "population_weight": 0.003824
+    },
+    {
+      "group_id": "20s__professional__comparison",
+      "age_group": "20s",
+      "occupation_group": "professional",
+      "style_key": "comparison",
+      "population_count": 3756,
+      "population_weight": 0.003756
+    },
+    {
+      "group_id": "30s__other__impulsive",
+      "age_group": "30s",
+      "occupation_group": "other",
+      "style_key": "impulsive",
+      "population_count": 3600,
+      "population_weight": 0.0036
+    },
+    {
+      "group_id": "60plus__professional__brand_loyal",
+      "age_group": "60plus",
+      "occupation_group": "professional",
+      "style_key": "brand_loyal",
+      "population_count": 2987,
+      "population_weight": 0.002987
+    },
+    {
+      "group_id": "20s__other__review_oriented",
+      "age_group": "20s",
+      "occupation_group": "other",
+      "style_key": "review_oriented",
+      "population_count": 2963,
+      "population_weight": 0.002963
+    },
+    {
+      "group_id": "50s__other__price_sensitive",
+      "age_group": "50s",
+      "occupation_group": "other",
+      "style_key": "price_sensitive",
+      "population_count": 2820,
+      "population_weight": 0.00282
+    },
+    {
+      "group_id": "60plus__laborer__impulsive",
+      "age_group": "60plus",
+      "occupation_group": "laborer",
+      "style_key": "impulsive",
+      "population_count": 2581,
+      "population_weight": 0.002581
+    },
+    {
+      "group_id": "20s__laborer__comparison",
+      "age_group": "20s",
+      "occupation_group": "laborer",
+      "style_key": "comparison",
+      "population_count": 2394,
+      "population_weight": 0.002394
+    },
+    {
+      "group_id": "30s__office_worker__review_oriented",
+      "age_group": "30s",
+      "occupation_group": "office_worker",
+      "style_key": "review_oriented",
+      "population_count": 2348,
+      "population_weight": 0.002348
+    },
+    {
+      "group_id": "60plus__caregiver__brand_loyal",
+      "age_group": "60plus",
+      "occupation_group": "caregiver",
+      "style_key": "brand_loyal",
+      "population_count": 2181,
+      "population_weight": 0.002181
+    },
+    {
+      "group_id": "50s__laborer__impulsive",
+      "age_group": "50s",
+      "occupation_group": "laborer",
+      "style_key": "impulsive",
+      "population_count": 2159,
+      "population_weight": 0.002159
+    },
+    {
+      "group_id": "60plus__professional__comparison",
+      "age_group": "60plus",
+      "occupation_group": "professional",
+      "style_key": "comparison",
+      "population_count": 2105,
+      "population_weight": 0.002105
+    },
+    {
+      "group_id": "40s__other__price_sensitive",
+      "age_group": "40s",
+      "occupation_group": "other",
+      "style_key": "price_sensitive",
+      "population_count": 2101,
+      "population_weight": 0.002101
+    },
+    {
+      "group_id": "60plus__other__impulsive",
+      "age_group": "60plus",
+      "occupation_group": "other",
+      "style_key": "impulsive",
+      "population_count": 2055,
+      "population_weight": 0.002055
+    },
+    {
+      "group_id": "60plus__retired__fast_decision",
+      "age_group": "60plus",
+      "occupation_group": "retired",
+      "style_key": "fast_decision",
+      "population_count": 2041,
+      "population_weight": 0.002041
+    },
+    {
+      "group_id": "20s__office_worker__impulsive",
+      "age_group": "20s",
+      "occupation_group": "office_worker",
+      "style_key": "impulsive",
+      "population_count": 1909,
+      "population_weight": 0.001909
+    },
+    {
+      "group_id": "20s__professional__impulsive",
+      "age_group": "20s",
+      "occupation_group": "professional",
+      "style_key": "impulsive",
+      "population_count": 1905,
+      "population_weight": 0.001905
+    },
+    {
+      "group_id": "30s__professional__review_oriented",
+      "age_group": "30s",
+      "occupation_group": "professional",
+      "style_key": "review_oriented",
+      "population_count": 1889,
+      "population_weight": 0.001889
+    },
+    {
+      "group_id": "50s__laborer__review_oriented",
+      "age_group": "50s",
+      "occupation_group": "laborer",
+      "style_key": "review_oriented",
+      "population_count": 1804,
+      "population_weight": 0.001804
+    },
+    {
+      "group_id": "40s__professional__impulsive",
+      "age_group": "40s",
+      "occupation_group": "professional",
+      "style_key": "impulsive",
+      "population_count": 1785,
+      "population_weight": 0.001785
+    },
+    {
+      "group_id": "40s__office_worker__review_oriented",
+      "age_group": "40s",
+      "occupation_group": "office_worker",
+      "style_key": "review_oriented",
+      "population_count": 1762,
+      "population_weight": 0.001762
+    },
+    {
+      "group_id": "30s__professional__impulsive",
+      "age_group": "30s",
+      "occupation_group": "professional",
+      "style_key": "impulsive",
+      "population_count": 1749,
+      "population_weight": 0.001749
+    },
+    {
+      "group_id": "20s__student__price_sensitive",
+      "age_group": "20s",
+      "occupation_group": "student",
+      "style_key": "price_sensitive",
+      "population_count": 1715,
+      "population_weight": 0.001715
+    },
+    {
+      "group_id": "20s__service_worker__impulsive",
+      "age_group": "20s",
+      "occupation_group": "service_worker",
+      "style_key": "impulsive",
+      "population_count": 1713,
+      "population_weight": 0.001713
+    },
+    {
+      "group_id": "40s__self_employed__brand_loyal",
+      "age_group": "40s",
+      "occupation_group": "self_employed",
+      "style_key": "brand_loyal",
+      "population_count": 1691,
+      "population_weight": 0.001691
+    },
+    {
+      "group_id": "50s__self_employed__brand_loyal",
+      "age_group": "50s",
+      "occupation_group": "self_employed",
+      "style_key": "brand_loyal",
+      "population_count": 1662,
+      "population_weight": 0.001662
+    },
+    {
+      "group_id": "60plus__other__shipping_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "other",
+      "style_key": "shipping_sensitive",
+      "population_count": 1615,
+      "population_weight": 0.001615
+    },
+    {
+      "group_id": "40s__professional__review_oriented",
+      "age_group": "40s",
+      "occupation_group": "professional",
+      "style_key": "review_oriented",
+      "population_count": 1557,
+      "population_weight": 0.001557
+    },
+    {
+      "group_id": "60plus__laborer__review_oriented",
+      "age_group": "60plus",
+      "occupation_group": "laborer",
+      "style_key": "review_oriented",
+      "population_count": 1550,
+      "population_weight": 0.00155
+    },
+    {
+      "group_id": "20s__office_worker__review_oriented",
+      "age_group": "20s",
+      "occupation_group": "office_worker",
+      "style_key": "review_oriented",
+      "population_count": 1545,
+      "population_weight": 0.001545
+    },
+    {
+      "group_id": "50s__other__shipping_sensitive",
+      "age_group": "50s",
+      "occupation_group": "other",
+      "style_key": "shipping_sensitive",
+      "population_count": 1517,
+      "population_weight": 0.001517
+    },
+    {
+      "group_id": "60plus__other__review_oriented",
+      "age_group": "60plus",
+      "occupation_group": "other",
+      "style_key": "review_oriented",
+      "population_count": 1408,
+      "population_weight": 0.001408
+    },
+    {
+      "group_id": "30s__office_worker__impulsive",
+      "age_group": "30s",
+      "occupation_group": "office_worker",
+      "style_key": "impulsive",
+      "population_count": 1398,
+      "population_weight": 0.001398
+    },
+    {
+      "group_id": "40s__office_worker__impulsive",
+      "age_group": "40s",
+      "occupation_group": "office_worker",
+      "style_key": "impulsive",
+      "population_count": 1390,
+      "population_weight": 0.00139
+    },
+    {
+      "group_id": "40s__laborer__review_oriented",
+      "age_group": "40s",
+      "occupation_group": "laborer",
+      "style_key": "review_oriented",
+      "population_count": 1375,
+      "population_weight": 0.001375
+    },
+    {
+      "group_id": "20s__service_worker__review_oriented",
+      "age_group": "20s",
+      "occupation_group": "service_worker",
+      "style_key": "review_oriented",
+      "population_count": 1296,
+      "population_weight": 0.001296
+    },
+    {
+      "group_id": "30s__other__price_sensitive",
+      "age_group": "30s",
+      "occupation_group": "other",
+      "style_key": "price_sensitive",
+      "population_count": 1283,
+      "population_weight": 0.001283
+    },
+    {
+      "group_id": "50s__service_worker__review_oriented",
+      "age_group": "50s",
+      "occupation_group": "service_worker",
+      "style_key": "review_oriented",
+      "population_count": 1260,
+      "population_weight": 0.00126
+    },
+    {
+      "group_id": "20s__laborer__impulsive",
+      "age_group": "20s",
+      "occupation_group": "laborer",
+      "style_key": "impulsive",
+      "population_count": 1243,
+      "population_weight": 0.001243
+    },
+    {
+      "group_id": "40s__service_worker__review_oriented",
+      "age_group": "40s",
+      "occupation_group": "service_worker",
+      "style_key": "review_oriented",
+      "population_count": 1239,
+      "population_weight": 0.001239
+    },
+    {
+      "group_id": "40s__other__fast_decision",
+      "age_group": "40s",
+      "occupation_group": "other",
+      "style_key": "fast_decision",
+      "population_count": 1237,
+      "population_weight": 0.001237
+    },
+    {
+      "group_id": "50s__service_worker__impulsive",
+      "age_group": "50s",
+      "occupation_group": "service_worker",
+      "style_key": "impulsive",
+      "population_count": 1234,
+      "population_weight": 0.001234
+    },
+    {
+      "group_id": "30s__service_worker__review_oriented",
+      "age_group": "30s",
+      "occupation_group": "service_worker",
+      "style_key": "review_oriented",
+      "population_count": 1209,
+      "population_weight": 0.001209
+    },
+    {
+      "group_id": "40s__laborer__impulsive",
+      "age_group": "40s",
+      "occupation_group": "laborer",
+      "style_key": "impulsive",
+      "population_count": 1203,
+      "population_weight": 0.001203
+    },
+    {
+      "group_id": "50s__other__fast_decision",
+      "age_group": "50s",
+      "occupation_group": "other",
+      "style_key": "fast_decision",
+      "population_count": 1197,
+      "population_weight": 0.001197
+    },
+    {
+      "group_id": "60plus__laborer__shipping_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "laborer",
+      "style_key": "shipping_sensitive",
+      "population_count": 1195,
+      "population_weight": 0.001195
+    },
+    {
+      "group_id": "50s__professional__impulsive",
+      "age_group": "50s",
+      "occupation_group": "professional",
+      "style_key": "impulsive",
+      "population_count": 1163,
+      "population_weight": 0.001163
+    },
+    {
+      "group_id": "60plus__caregiver__comparison",
+      "age_group": "60plus",
+      "occupation_group": "caregiver",
+      "style_key": "comparison",
+      "population_count": 1149,
+      "population_weight": 0.001149
+    },
+    {
+      "group_id": "30s__other__fast_decision",
+      "age_group": "30s",
+      "occupation_group": "other",
+      "style_key": "fast_decision",
+      "population_count": 1136,
+      "population_weight": 0.001136
+    },
+    {
+      "group_id": "50s__office_worker__review_oriented",
+      "age_group": "50s",
+      "occupation_group": "office_worker",
+      "style_key": "review_oriented",
+      "population_count": 1134,
+      "population_weight": 0.001134
+    },
+    {
+      "group_id": "20s__student__fast_decision",
+      "age_group": "20s",
+      "occupation_group": "student",
+      "style_key": "fast_decision",
+      "population_count": 1113,
+      "population_weight": 0.001113
+    },
+    {
+      "group_id": "40s__service_worker__impulsive",
+      "age_group": "40s",
+      "occupation_group": "service_worker",
+      "style_key": "impulsive",
+      "population_count": 1074,
+      "population_weight": 0.001074
+    },
+    {
+      "group_id": "50s__laborer__shipping_sensitive",
+      "age_group": "50s",
+      "occupation_group": "laborer",
+      "style_key": "shipping_sensitive",
+      "population_count": 1065,
+      "population_weight": 0.001065
+    },
+    {
+      "group_id": "20s__professional__review_oriented",
+      "age_group": "20s",
+      "occupation_group": "professional",
+      "style_key": "review_oriented",
+      "population_count": 1062,
+      "population_weight": 0.001062
+    },
+    {
+      "group_id": "30s__laborer__review_oriented",
+      "age_group": "30s",
+      "occupation_group": "laborer",
+      "style_key": "review_oriented",
+      "population_count": 1056,
+      "population_weight": 0.001056
+    },
+    {
+      "group_id": "40s__other__shipping_sensitive",
+      "age_group": "40s",
+      "occupation_group": "other",
+      "style_key": "shipping_sensitive",
+      "population_count": 1051,
+      "population_weight": 0.001051
+    },
+    {
+      "group_id": "50s__professional__review_oriented",
+      "age_group": "50s",
+      "occupation_group": "professional",
+      "style_key": "review_oriented",
+      "population_count": 1007,
+      "population_weight": 0.001007
+    },
+    {
+      "group_id": "30s__self_employed__brand_loyal",
+      "age_group": "30s",
+      "occupation_group": "self_employed",
+      "style_key": "brand_loyal",
+      "population_count": 1002,
+      "population_weight": 0.001002
+    },
+    {
+      "group_id": "50s__office_worker__impulsive",
+      "age_group": "50s",
+      "occupation_group": "office_worker",
+      "style_key": "impulsive",
+      "population_count": 988,
+      "population_weight": 0.000988
+    },
+    {
+      "group_id": "50s__caregiver__brand_loyal",
+      "age_group": "50s",
+      "occupation_group": "caregiver",
+      "style_key": "brand_loyal",
+      "population_count": 983,
+      "population_weight": 0.000983
+    },
+    {
+      "group_id": "60plus__retired__shipping_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "retired",
+      "style_key": "shipping_sensitive",
+      "population_count": 976,
+      "population_weight": 0.000976
+    },
+    {
+      "group_id": "50s__caregiver__comparison",
+      "age_group": "50s",
+      "occupation_group": "caregiver",
+      "style_key": "comparison",
+      "population_count": 915,
+      "population_weight": 0.000915
+    },
+    {
+      "group_id": "60plus__service_worker__review_oriented",
+      "age_group": "60plus",
+      "occupation_group": "service_worker",
+      "style_key": "review_oriented",
+      "population_count": 849,
+      "population_weight": 0.000849
+    },
+    {
+      "group_id": "30s__service_worker__impulsive",
+      "age_group": "30s",
+      "occupation_group": "service_worker",
+      "style_key": "impulsive",
+      "population_count": 839,
+      "population_weight": 0.000839
+    },
+    {
+      "group_id": "60plus__service_worker__impulsive",
+      "age_group": "60plus",
+      "occupation_group": "service_worker",
+      "style_key": "impulsive",
+      "population_count": 824,
+      "population_weight": 0.000824
+    },
+    {
+      "group_id": "20s__laborer__review_oriented",
+      "age_group": "20s",
+      "occupation_group": "laborer",
+      "style_key": "review_oriented",
+      "population_count": 779,
+      "population_weight": 0.000779
+    },
+    {
+      "group_id": "40s__self_employed__comparison",
+      "age_group": "40s",
+      "occupation_group": "self_employed",
+      "style_key": "comparison",
+      "population_count": 765,
+      "population_weight": 0.000765
+    },
+    {
+      "group_id": "40s__office_worker__price_sensitive",
+      "age_group": "40s",
+      "occupation_group": "office_worker",
+      "style_key": "price_sensitive",
+      "population_count": 763,
+      "population_weight": 0.000763
+    },
+    {
+      "group_id": "60plus__service_worker__price_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "service_worker",
+      "style_key": "price_sensitive",
+      "population_count": 731,
+      "population_weight": 0.000731
+    },
+    {
+      "group_id": "30s__office_worker__price_sensitive",
+      "age_group": "30s",
+      "occupation_group": "office_worker",
+      "style_key": "price_sensitive",
+      "population_count": 725,
+      "population_weight": 0.000725
+    },
+    {
+      "group_id": "30s__other__shipping_sensitive",
+      "age_group": "30s",
+      "occupation_group": "other",
+      "style_key": "shipping_sensitive",
+      "population_count": 706,
+      "population_weight": 0.000706
+    },
+    {
+      "group_id": "40s__laborer__shipping_sensitive",
+      "age_group": "40s",
+      "occupation_group": "laborer",
+      "style_key": "shipping_sensitive",
+      "population_count": 697,
+      "population_weight": 0.000697
+    },
+    {
+      "group_id": "50s__service_worker__price_sensitive",
+      "age_group": "50s",
+      "occupation_group": "service_worker",
+      "style_key": "price_sensitive",
+      "population_count": 680,
+      "population_weight": 0.00068
+    },
+    {
+      "group_id": "30s__self_employed__comparison",
+      "age_group": "30s",
+      "occupation_group": "self_employed",
+      "style_key": "comparison",
+      "population_count": 678,
+      "population_weight": 0.000678
+    },
+    {
+      "group_id": "50s__self_employed__comparison",
+      "age_group": "50s",
+      "occupation_group": "self_employed",
+      "style_key": "comparison",
+      "population_count": 660,
+      "population_weight": 0.00066
+    },
+    {
+      "group_id": "30s__laborer__impulsive",
+      "age_group": "30s",
+      "occupation_group": "laborer",
+      "style_key": "impulsive",
+      "population_count": 646,
+      "population_weight": 0.000646
+    },
+    {
+      "group_id": "60plus__laborer__fast_decision",
+      "age_group": "60plus",
+      "occupation_group": "laborer",
+      "style_key": "fast_decision",
+      "population_count": 605,
+      "population_weight": 0.000605
+    },
+    {
+      "group_id": "60plus__self_employed__brand_loyal",
+      "age_group": "60plus",
+      "occupation_group": "self_employed",
+      "style_key": "brand_loyal",
+      "population_count": 601,
+      "population_weight": 0.000601
+    },
+    {
+      "group_id": "50s__office_worker__price_sensitive",
+      "age_group": "50s",
+      "occupation_group": "office_worker",
+      "style_key": "price_sensitive",
+      "population_count": 547,
+      "population_weight": 0.000547
+    },
+    {
+      "group_id": "20s__other__fast_decision",
+      "age_group": "20s",
+      "occupation_group": "other",
+      "style_key": "fast_decision",
+      "population_count": 530,
+      "population_weight": 0.00053
+    },
+    {
+      "group_id": "60plus__other__fast_decision",
+      "age_group": "60plus",
+      "occupation_group": "other",
+      "style_key": "fast_decision",
+      "population_count": 515,
+      "population_weight": 0.000515
+    },
+    {
+      "group_id": "60plus__laborer__price_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "laborer",
+      "style_key": "price_sensitive",
+      "population_count": 480,
+      "population_weight": 0.00048
+    },
+    {
+      "group_id": "40s__service_worker__price_sensitive",
+      "age_group": "40s",
+      "occupation_group": "service_worker",
+      "style_key": "price_sensitive",
+      "population_count": 467,
+      "population_weight": 0.000467
+    },
+    {
+      "group_id": "30s__laborer__shipping_sensitive",
+      "age_group": "30s",
+      "occupation_group": "laborer",
+      "style_key": "shipping_sensitive",
+      "population_count": 460,
+      "population_weight": 0.00046
+    },
+    {
+      "group_id": "40s__caregiver__brand_loyal",
+      "age_group": "40s",
+      "occupation_group": "caregiver",
+      "style_key": "brand_loyal",
+      "population_count": 457,
+      "population_weight": 0.000457
+    },
+    {
+      "group_id": "60plus__other__price_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "other",
+      "style_key": "price_sensitive",
+      "population_count": 447,
+      "population_weight": 0.000447
+    },
+    {
+      "group_id": "40s__caregiver__comparison",
+      "age_group": "40s",
+      "occupation_group": "caregiver",
+      "style_key": "comparison",
+      "population_count": 420,
+      "population_weight": 0.00042
+    },
+    {
+      "group_id": "20s__other__shipping_sensitive",
+      "age_group": "20s",
+      "occupation_group": "other",
+      "style_key": "shipping_sensitive",
+      "population_count": 403,
+      "population_weight": 0.000403
+    },
+    {
+      "group_id": "50s__laborer__fast_decision",
+      "age_group": "50s",
+      "occupation_group": "laborer",
+      "style_key": "fast_decision",
+      "population_count": 385,
+      "population_weight": 0.000385
+    },
+    {
+      "group_id": "20s__laborer__shipping_sensitive",
+      "age_group": "20s",
+      "occupation_group": "laborer",
+      "style_key": "shipping_sensitive",
+      "population_count": 368,
+      "population_weight": 0.000368
+    },
+    {
+      "group_id": "20s__self_employed__brand_loyal",
+      "age_group": "20s",
+      "occupation_group": "self_employed",
+      "style_key": "brand_loyal",
+      "population_count": 365,
+      "population_weight": 0.000365
+    },
+    {
+      "group_id": "20s__other__price_sensitive",
+      "age_group": "20s",
+      "occupation_group": "other",
+      "style_key": "price_sensitive",
+      "population_count": 361,
+      "population_weight": 0.000361
+    },
+    {
+      "group_id": "20s__self_employed__comparison",
+      "age_group": "20s",
+      "occupation_group": "self_employed",
+      "style_key": "comparison",
+      "population_count": 358,
+      "population_weight": 0.000358
+    },
+    {
+      "group_id": "40s__service_worker__shipping_sensitive",
+      "age_group": "40s",
+      "occupation_group": "service_worker",
+      "style_key": "shipping_sensitive",
+      "population_count": 349,
+      "population_weight": 0.000349
+    },
+    {
+      "group_id": "60plus__professional__review_oriented",
+      "age_group": "60plus",
+      "occupation_group": "professional",
+      "style_key": "review_oriented",
+      "population_count": 349,
+      "population_weight": 0.000349
+    },
+    {
+      "group_id": "20s__office_worker__price_sensitive",
+      "age_group": "20s",
+      "occupation_group": "office_worker",
+      "style_key": "price_sensitive",
+      "population_count": 343,
+      "population_weight": 0.000343
+    },
+    {
+      "group_id": "50s__service_worker__shipping_sensitive",
+      "age_group": "50s",
+      "occupation_group": "service_worker",
+      "style_key": "shipping_sensitive",
+      "population_count": 339,
+      "population_weight": 0.000339
+    },
+    {
+      "group_id": "30s__service_worker__shipping_sensitive",
+      "age_group": "30s",
+      "occupation_group": "service_worker",
+      "style_key": "shipping_sensitive",
+      "population_count": 334,
+      "population_weight": 0.000334
+    },
+    {
+      "group_id": "30s__office_worker__fast_decision",
+      "age_group": "30s",
+      "occupation_group": "office_worker",
+      "style_key": "fast_decision",
+      "population_count": 332,
+      "population_weight": 0.000332
+    },
+    {
+      "group_id": "60plus__office_worker__review_oriented",
+      "age_group": "60plus",
+      "occupation_group": "office_worker",
+      "style_key": "review_oriented",
+      "population_count": 323,
+      "population_weight": 0.000323
+    },
+    {
+      "group_id": "60plus__professional__impulsive",
+      "age_group": "60plus",
+      "occupation_group": "professional",
+      "style_key": "impulsive",
+      "population_count": 323,
+      "population_weight": 0.000323
+    },
+    {
+      "group_id": "30s__professional__fast_decision",
+      "age_group": "30s",
+      "occupation_group": "professional",
+      "style_key": "fast_decision",
+      "population_count": 316,
+      "population_weight": 0.000316
+    },
+    {
+      "group_id": "60plus__self_employed__comparison",
+      "age_group": "60plus",
+      "occupation_group": "self_employed",
+      "style_key": "comparison",
+      "population_count": 305,
+      "population_weight": 0.000305
+    },
+    {
+      "group_id": "40s__professional__fast_decision",
+      "age_group": "40s",
+      "occupation_group": "professional",
+      "style_key": "fast_decision",
+      "population_count": 302,
+      "population_weight": 0.000302
+    },
+    {
+      "group_id": "30s__professional__price_sensitive",
+      "age_group": "30s",
+      "occupation_group": "professional",
+      "style_key": "price_sensitive",
+      "population_count": 284,
+      "population_weight": 0.000284
+    },
+    {
+      "group_id": "30s__service_worker__price_sensitive",
+      "age_group": "30s",
+      "occupation_group": "service_worker",
+      "style_key": "price_sensitive",
+      "population_count": 279,
+      "population_weight": 0.000279
+    },
+    {
+      "group_id": "40s__professional__price_sensitive",
+      "age_group": "40s",
+      "occupation_group": "professional",
+      "style_key": "price_sensitive",
+      "population_count": 278,
+      "population_weight": 0.000278
+    },
+    {
+      "group_id": "60plus__office_worker__impulsive",
+      "age_group": "60plus",
+      "occupation_group": "office_worker",
+      "style_key": "impulsive",
+      "population_count": 274,
+      "population_weight": 0.000274
+    },
+    {
+      "group_id": "40s__laborer__fast_decision",
+      "age_group": "40s",
+      "occupation_group": "laborer",
+      "style_key": "fast_decision",
+      "population_count": 267,
+      "population_weight": 0.000267
+    },
+    {
+      "group_id": "20s__service_worker__shipping_sensitive",
+      "age_group": "20s",
+      "occupation_group": "service_worker",
+      "style_key": "shipping_sensitive",
+      "population_count": 264,
+      "population_weight": 0.000264
+    },
+    {
+      "group_id": "50s__laborer__price_sensitive",
+      "age_group": "50s",
+      "occupation_group": "laborer",
+      "style_key": "price_sensitive",
+      "population_count": 257,
+      "population_weight": 0.000257
+    },
+    {
+      "group_id": "40s__office_worker__fast_decision",
+      "age_group": "40s",
+      "occupation_group": "office_worker",
+      "style_key": "fast_decision",
+      "population_count": 254,
+      "population_weight": 0.000254
+    },
+    {
+      "group_id": "60plus__service_worker__fast_decision",
+      "age_group": "60plus",
+      "occupation_group": "service_worker",
+      "style_key": "fast_decision",
+      "population_count": 251,
+      "population_weight": 0.000251
+    },
+    {
+      "group_id": "60plus__service_worker__shipping_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "service_worker",
+      "style_key": "shipping_sensitive",
+      "population_count": 239,
+      "population_weight": 0.000239
+    },
+    {
+      "group_id": "50s__service_worker__fast_decision",
+      "age_group": "50s",
+      "occupation_group": "service_worker",
+      "style_key": "fast_decision",
+      "population_count": 230,
+      "population_weight": 0.00023
+    },
+    {
+      "group_id": "60plus__caregiver__review_oriented",
+      "age_group": "60plus",
+      "occupation_group": "caregiver",
+      "style_key": "review_oriented",
+      "population_count": 215,
+      "population_weight": 0.000215
+    },
+    {
+      "group_id": "20s__office_worker__fast_decision",
+      "age_group": "20s",
+      "occupation_group": "office_worker",
+      "style_key": "fast_decision",
+      "population_count": 214,
+      "population_weight": 0.000214
+    },
+    {
+      "group_id": "60plus__office_worker__price_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "office_worker",
+      "style_key": "price_sensitive",
+      "population_count": 210,
+      "population_weight": 0.00021
+    },
+    {
+      "group_id": "40s__service_worker__fast_decision",
+      "age_group": "40s",
+      "occupation_group": "service_worker",
+      "style_key": "fast_decision",
+      "population_count": 198,
+      "population_weight": 0.000198
+    },
+    {
+      "group_id": "40s__self_employed__review_oriented",
+      "age_group": "40s",
+      "occupation_group": "self_employed",
+      "style_key": "review_oriented",
+      "population_count": 197,
+      "population_weight": 0.000197
+    },
+    {
+      "group_id": "20s__service_worker__price_sensitive",
+      "age_group": "20s",
+      "occupation_group": "service_worker",
+      "style_key": "price_sensitive",
+      "population_count": 193,
+      "population_weight": 0.000193
+    },
+    {
+      "group_id": "50s__office_worker__fast_decision",
+      "age_group": "50s",
+      "occupation_group": "office_worker",
+      "style_key": "fast_decision",
+      "population_count": 191,
+      "population_weight": 0.000191
+    },
+    {
+      "group_id": "30s__office_worker__shipping_sensitive",
+      "age_group": "30s",
+      "occupation_group": "office_worker",
+      "style_key": "shipping_sensitive",
+      "population_count": 188,
+      "population_weight": 0.000188
+    },
+    {
+      "group_id": "20s__student__shipping_sensitive",
+      "age_group": "20s",
+      "occupation_group": "student",
+      "style_key": "shipping_sensitive",
+      "population_count": 184,
+      "population_weight": 0.000184
+    },
+    {
+      "group_id": "50s__professional__fast_decision",
+      "age_group": "50s",
+      "occupation_group": "professional",
+      "style_key": "fast_decision",
+      "population_count": 183,
+      "population_weight": 0.000183
+    },
+    {
+      "group_id": "30s__caregiver__brand_loyal",
+      "age_group": "30s",
+      "occupation_group": "caregiver",
+      "style_key": "brand_loyal",
+      "population_count": 176,
+      "population_weight": 0.000176
+    },
+    {
+      "group_id": "30s__caregiver__comparison",
+      "age_group": "30s",
+      "occupation_group": "caregiver",
+      "style_key": "comparison",
+      "population_count": 172,
+      "population_weight": 0.000172
+    },
+    {
+      "group_id": "50s__professional__price_sensitive",
+      "age_group": "50s",
+      "occupation_group": "professional",
+      "style_key": "price_sensitive",
+      "population_count": 172,
+      "population_weight": 0.000172
+    },
+    {
+      "group_id": "20s__professional__fast_decision",
+      "age_group": "20s",
+      "occupation_group": "professional",
+      "style_key": "fast_decision",
+      "population_count": 171,
+      "population_weight": 0.000171
+    },
+    {
+      "group_id": "20s__professional__price_sensitive",
+      "age_group": "20s",
+      "occupation_group": "professional",
+      "style_key": "price_sensitive",
+      "population_count": 171,
+      "population_weight": 0.000171
+    },
+    {
+      "group_id": "30s__self_employed__review_oriented",
+      "age_group": "30s",
+      "occupation_group": "self_employed",
+      "style_key": "review_oriented",
+      "population_count": 171,
+      "population_weight": 0.000171
+    },
+    {
+      "group_id": "30s__service_worker__fast_decision",
+      "age_group": "30s",
+      "occupation_group": "service_worker",
+      "style_key": "fast_decision",
+      "population_count": 170,
+      "population_weight": 0.00017
+    },
+    {
+      "group_id": "40s__laborer__price_sensitive",
+      "age_group": "40s",
+      "occupation_group": "laborer",
+      "style_key": "price_sensitive",
+      "population_count": 164,
+      "population_weight": 0.000164
+    },
+    {
+      "group_id": "20s__service_worker__fast_decision",
+      "age_group": "20s",
+      "occupation_group": "service_worker",
+      "style_key": "fast_decision",
+      "population_count": 159,
+      "population_weight": 0.000159
+    },
+    {
+      "group_id": "30s__laborer__fast_decision",
+      "age_group": "30s",
+      "occupation_group": "laborer",
+      "style_key": "fast_decision",
+      "population_count": 156,
+      "population_weight": 0.000156
+    },
+    {
+      "group_id": "50s__caregiver__review_oriented",
+      "age_group": "50s",
+      "occupation_group": "caregiver",
+      "style_key": "review_oriented",
+      "population_count": 154,
+      "population_weight": 0.000154
+    },
+    {
+      "group_id": "40s__office_worker__shipping_sensitive",
+      "age_group": "40s",
+      "occupation_group": "office_worker",
+      "style_key": "shipping_sensitive",
+      "population_count": 148,
+      "population_weight": 0.000148
+    },
+    {
+      "group_id": "60plus__caregiver__impulsive",
+      "age_group": "60plus",
+      "occupation_group": "caregiver",
+      "style_key": "impulsive",
+      "population_count": 143,
+      "population_weight": 0.000143
+    },
+    {
+      "group_id": "20s__office_worker__shipping_sensitive",
+      "age_group": "20s",
+      "occupation_group": "office_worker",
+      "style_key": "shipping_sensitive",
+      "population_count": 135,
+      "population_weight": 0.000135
+    },
+    {
+      "group_id": "50s__office_worker__shipping_sensitive",
+      "age_group": "50s",
+      "occupation_group": "office_worker",
+      "style_key": "shipping_sensitive",
+      "population_count": 130,
+      "population_weight": 0.00013
+    },
+    {
+      "group_id": "20s__caregiver__brand_loyal",
+      "age_group": "20s",
+      "occupation_group": "caregiver",
+      "style_key": "brand_loyal",
+      "population_count": 125,
+      "population_weight": 0.000125
+    },
+    {
+      "group_id": "30s__laborer__price_sensitive",
+      "age_group": "30s",
+      "occupation_group": "laborer",
+      "style_key": "price_sensitive",
+      "population_count": 118,
+      "population_weight": 0.000118
+    },
+    {
+      "group_id": "40s__self_employed__impulsive",
+      "age_group": "40s",
+      "occupation_group": "self_employed",
+      "style_key": "impulsive",
+      "population_count": 115,
+      "population_weight": 0.000115
+    },
+    {
+      "group_id": "50s__self_employed__review_oriented",
+      "age_group": "50s",
+      "occupation_group": "self_employed",
+      "style_key": "review_oriented",
+      "population_count": 113,
+      "population_weight": 0.000113
+    },
+    {
+      "group_id": "40s__professional__shipping_sensitive",
+      "age_group": "40s",
+      "occupation_group": "professional",
+      "style_key": "shipping_sensitive",
+      "population_count": 112,
+      "population_weight": 0.000112
+    },
+    {
+      "group_id": "20s__self_employed__impulsive",
+      "age_group": "20s",
+      "occupation_group": "self_employed",
+      "style_key": "impulsive",
+      "population_count": 111,
+      "population_weight": 0.000111
+    },
+    {
+      "group_id": "20s__laborer__price_sensitive",
+      "age_group": "20s",
+      "occupation_group": "laborer",
+      "style_key": "price_sensitive",
+      "population_count": 110,
+      "population_weight": 0.00011
+    },
+    {
+      "group_id": "20s__laborer__fast_decision",
+      "age_group": "20s",
+      "occupation_group": "laborer",
+      "style_key": "fast_decision",
+      "population_count": 109,
+      "population_weight": 0.000109
+    },
+    {
+      "group_id": "50s__caregiver__impulsive",
+      "age_group": "50s",
+      "occupation_group": "caregiver",
+      "style_key": "impulsive",
+      "population_count": 109,
+      "population_weight": 0.000109
+    },
+    {
+      "group_id": "30s__professional__shipping_sensitive",
+      "age_group": "30s",
+      "occupation_group": "professional",
+      "style_key": "shipping_sensitive",
+      "population_count": 104,
+      "population_weight": 0.000104
+    },
+    {
+      "group_id": "20s__caregiver__comparison",
+      "age_group": "20s",
+      "occupation_group": "caregiver",
+      "style_key": "comparison",
+      "population_count": 103,
+      "population_weight": 0.000103
+    },
+    {
+      "group_id": "40s__self_employed__fast_decision",
+      "age_group": "40s",
+      "occupation_group": "self_employed",
+      "style_key": "fast_decision",
+      "population_count": 98,
+      "population_weight": 0.000098
+    },
+    {
+      "group_id": "30s__self_employed__fast_decision",
+      "age_group": "30s",
+      "occupation_group": "self_employed",
+      "style_key": "fast_decision",
+      "population_count": 92,
+      "population_weight": 0.000092
+    },
+    {
+      "group_id": "20s__self_employed__review_oriented",
+      "age_group": "20s",
+      "occupation_group": "self_employed",
+      "style_key": "review_oriented",
+      "population_count": 85,
+      "population_weight": 0.000085
+    },
+    {
+      "group_id": "20s__professional__shipping_sensitive",
+      "age_group": "20s",
+      "occupation_group": "professional",
+      "style_key": "shipping_sensitive",
+      "population_count": 84,
+      "population_weight": 0.000084
+    },
+    {
+      "group_id": "30s__self_employed__impulsive",
+      "age_group": "30s",
+      "occupation_group": "self_employed",
+      "style_key": "impulsive",
+      "population_count": 76,
+      "population_weight": 0.000076
+    },
+    {
+      "group_id": "40s__caregiver__review_oriented",
+      "age_group": "40s",
+      "occupation_group": "caregiver",
+      "style_key": "review_oriented",
+      "population_count": 75,
+      "population_weight": 0.000075
+    },
+    {
+      "group_id": "40s__caregiver__impulsive",
+      "age_group": "40s",
+      "occupation_group": "caregiver",
+      "style_key": "impulsive",
+      "population_count": 68,
+      "population_weight": 0.000068
+    },
+    {
+      "group_id": "50s__professional__shipping_sensitive",
+      "age_group": "50s",
+      "occupation_group": "professional",
+      "style_key": "shipping_sensitive",
+      "population_count": 65,
+      "population_weight": 0.000065
+    },
+    {
+      "group_id": "50s__self_employed__impulsive",
+      "age_group": "50s",
+      "occupation_group": "self_employed",
+      "style_key": "impulsive",
+      "population_count": 64,
+      "population_weight": 0.000064
+    },
+    {
+      "group_id": "60plus__office_worker__fast_decision",
+      "age_group": "60plus",
+      "occupation_group": "office_worker",
+      "style_key": "fast_decision",
+      "population_count": 64,
+      "population_weight": 0.000064
+    },
+    {
+      "group_id": "60plus__professional__price_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "professional",
+      "style_key": "price_sensitive",
+      "population_count": 64,
+      "population_weight": 0.000064
+    },
+    {
+      "group_id": "20s__caregiver__impulsive",
+      "age_group": "20s",
+      "occupation_group": "caregiver",
+      "style_key": "impulsive",
+      "population_count": 55,
+      "population_weight": 0.000055
+    },
+    {
+      "group_id": "50s__self_employed__fast_decision",
+      "age_group": "50s",
+      "occupation_group": "self_employed",
+      "style_key": "fast_decision",
+      "population_count": 52,
+      "population_weight": 0.000052
+    },
+    {
+      "group_id": "60plus__professional__fast_decision",
+      "age_group": "60plus",
+      "occupation_group": "professional",
+      "style_key": "fast_decision",
+      "population_count": 49,
+      "population_weight": 0.000049
+    },
+    {
+      "group_id": "60plus__office_worker__shipping_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "office_worker",
+      "style_key": "shipping_sensitive",
+      "population_count": 44,
+      "population_weight": 0.000044
+    },
+    {
+      "group_id": "60plus__caregiver__price_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "caregiver",
+      "style_key": "price_sensitive",
+      "population_count": 41,
+      "population_weight": 0.000041
+    },
+    {
+      "group_id": "30s__caregiver__impulsive",
+      "age_group": "30s",
+      "occupation_group": "caregiver",
+      "style_key": "impulsive",
+      "population_count": 40,
+      "population_weight": 0.00004
+    },
+    {
+      "group_id": "60plus__caregiver__fast_decision",
+      "age_group": "60plus",
+      "occupation_group": "caregiver",
+      "style_key": "fast_decision",
+      "population_count": 37,
+      "population_weight": 0.000037
+    },
+    {
+      "group_id": "30s__caregiver__review_oriented",
+      "age_group": "30s",
+      "occupation_group": "caregiver",
+      "style_key": "review_oriented",
+      "population_count": 35,
+      "population_weight": 0.000035
+    },
+    {
+      "group_id": "60plus__caregiver__shipping_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "caregiver",
+      "style_key": "shipping_sensitive",
+      "population_count": 29,
+      "population_weight": 0.000029
+    },
+    {
+      "group_id": "60plus__self_employed__fast_decision",
+      "age_group": "60plus",
+      "occupation_group": "self_employed",
+      "style_key": "fast_decision",
+      "population_count": 29,
+      "population_weight": 0.000029
+    },
+    {
+      "group_id": "50s__caregiver__fast_decision",
+      "age_group": "50s",
+      "occupation_group": "caregiver",
+      "style_key": "fast_decision",
+      "population_count": 27,
+      "population_weight": 0.000027
+    },
+    {
+      "group_id": "60plus__self_employed__review_oriented",
+      "age_group": "60plus",
+      "occupation_group": "self_employed",
+      "style_key": "review_oriented",
+      "population_count": 27,
+      "population_weight": 0.000027
+    },
+    {
+      "group_id": "20s__caregiver__review_oriented",
+      "age_group": "20s",
+      "occupation_group": "caregiver",
+      "style_key": "review_oriented",
+      "population_count": 26,
+      "population_weight": 0.000026
+    },
+    {
+      "group_id": "60plus__professional__shipping_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "professional",
+      "style_key": "shipping_sensitive",
+      "population_count": 24,
+      "population_weight": 0.000024
+    },
+    {
+      "group_id": "60plus__self_employed__price_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "self_employed",
+      "style_key": "price_sensitive",
+      "population_count": 23,
+      "population_weight": 0.000023
+    },
+    {
+      "group_id": "50s__self_employed__price_sensitive",
+      "age_group": "50s",
+      "occupation_group": "self_employed",
+      "style_key": "price_sensitive",
+      "population_count": 22,
+      "population_weight": 0.000022
+    },
+    {
+      "group_id": "40s__self_employed__price_sensitive",
+      "age_group": "40s",
+      "occupation_group": "self_employed",
+      "style_key": "price_sensitive",
+      "population_count": 19,
+      "population_weight": 0.000019
+    },
+    {
+      "group_id": "40s__caregiver__fast_decision",
+      "age_group": "40s",
+      "occupation_group": "caregiver",
+      "style_key": "fast_decision",
+      "population_count": 18,
+      "population_weight": 0.000018
+    },
+    {
+      "group_id": "50s__caregiver__shipping_sensitive",
+      "age_group": "50s",
+      "occupation_group": "caregiver",
+      "style_key": "shipping_sensitive",
+      "population_count": 18,
+      "population_weight": 0.000018
+    },
+    {
+      "group_id": "40s__caregiver__price_sensitive",
+      "age_group": "40s",
+      "occupation_group": "caregiver",
+      "style_key": "price_sensitive",
+      "population_count": 15,
+      "population_weight": 0.000015
+    },
+    {
+      "group_id": "60plus__self_employed__impulsive",
+      "age_group": "60plus",
+      "occupation_group": "self_employed",
+      "style_key": "impulsive",
+      "population_count": 14,
+      "population_weight": 0.000014
+    },
+    {
+      "group_id": "50s__caregiver__price_sensitive",
+      "age_group": "50s",
+      "occupation_group": "caregiver",
+      "style_key": "price_sensitive",
+      "population_count": 11,
+      "population_weight": 0.000011
+    },
+    {
+      "group_id": "40s__self_employed__shipping_sensitive",
+      "age_group": "40s",
+      "occupation_group": "self_employed",
+      "style_key": "shipping_sensitive",
+      "population_count": 10,
+      "population_weight": 0.00001
+    },
+    {
+      "group_id": "30s__self_employed__price_sensitive",
+      "age_group": "30s",
+      "occupation_group": "self_employed",
+      "style_key": "price_sensitive",
+      "population_count": 8,
+      "population_weight": 0.000008
+    },
+    {
+      "group_id": "50s__self_employed__shipping_sensitive",
+      "age_group": "50s",
+      "occupation_group": "self_employed",
+      "style_key": "shipping_sensitive",
+      "population_count": 6,
+      "population_weight": 0.000006
+    },
+    {
+      "group_id": "20s__caregiver__price_sensitive",
+      "age_group": "20s",
+      "occupation_group": "caregiver",
+      "style_key": "price_sensitive",
+      "population_count": 4,
+      "population_weight": 0.000004
+    },
+    {
+      "group_id": "20s__self_employed__fast_decision",
+      "age_group": "20s",
+      "occupation_group": "self_employed",
+      "style_key": "fast_decision",
+      "population_count": 4,
+      "population_weight": 0.000004
+    },
+    {
+      "group_id": "20s__self_employed__price_sensitive",
+      "age_group": "20s",
+      "occupation_group": "self_employed",
+      "style_key": "price_sensitive",
+      "population_count": 4,
+      "population_weight": 0.000004
+    },
+    {
+      "group_id": "30s__self_employed__shipping_sensitive",
+      "age_group": "30s",
+      "occupation_group": "self_employed",
+      "style_key": "shipping_sensitive",
+      "population_count": 4,
+      "population_weight": 0.000004
+    },
+    {
+      "group_id": "30s__caregiver__shipping_sensitive",
+      "age_group": "30s",
+      "occupation_group": "caregiver",
+      "style_key": "shipping_sensitive",
+      "population_count": 3,
+      "population_weight": 0.000003
+    },
+    {
+      "group_id": "20s__self_employed__shipping_sensitive",
+      "age_group": "20s",
+      "occupation_group": "self_employed",
+      "style_key": "shipping_sensitive",
+      "population_count": 2,
+      "population_weight": 0.000002
+    },
+    {
+      "group_id": "30s__caregiver__fast_decision",
+      "age_group": "30s",
+      "occupation_group": "caregiver",
+      "style_key": "fast_decision",
+      "population_count": 2,
+      "population_weight": 0.000002
+    },
+    {
+      "group_id": "30s__caregiver__price_sensitive",
+      "age_group": "30s",
+      "occupation_group": "caregiver",
+      "style_key": "price_sensitive",
+      "population_count": 2,
+      "population_weight": 0.000002
+    },
+    {
+      "group_id": "40s__caregiver__shipping_sensitive",
+      "age_group": "40s",
+      "occupation_group": "caregiver",
+      "style_key": "shipping_sensitive",
+      "population_count": 2,
+      "population_weight": 0.000002
+    },
+    {
+      "group_id": "20s__caregiver__fast_decision",
+      "age_group": "20s",
+      "occupation_group": "caregiver",
+      "style_key": "fast_decision",
+      "population_count": 1,
+      "population_weight": 0.000001
+    },
+    {
+      "group_id": "20s__caregiver__shipping_sensitive",
+      "age_group": "20s",
+      "occupation_group": "caregiver",
+      "style_key": "shipping_sensitive",
+      "population_count": 1,
+      "population_weight": 0.000001
+    },
+    {
+      "group_id": "60plus__self_employed__shipping_sensitive",
+      "age_group": "60plus",
+      "occupation_group": "self_employed",
+      "style_key": "shipping_sensitive",
+      "population_count": 1,
+      "population_weight": 0.000001
+    }
+  ]
+}
