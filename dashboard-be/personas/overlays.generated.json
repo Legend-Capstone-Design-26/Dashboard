@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-05-11T20:22:08.970Z",
+  "generated_at": "2026-07-01T10:29:33.329Z",
   "overlays": [
     {
       "overlay_id": "exp_checkout_cta_v1::B::30대-직장인리뷰의존형",
@@ -25,14 +25,12 @@
       "persona_id": "20대-학생트렌드충동형",
       "group_id": "20s__student__impulsive",
       "style_key": "impulsive",
-      "provider": "mock",
-      "provider_reason": "mock_mode",
-      "generated_at": 1778530557481,
-      "reason_summary": "variant B의 UI/UX 변경 유형과 페르소나 반응 경향을 바탕으로 기본 오버레이를 생성했습니다.",
+      "provider": "openai",
+      "provider_reason": null,
+      "generated_at": 1782901773329,
+      "reason_summary": "CTA 문구 변경으로 20대 학생·트렌드충동형 사용자의 즉각적인 클릭 반응이 증가하나, 상세 뷰 이동이나 이탈에는 큰 영향이 예상되지 않습니다.",
       "edge_weight_multipliers": {
-        "landing->cta_click": 1.2,
-        "checkout_entry->payment_attempt": 1.1,
-        "detail_view->cart_entry": 1.2
+        "landing->cta_click": 1.3
       }
     },
     {
@@ -64,6 +62,21 @@
       "reason_summary": "variant B의 UI/UX 변경 유형과 페르소나 반응 경향을 바탕으로 기본 오버레이를 생성했습니다.",
       "edge_weight_multipliers": {
         "detail_view->cart_entry": 1.15
+      }
+    },
+    {
+      "overlay_id": "exp_home_cta_v1::B::20대-학생비교검토형",
+      "experiment_key": "exp_home_cta_v1",
+      "variant": "B",
+      "persona_id": "20대-학생비교검토형",
+      "group_id": "20s__student__comparison",
+      "style_key": "comparison",
+      "provider": "openai",
+      "provider_reason": null,
+      "generated_at": 1782801953666,
+      "reason_summary": "헤더 링크 문구 변경이 사용자의 탐색 의욕에 약간 긍정적인 영향을 미쳐 검색에서 목록 보기 전이 비율이 소폭 증가할 것으로 예상됩니다.",
+      "edge_weight_multipliers": {
+        "search_query->listing_view": 1.1
       }
     }
   ]

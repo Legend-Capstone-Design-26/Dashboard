@@ -84,7 +84,7 @@ body {
   font-weight: 700;
 }
 
-/* 선택모드 토글 */
+/* 요소 선택 토글 */
 .btnToggle {
   border: 1px solid var(--color-border);
   background: transparent;
