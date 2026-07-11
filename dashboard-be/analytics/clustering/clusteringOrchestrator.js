@@ -1,7 +1,7 @@
 const { normalizeAll, extractRawVector, FEATURE_KEYS, FEATURE_SCHEMA_VERSION, computeRawMean } = require("./featureExtractor");
 const { stableKMeans, findOptimalK, nearestCentroidIdx }                         = require("./kmeans");
 const { mapClustersToTaxonomy, findDeprecated }                                   = require("./taxonomyMapper");
-const { buildFeatureProfile, nameCluster, resolveMappingDecision }                = require("./llmNamer");
+const { buildFeatureProfile, buildClusterDescription, nameCluster, resolveMappingDecision } = require("./llmNamer");
 const {
   saveTaxonomy, loadTaxonomy,
   saveNormParams,
@@ -55,6 +55,15 @@ function denormalizeCentroid(centroid, normParams) {
   return centroid.map((v, i) => v * normParams.ranges[i] + normParams.mins[i]);
 }
 
+// LLM reason 이 실제 설명으로 쓸 만한 값인지 판단한다.
+// 파싱 실패 시 채워지는 내부 사유 문자열은 사용자 노출용 설명으로 쓰지 않는다.
+const INTERNAL_REASONS = new Set(["LLM 응답 검증 실패", "기존 유형 유지"]);
+function usableDescription(reason) {
+  const trimmed = String(reason || "").trim();
+  if (trimmed.length < 4 || INTERNAL_REASONS.has(trimmed)) return "";
+  return trimmed;
+}
+
 // 이미 사용된 이름과 충돌하지 않도록 suffix 를 붙인다
 function deduplicateName(name, usedNames) {
   let unique = name;
@@ -96,9 +105,11 @@ async function runClustering(sessionStates, siteId, redisRuntime, callLlm, opts 
     const featureProfile = buildFeatureProfile(rawCentroid, globalRawMean);
     const mapping      = mappings[ci];
     let   finalName;
+    let   llmReason = "";
 
     if (mapping.type === "existing") {
       finalName = mapping.matchedName;
+      llmReason = String(existingTaxonomy[mapping.matchedName]?.description || "");
     } else if (mapping.type === "ambiguous") {
       const decision = await resolveMappingDecision({
         featureProfile,
@@ -107,11 +118,15 @@ async function runClustering(sessionStates, siteId, redisRuntime, callLlm, opts 
         callLlm,
       });
       finalName = decision.name;
+      llmReason = decision.keepExisting
+        ? String(existingTaxonomy[mapping.matchedName]?.description || "")
+        : String(decision.reason || "");
     } else {
       // 완전히 새로운 클러스터
       const existingNames = [...Object.keys(nextTaxonomy), ...Object.keys(existingTaxonomy)];
-      const { name } = await nameCluster({ featureProfile, existingNames, callLlm });
+      const { name, reason } = await nameCluster({ featureProfile, existingNames, callLlm });
       finalName = name;
+      llmReason = String(reason || "");
     }
 
     const uniqueName = deduplicateName(finalName, assignedNames);
@@ -120,6 +135,7 @@ async function runClustering(sessionStates, siteId, redisRuntime, callLlm, opts 
     nextTaxonomy[uniqueName] = {
       centroid,
       rawCentroid,
+      description:  usableDescription(llmReason) || buildClusterDescription(rawCentroid, globalRawMean),
       status:       "active",
       clusterIndex: ci,
       updatedAt:    Date.now(),
