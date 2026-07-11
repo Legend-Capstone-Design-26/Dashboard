@@ -1,0 +1,440 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary "대시보드 메뉴" [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: D
+        - generic [ref=e6]:
+          - generic [ref=e7]: Dashboard
+          - generic [ref=e8]: UX Analytics
+      - navigation "주요 메뉴" [ref=e9]:
+        - generic: 메뉴
+        - link "대시보드" [ref=e10] [cursor=pointer]:
+          - /url: "#summaryRow"
+          - generic [ref=e11]: ▦
+          - text: 대시보드
+        - link "사용자 흐름" [ref=e12] [cursor=pointer]:
+          - /url: "#journeyCard"
+          - generic [ref=e13]: ↝
+          - text: 사용자 흐름
+        - link "모니터링" [ref=e14] [cursor=pointer]:
+          - /url: "#trendPanel"
+          - generic [ref=e15]: ⌁
+          - text: 모니터링
+        - link "실험 관리" [ref=e16] [cursor=pointer]:
+          - /url: "#experimentPanel"
+          - generic [ref=e17]: ◈
+          - text: 실험 관리
+        - link "유형별 지표" [ref=e18] [cursor=pointer]:
+          - /url: "#labelsCard"
+          - generic [ref=e19]: ▤
+          - text: 유형별 지표
+        - link "세션 로그" [ref=e20] [cursor=pointer]:
+          - /url: "#sessionsCard"
+          - generic [ref=e21]: ♙
+          - text: 세션 로그
+        - link "AI 인사이트" [ref=e22] [cursor=pointer]:
+          - /url: "#insightsCard"
+          - generic [ref=e23]: ✦
+          - text: AI 인사이트
+        - link "실험실 ↗" [ref=e24] [cursor=pointer]:
+          - /url: /persona-lab
+          - generic [ref=e25]: ⚗
+          - text: 실험실 ↗
+    - generic [ref=e26]:
+      - banner [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: ▥
+          - generic [ref=e30]:
+            - generic [ref=e31]: 대시보드
+            - generic [ref=e32]: 실험 운영과 성과, 고객 행동 요약
+        - generic [ref=e33]:
+          - generic [ref=e34]: 대상 사이트
+          - combobox "대상 사이트 선택" [ref=e35] [cursor=pointer]:
+            - option "Legend Ecommerce (legend-ecommerce)" [selected]
+            - option "Ecommerce Legacy (test_site_011)"
+          - generic [ref=e167]: Dashboard Admin
+          - button "경로 설정" [ref=e36] [cursor=pointer]
+          - button "설정" [ref=e168] [cursor=pointer]
+          - button "새로고침" [ref=e37] [cursor=pointer]
+          - button "로그아웃" [ref=e38] [cursor=pointer]
+          - link "화면 편집기" [ref=e39] [cursor=pointer]:
+            - /url: /editor?site_id=legend-ecommerce
+      - main [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - generic [ref=e43]:
+              - heading "기간 설정" [level=2] [ref=e44]
+              - generic [ref=e45]: 주요 카드와 그래프는 선택한 기간 기준으로 집계됩니다.
+            - generic [ref=e46]:
+              - generic [ref=e47]:
+                - generic [ref=e48]: 기간
+                - combobox "기간 선택" [ref=e49] [cursor=pointer]:
+                  - option "오늘"
+                  - option "최근 7일" [selected]
+                  - option "최근 30일"
+                  - option "사용자 지정"
+              - generic [ref=e50]:
+                - generic [ref=e51]:
+                  - generic [ref=e52]: 시작일
+                  - textbox "시작일" [ref=e53]: 2026-05-23
+                - generic [ref=e54]:
+                  - generic [ref=e55]: 종료일
+                  - textbox "종료일" [ref=e56]: 2026-05-29
+          - generic [ref=e57]: 최근 7일 · 2026. 5. 23. ~ 2026. 5. 29. 기준으로 카드와 그래프를 집계합니다.
+          - generic [ref=e58]:
+            - generic [ref=e59]: 미수신
+            - generic [ref=e60]: 마지막 이벤트 2026. 5. 25. 오후 3:35:38 (4일 전) · 최근 5분 0건
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - text: ◌
+            - generic [ref=e63]: 세션 수
+            - generic [ref=e64]: "59"
+            - generic [ref=e65]: 최근 7일 동안 세션 59건 · 이벤트 158건
+          - generic [ref=e66]:
+            - text: ◎
+            - generic [ref=e67]: 가장 많은 유형
+            - generic [ref=e68]: 가볍게 둘러보기
+            - generic [ref=e69]: 가볍게 둘러보기이 전체 세션의 62.71%로 가장 높습니다. 가볍게 둘러보다 구매 행동 없이 종료하는 패턴
+          - generic [ref=e70]:
+            - text: △
+            - generic [ref=e71]: 오늘 먼저 확인할 문제
+            - generic [ref=e72]: "2"
+            - generic [ref=e73]: 가볍게 둘러보기 · /, /collection, /detail, /cart 중심 구간에서 반복 신호가 보입니다. 대표 세션 기준 평균 체류 448초, 평균 탐색 깊이 6.0 수준입니다.
+        - generic [ref=e74]:
+          - generic [ref=e76]:
+            - heading "사용자 이동 흐름" [level=2] [ref=e77]
+            - generic [ref=e78]: 선택한 기간 동안 사용자가 어떤 페이지 흐름으로 이동하고, 어느 단계에서 이탈하는지 보여줍니다.
+          - generic [ref=e79]:
+            - article [ref=e169]:
+              - generic [ref=e171]: 홈
+              - generic [ref=e172]:
+                - generic [ref=e173]: 진입 세션 59
+                - generic [ref=e174]: 다음 단계 이동 72.88%
+                - generic [ref=e175]: 이탈률 27.12%
+              - generic [ref=e176]: 다음 단계로 이동한 세션 43건
+            - article [ref=e177]:
+              - text: →
+              - generic [ref=e179]: 상품 목록
+              - generic [ref=e180]:
+                - generic [ref=e181]: 진입 세션 43
+                - generic [ref=e182]: 다음 단계 이동 72.09%
+                - generic [ref=e183]: 이탈률 27.91%
+              - generic [ref=e184]: 다음 단계로 이동한 세션 31건
+            - article [ref=e185]:
+              - text: →
+              - generic [ref=e186]:
+                - generic [ref=e187]: 상품 상세
+                - generic [ref=e188]: 높은 이탈
+              - generic [ref=e189]:
+                - generic [ref=e190]: 진입 세션 31
+                - generic [ref=e191]: 다음 단계 이동 45.16%
+                - generic [ref=e192]: 이탈률 54.84%
+              - generic [ref=e193]: 다음 단계로 이동한 세션 14건
+            - article [ref=e194]:
+              - text: →
+              - generic [ref=e195]:
+                - generic [ref=e196]: 장바구니
+                - generic [ref=e197]: 높은 이탈
+              - generic [ref=e198]:
+                - generic [ref=e199]: 진입 세션 14
+                - generic [ref=e200]: 다음 단계 이동 50.00%
+                - generic [ref=e201]: 이탈률 50.00%
+              - generic [ref=e202]: 다음 단계로 이동한 세션 7건
+            - article [ref=e203]:
+              - text: →
+              - generic [ref=e205]: 결제
+              - generic [ref=e206]:
+                - generic [ref=e207]: 진입 세션 7
+                - generic [ref=e208]: 다음 단계 이동 57.14%
+                - generic [ref=e209]: 이탈률 42.86%
+              - generic [ref=e210]: 다음 단계로 이동한 세션 4건
+            - article [ref=e211]:
+              - text: →
+              - generic [ref=e212]:
+                - generic [ref=e213]: 구매 완료
+                - generic [ref=e214]: 완료
+              - generic [ref=e215]:
+                - generic [ref=e216]: 진입 세션 4
+                - generic [ref=e217]: 다음 단계 이동 —
+                - generic [ref=e218]: 이탈률 0.00%
+              - generic [ref=e219]: 구매 완료 단계입니다.
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - heading "기간별 세션 추이" [level=2] [ref=e84]
+              - generic [ref=e85]: 선택한 기간 동안 수집된 세션 수와 이벤트 수의 변화를 보여줍니다.
+            - generic [ref=e86]:
+              - generic [ref=e87]: 세션 수
+              - generic [ref=e89]: 이벤트 수
+          - generic [ref=e220]:
+            - status
+            - img "세션 수와 이벤트 수 추이 그래프" [ref=e221]
+            - generic [ref=e266]:
+              - generic "5. 23." [ref=e267]
+              - generic "5. 24." [ref=e268]
+              - generic "5. 25." [ref=e269]
+              - generic "5. 26." [ref=e270]
+              - generic "5. 27." [ref=e271]
+              - generic "5. 28." [ref=e272]
+              - generic "5. 29." [ref=e273]
+        - generic [ref=e93]:
+          - generic [ref=e94]:
+            - generic [ref=e95]:
+              - heading "유형별 비중" [level=2] [ref=e96]
+              - generic [ref=e97]: 패턴마다 세션이 얼마나 왔는지
+            - generic [ref=e98]:
+              - generic [ref=e101]:
+                - strong [ref=e102]: "59"
+                - generic [ref=e103]: 세션
+              - generic [ref=e104]:
+                - generic [ref=e274]:
+                  - generic [ref=e275]:
+                    - generic [ref=e276]: 여러 화면 오래 탐색
+                    - generic [ref=e277]: 19 / 32.20%
+                  - generic [ref=e278]: 여러 화면을 오래 둘러보지만 결정을 미루는 패턴
+                - generic [ref=e281]:
+                  - generic [ref=e282]:
+                    - generic [ref=e283]: 가격·혜택 비교형
+                    - generic [ref=e284]: 0 / 0.00%
+                  - generic [ref=e285]: 아직 감지되지 않음
+                - generic [ref=e287]:
+                  - generic [ref=e288]:
+                    - generic [ref=e289]: 가볍게 둘러보기
+                    - generic [ref=e290]: 37 / 62.71%
+                  - generic [ref=e291]: 가볍게 둘러보다 구매 행동 없이 종료하는 패턴
+                - generic [ref=e294]:
+                  - generic [ref=e295]:
+                    - generic [ref=e296]: 불편 겪고 이탈
+                    - generic [ref=e297]: 0 / 0.00%
+                  - generic [ref=e298]: 아직 감지되지 않음
+                - generic [ref=e300]:
+                  - generic [ref=e301]:
+                    - generic [ref=e302]: 결제 전 이탈
+                    - generic [ref=e303]: 3 / 5.08%
+                  - generic [ref=e304]: 장바구니·결제 단계에서 구매 완료로 이어지지 않는 패턴
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - heading "먼저 볼 만한 포인트" [level=2] [ref=e108]
+              - generic [ref=e109]: 매일 오전 08:00 기준으로 업데이트되는 우선 확인 항목
+            - generic [ref=e110]:
+              - generic [ref=e307]:
+                - generic [ref=e308]:
+                  - strong [ref=e309]: /, /collection, /detail, /cart 중심 구간에서 반복 신호가 보입니다. 대표 세션 기준 평균 체류 448초, 평균 탐색 깊이 6.0 수준입니다.
+                  - generic [ref=e310]: 긴급
+                - generic [ref=e311]:
+                  - generic [ref=e312]: 가볍게 둘러보기
+                  - generic [ref=e313]: /, /collection, /detail, /cart 중심 구간에서 반복 신호가 보입니다. 대표 세션 기준 평균 체류 448초, 평균 탐색 깊이 6.0 수준입니다.
+                - generic [ref=e314]: 첫 화면에서 가치 제안이 즉시 전달되지 않음
+                - generic [ref=e315]:
+                  - strong [ref=e316]: 권장 액션
+                  - text: · 첫 페이지 뷰 이후 10초 이내 행동 분포를 확인
+              - generic [ref=e317]:
+                - generic [ref=e318]:
+                  - strong [ref=e319]: /, /category, /search, /detail 중심 구간에서 반복 신호가 보입니다. 대표 세션 기준 평균 체류 156초, 평균 탐색 깊이 4.0 수준입니다.
+                  - generic [ref=e320]: 긴급
+                - generic [ref=e321]:
+                  - generic [ref=e322]: 여러 화면 오래 탐색
+                  - generic [ref=e323]: /, /category, /search, /detail 중심 구간에서 반복 신호가 보입니다. 대표 세션 기준 평균 체류 156초, 평균 탐색 깊이 4.0 수준입니다.
+                - generic [ref=e324]: 상품 비교 정보는 많지만 선택을 도와주는 장치가 부족함
+                - generic [ref=e325]:
+                  - strong [ref=e326]: 권장 액션
+                  - text: · 페이지 깊이와 페이지뷰 수가 높은 세션의 CTA 클릭률을 확인
+              - generic [ref=e327]:
+                - generic [ref=e328]:
+                  - strong [ref=e329]: /, /collection, /detail, /cart 중심 구간에서 반복 신호가 보입니다. 대표 세션 기준 평균 체류 374초, 평균 탐색 깊이 5.0 수준입니다.
+                  - generic [ref=e330]: 낮음
+                - generic [ref=e331]:
+                  - generic [ref=e332]: 결제 전 이탈
+                  - generic [ref=e333]: /, /collection, /detail, /cart 중심 구간에서 반복 신호가 보입니다. 대표 세션 기준 평균 체류 374초, 평균 탐색 깊이 5.0 수준입니다.
+                - generic [ref=e334]: 결제 직전 비용 정보나 혜택 정보가 충분히 설득되지 않음
+                - generic [ref=e335]:
+                  - strong [ref=e336]: 권장 액션
+                  - text: · 결제 진입 세션의 평균 체류 시간과 이탈 시점을 비교
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - heading "A/B 실험 관리" [level=2] [ref=e115]
+              - generic [ref=e116]: 문구, 스타일, 노출, 링크, CSS 변경이 어떤 사용자 반응을 만드는지 비교합니다.
+            - generic [ref=e117]: 사이트 ID legend-ecommerce
+          - generic [ref=e118]:
+            - generic [ref=e119]:
+              - generic [ref=e120]: 실험 선택
+              - combobox "실험 선택" [ref=e121] [cursor=pointer]:
+                - option "exp_home_hero_demo · 보관함 · /" [selected]
+                - option "exp_cta_demo_001 · 진행 중 · /checkout"
+                - option "exp_cart_hint_draft · 작성 중 · /cart"
+            - generic [ref=e337]:
+              - generic [ref=e338]:
+                - generic [ref=e339]:
+                  - generic [ref=e340]: 선택된 실험
+                  - generic [ref=e341]: exp_home_hero_demo
+                  - generic [ref=e342]: 실험 기간 · 2025. 4. 13. 오후 10:13:20 ~ 2026. 4. 13. 오후 12:31:03
+                - generic [ref=e343]:
+                  - generic [ref=e344]: 보관함
+                  - generic [ref=e345]: 선택 기간 데이터 없음
+              - generic [ref=e346]:
+                - generic [ref=e347]:
+                  - generic [ref=e348]: Variant A
+                  - generic [ref=e349]: Variant A
+                - generic [ref=e350]:
+                  - generic [ref=e351]: Variant B
+                  - generic [ref=e352]: Variant B
+                - generic [ref=e353]:
+                  - generic [ref=e354]: 총 참여 세션 수
+                  - generic [ref=e355]: "0"
+                - generic [ref=e356]:
+                  - generic [ref=e357]: 선택 기간 결과
+                  - generic [ref=e358]: 선택한 기간에 해당 실험 데이터가 없습니다.
+              - generic [ref=e359]:
+                - button "결과 자세히 보기" [ref=e360] [cursor=pointer]
+                - generic [ref=e361]: 선택한 기간이 실험 기간과 겹치지 않아 데이터가 비어 있을 수 있습니다. B안의 UI 변경 사항이 아직 없습니다.
+          - table [ref=e123]:
+            - rowgroup [ref=e124]:
+              - row "실험 코드 상태 적용 페이지 버전 마지막 수정 작업" [ref=e125]:
+                - columnheader "실험 코드" [ref=e126]
+                - columnheader "상태" [ref=e127]
+                - columnheader "적용 페이지" [ref=e128]
+                - columnheader "버전" [ref=e129]
+                - columnheader "마지막 수정" [ref=e130]
+                - columnheader "작업" [ref=e131]
+            - rowgroup [ref=e362]:
+              - row "exp_home_hero_demo 보관함 / v1 2026. 4. 13. 오후 12:31:03 결과 보기 보관함 편집기 삭제" [ref=e363]:
+                - cell "exp_home_hero_demo" [ref=e364]
+                - cell "보관함" [ref=e365]:
+                  - generic [ref=e366]: 보관함
+                - cell / [ref=e367]
+                - cell "v1" [ref=e368]
+                - cell "2026. 4. 13. 오후 12:31:03" [ref=e369]
+                - cell "결과 보기 보관함 편집기 삭제" [ref=e370]:
+                  - generic [ref=e371]:
+                    - button "결과 보기" [ref=e372] [cursor=pointer]
+                    - generic [ref=e373]: 보관함
+                    - link "편집기" [ref=e374] [cursor=pointer]:
+                      - /url: /editor?site_id=legend-ecommerce&experiment_key=exp_home_hero_demo&experiment_version=1
+                    - button "삭제" [ref=e375] [cursor=pointer]
+              - row "exp_cta_demo_001 진행 중 /checkout v2 2025. 4. 14. 오전 1:00:00 결과 보기 중지 편집기 삭제" [ref=e376]:
+                - cell "exp_cta_demo_001" [ref=e377]
+                - cell "진행 중" [ref=e378]:
+                  - generic [ref=e379]: 진행 중
+                - cell "/checkout" [ref=e380]
+                - cell "v2" [ref=e381]
+                - cell "2025. 4. 14. 오전 1:00:00" [ref=e382]
+                - cell "결과 보기 중지 편집기 삭제" [ref=e383]:
+                  - generic [ref=e384]:
+                    - button "결과 보기" [ref=e385] [cursor=pointer]
+                    - button "중지" [ref=e386] [cursor=pointer]
+                    - link "편집기" [ref=e387] [cursor=pointer]:
+                      - /url: /editor?site_id=legend-ecommerce&experiment_key=exp_cta_demo_001&experiment_version=2
+                    - button "삭제" [ref=e388] [cursor=pointer]
+              - row "exp_cart_hint_draft 작성 중 /cart v1 2025. 4. 13. 오후 7:26:40 편집기에서 열기 초안 이어쓰기 보관으로 편집기 삭제" [ref=e389]:
+                - cell "exp_cart_hint_draft" [ref=e390]
+                - cell "작성 중" [ref=e391]:
+                  - generic [ref=e392]: 작성 중
+                - cell "/cart" [ref=e393]
+                - cell "v1" [ref=e394]
+                - cell "2025. 4. 13. 오후 7:26:40" [ref=e395]
+                - cell "편집기에서 열기 초안 이어쓰기 보관으로 편집기 삭제" [ref=e396]:
+                  - generic [ref=e397]:
+                    - button "편집기에서 열기" [ref=e398] [cursor=pointer]
+                    - button "초안 이어쓰기" [ref=e399] [cursor=pointer]
+                    - button "보관으로" [ref=e400] [cursor=pointer]
+                    - link "편집기" [ref=e401] [cursor=pointer]:
+                      - /url: /editor?site_id=legend-ecommerce&experiment_key=exp_cart_hint_draft&experiment_version=1
+                    - button "삭제" [ref=e402] [cursor=pointer]
+        - generic [ref=e132]:
+          - generic [ref=e133]:
+            - heading "유형별 지표" [level=2] [ref=e134]
+            - generic [ref=e135]: 세션 수·비중·체류·방문 깊이·결제까지 갔는지
+          - table [ref=e137]:
+            - rowgroup [ref=e138]:
+              - row "유형 세션 비중 평균 체류 방문 깊이 결제 완료 비율" [ref=e139]:
+                - columnheader "유형" [ref=e140]
+                - columnheader "세션" [ref=e141]
+                - columnheader "비중" [ref=e142]
+                - columnheader "평균 체류" [ref=e143]
+                - columnheader "방문 깊이" [ref=e144]
+                - columnheader "결제 완료 비율" [ref=e145]
+            - rowgroup [ref=e146]:
+              - row "가볍게 둘러보기 37 62.71% 86.5초 2.1 10.81%" [ref=e403]:
+                - cell "가볍게 둘러보기" [ref=e404]:
+                  - generic [ref=e405]: 가볍게 둘러보기
+                - cell "37" [ref=e406]
+                - cell "62.71%" [ref=e407]
+                - cell "86.5초" [ref=e408]
+                - cell "2.1" [ref=e409]
+                - cell "10.81%" [ref=e410]
+              - row "여러 화면 오래 탐색 19 32.20% 223.1초 3.4 0.00%" [ref=e411]:
+                - cell "여러 화면 오래 탐색" [ref=e412]:
+                  - generic [ref=e413]: 여러 화면 오래 탐색
+                - cell "19" [ref=e414]
+                - cell "32.20%" [ref=e415]
+                - cell "223.1초" [ref=e416]
+                - cell "3.4" [ref=e417]
+                - cell "0.00%" [ref=e418]
+              - row "결제 전 이탈 3 5.08% 374.2초 5.0 0.00%" [ref=e419]:
+                - cell "결제 전 이탈" [ref=e420]:
+                  - generic [ref=e421]: 결제 전 이탈
+                - cell "3" [ref=e422]
+                - cell "5.08%" [ref=e423]
+                - cell "374.2초" [ref=e424]
+                - cell "5.0" [ref=e425]
+                - cell "0.00%" [ref=e426]
+        - group [ref=e149]:
+          - generic "▸ 최근 세션 상세 보기 최근 방문 기록" [ref=e150] [cursor=pointer]:
+            - text: ▸ 최근 세션 상세 보기
+            - generic [ref=e151]: 최근 방문 기록
+        - generic [ref=e152]:
+          - generic [ref=e154]:
+            - heading "AI UX 인사이트" [level=2] [ref=e155]
+            - generic [ref=e156]: 선택한 기간의 세션, 유형, 이동 흐름을 바탕으로 전체 프로덕트 관점에서 요약합니다.
+          - generic [ref=e157]:
+            - generic [ref=e427]:
+              - heading "전체 요약" [level=3] [ref=e428]
+              - generic [ref=e429]: 상품 상세 단계에서 이탈이 상대적으로 높게 나타났습니다. 가볍게 둘러보기 유형이 전체 세션의 62.71%로 가장 높은 비중을 보입니다.
+            - generic [ref=e430]:
+              - generic [ref=e431]:
+                - heading "주요 문제" [level=3] [ref=e432]
+                - article [ref=e433]:
+                  - generic [ref=e434]:
+                    - generic [ref=e435]:
+                      - generic [ref=e436]: 상품 상세 이후 전환 약화
+                      - generic [ref=e437]: 상품 상세
+                    - generic [ref=e438]: 높음
+                  - generic [ref=e440]: 다음 단계 이동률 45.16% · 이탈률 54.84%
+                  - generic [ref=e441]: 상품 상세 단계에서 다음 흐름으로 이어지지 않는 세션이 많아 보입니다. CTA 배치나 정보 전달을 우선 확인해볼 수 있습니다.
+                - article [ref=e442]:
+                  - generic [ref=e443]:
+                    - generic [ref=e444]:
+                      - generic [ref=e445]: 장바구니 이후 전환 약화
+                      - generic [ref=e446]: 장바구니
+                    - generic [ref=e447]: 높음
+                  - generic [ref=e449]: 다음 단계 이동률 50.00% · 이탈률 50.00%
+                  - generic [ref=e450]: 장바구니 단계에서 다음 흐름으로 이어지지 않는 세션이 많아 보입니다. CTA 배치나 정보 전달을 우선 확인해볼 수 있습니다.
+                - article [ref=e451]:
+                  - generic [ref=e452]:
+                    - generic [ref=e453]:
+                      - generic [ref=e454]: /, /collection, /detail, /cart 중심 구간에서 반복 신호가 보입니다. 대표 세션 기준 평균 체류 448초, 평균 탐색 깊이 6.0 수준입니다.
+                      - generic [ref=e455]: 가볍게 둘러보기
+                    - generic [ref=e456]: 높음
+                  - generic [ref=e458]: 유형 비중 62.71%
+                  - generic [ref=e459]: 첫 화면에서 가치 제안이 즉시 전달되지 않음
+              - generic [ref=e460]:
+                - heading "권장 액션" [level=3] [ref=e461]
+                - list [ref=e462]:
+                  - listitem [ref=e463]: 상품 상세 단계의 CTA 위치와 정보 밀도를 먼저 점검해볼 수 있습니다.
+                  - listitem [ref=e464]: 장바구니 단계의 CTA 위치와 정보 밀도를 먼저 점검해볼 수 있습니다.
+                  - listitem [ref=e465]: 첫 페이지 뷰 이후 10초 이내 행동 분포를 확인
+                  - listitem [ref=e466]: 페이지 깊이와 페이지뷰 수가 높은 세션의 CTA 클릭률을 확인
+              - generic [ref=e467]:
+                - heading "관련 실험 제안" [level=3] [ref=e468]
+                - list [ref=e469]:
+                  - listitem [ref=e470]: 첫 화면의 메시지와 CTA를 선명하게 하면 초기 이탈이 줄어든다 (page_view_to_click_rate)
+                  - listitem [ref=e471]: 의사결정 보조 UI를 추가하면 과도한 탐색 세션이 결제로 전환된다 (checkout_entered / sessions)
+                  - listitem [ref=e472]: 결제 단계의 신뢰 정보와 진행 안내를 강화하면 완료율이 오른다 (checkout_complete / sessions)
+        - group [ref=e160]:
+          - generic "▸ 연동 상세 보기 SDK 미리보기 링크와 확인용 정보" [ref=e161] [cursor=pointer]:
+            - text: ▸ 연동 상세 보기
+            - generic [ref=e162]: SDK 미리보기 링크와 확인용 정보
+  - button "AI AI 도우미" [ref=e164] [cursor=pointer]:
+    - generic [ref=e165]: AI
+    - generic [ref=e166]: AI 도우미

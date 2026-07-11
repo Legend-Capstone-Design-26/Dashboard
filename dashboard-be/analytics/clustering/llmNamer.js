@@ -3,21 +3,10 @@ const { FEATURE_KEYS } = require("./featureExtractor");
 // ─── Feature Label Map ────────────────────────────────────────────────────────
 
 const FEATURE_LABELS = {
-  duration_ms:             "세션 시간(ms)",
-  page_view_count:         "페이지뷰 수",
-  click_count:             "클릭 수",
-  depth:                   "방문한 고유 페이지 수",
-  dwell_total_ms:          "총 체류 시간(ms)",
-  error_count:             "에러 발생 수",
-  price_interaction_count: "가격·쿠폰 관련 클릭 수",
-  filter_count:            "필터·정렬 사용 수",
-  search_count:            "검색 수",
-  cart_add_count:          "장바구니 추가 수",
-  cart_remove_count:       "장바구니 취소 수",
-  wishlist_count:          "찜하기 수",
-  payment_attempt_count:   "결제 시도 수",
-  checkout_started:        "체크아웃 진입(0/1)",
-  checkout_completed:      "구매 완료(0/1)",
+  depth:             "방문한 경로 수 (탐색 범위)",
+  path_diversity:    "고유 경로 비율 (0~1, 낮을수록 같은 곳 반복)",
+  dwell_per_page:    "페이지당 체류 시간(ms) (몰입도)",
+  oscillation_rate:  "왕복 이동 비율 (0~1, 높을수록 배회)",
 };
 
 // ─── Profile Builder ──────────────────────────────────────────────────────────
