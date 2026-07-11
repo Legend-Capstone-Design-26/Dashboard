@@ -131,6 +131,66 @@ function validateNamingPayload(parsed, existingNames, featureProfile) {
   return { name, reason: String(parsed.reason || "").trim() };
 }
 
+// ─── Deterministic Description ───────────────────────────────────────────────
+// LLM reason 이 없거나 검증에 실패한 클러스터를 위해, raw centroid 와 전체 평균을
+// 비교해 사람이 읽을 수 있는 설명을 결정론적으로 생성한다.
+
+// [평균보다 높을 때 문구, 평균보다 낮을 때 문구(없으면 null)]
+const DESCRIPTION_PHRASES = Object.freeze({
+  path_depth: ["여러 페이지를 폭넓게 방문해요", "방문하는 페이지 수가 적어요"],
+  path_diversity: ["새로운 페이지 위주로 탐색해요", "같은 페이지를 반복해서 방문해요"],
+  oscillation_rate: ["페이지 사이를 오가며 배회하는 편이에요", null],
+  backtrack_rate: ["직전 페이지로 자주 되돌아가요", null],
+  transition_count: ["페이지 이동이 활발해요", "페이지 이동이 거의 없어요"],
+  page_view_intensity: ["페이지뷰가 평균보다 많아요", "페이지뷰가 평균보다 적어요"],
+  click_intensity: ["클릭이 평균보다 많아요", "클릭이 평균보다 적어요"],
+  dwell_per_page: ["페이지당 체류 시간이 길어요", "페이지당 체류 시간이 짧아요"],
+  error_friction: ["오류나 반복 클릭 같은 마찰 신호가 높아요", null],
+  search_count: ["검색 기능을 적극적으로 사용해요", null],
+  filter_count: ["필터와 정렬을 자주 사용해요", null],
+  price_interaction_count: ["가격 정보를 자주 확인해요", null],
+  cart_add_count: ["장바구니에 상품을 자주 담아요", null],
+  cart_remove_count: ["장바구니에서 상품을 자주 빼요", null],
+  payment_attempt_count: ["결제를 시도하는 비율이 높아요", null],
+  checkout_entered: ["결제 단계까지 진입하는 편이에요", null],
+  checkout_complete: ["구매까지 완료하는 비율이 높아요", null],
+  max_step_index: ["구매 여정 후반까지 도달해요", "구매 여정 초반에 머물러요"],
+});
+
+// featureExtractor 에서 capLog(log1p) 처리되는 피처들. 비교 시 원래 스케일로 되돌린다.
+const LOG_SCALED_KEYS = new Set([
+  "path_depth", "transition_count", "page_view_intensity", "click_intensity",
+  "event_intensity", "dwell_per_page", "error_friction", "search_count",
+  "filter_count", "price_interaction_count", "cart_add_count", "cart_remove_count",
+  "payment_attempt_count",
+]);
+
+function buildClusterDescription(rawCentroid, globalRawMean) {
+  const scored = [];
+  for (let i = 0; i < FEATURE_KEYS.length; i++) {
+    const key = FEATURE_KEYS[i];
+    const phrases = DESCRIPTION_PHRASES[key];
+    if (!phrases) continue;
+
+    let value = Number(rawCentroid?.[i]) || 0;
+    let mean = Number(globalRawMean?.[i]) || 0;
+    if (LOG_SCALED_KEYS.has(key)) {
+      value = Math.expm1(value);
+      mean = Math.expm1(mean);
+    }
+    if (mean <= 0) continue;
+
+    const ratio = value / mean;
+    const phrase = ratio >= 1.5 ? phrases[0] : ratio <= 0.5 ? phrases[1] : null;
+    if (!phrase) continue;
+    scored.push({ phrase, weight: Math.abs(Math.log(Math.max(ratio, 1e-6))) });
+  }
+
+  scored.sort((a, b) => b.weight - a.weight);
+  const top = scored.slice(0, 2).map((item) => item.phrase);
+  return top.length > 0 ? top.join(" · ") : "전체 평균과 비슷한 행동 패턴을 보여요";
+}
+
 function fallbackName(featureProfile, existingNames = []) {
   const profile = String(featureProfile || "");
   const candidates = [
@@ -149,6 +209,7 @@ function fallbackName(featureProfile, existingNames = []) {
 
 module.exports = {
   buildFeatureProfile,
+  buildClusterDescription,
   nameCluster,
   resolveMappingDecision,
   isValidClusterName,

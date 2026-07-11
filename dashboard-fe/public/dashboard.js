@@ -2675,8 +2675,11 @@
     labelBars.innerHTML = fullSummary.map((item) => {
       const share = typeof item.share === "number" ? item.share : 0;
       const pct = Math.max(0, Math.min(100, share * 100));
+      const clusterDescription = state.clusteringTaxonomy?.[item.label]?.description;
       const desc = isClustering
-        ? (state.clusteringFallbackUsed ? "규칙 기반 분류 (학습 데이터 부족)" : "비지도 학습으로 발견된 유형")
+        ? (state.clusteringFallbackUsed
+            ? "규칙 기반 분류 (학습 데이터 부족)"
+            : (clusterDescription || "비지도 학습으로 발견된 유형"))
         : (item.sessions === 0 ? "아직 감지되지 않음" : labelDescription(item.label));
       const conversionRate = isClustering && item.sessions > 0 && typeof item.metrics?.checkout_complete_rate === "number"
         ? `<div class="labelConversion">구매 전환율 ${fmtPct(item.metrics.checkout_complete_rate)}</div>`

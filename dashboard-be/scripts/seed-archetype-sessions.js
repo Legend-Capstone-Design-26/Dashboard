@@ -209,6 +209,8 @@ async function main() {
   } else {
     console.log(`[seed-archetype-sessions] 완료. K=${result.k}`);
     for (const [name, info] of Object.entries(result.taxonomy)) {
+      // taxonomy 객체에는 schemaVersion/featureKeys 같은 메타데이터도 같은 레벨에 들어있다
+      if (!info || !Array.isArray(info.rawCentroid)) continue;
       console.log(`  - "${name}" (status=${info.status}, rawCentroid=[${info.rawCentroid.map((v) => v.toFixed(1)).join(", ")}])`);
     }
   }
