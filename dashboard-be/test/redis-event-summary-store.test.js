@@ -178,3 +178,60 @@ test("event-summary API returns redis_unavailable without file fallback when Red
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("event-summary API uses historical session trend counts", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "event-summary-historical-api-"));
+  const files = {
+    experimentsFile: path.join(dir, "experiments.json"),
+    eventsFile: path.join(dir, "events.jsonl"),
+    sitesFile: path.join(dir, "sites.json"),
+    productsFile: path.join(dir, "products.json"),
+    faqFile: path.join(dir, "faq.json"),
+    policiesFile: path.join(dir, "policies.json"),
+    ordersFile: path.join(dir, "orders.json"),
+    supportTicketsFile: path.join(dir, "support_tickets.json"),
+    chatSessionsFile: path.join(dir, "chat_sessions.json"),
+    chatEventsFile: path.join(dir, "chat_events.jsonl"),
+    chatFeedbackFile: path.join(dir, "chat_feedback.json"),
+  };
+  fs.writeFileSync(files.experimentsFile, JSON.stringify({ experiments: [] }));
+  fs.writeFileSync(files.eventsFile, "");
+  fs.writeFileSync(files.sitesFile, JSON.stringify({ sites: [{ site_id: "site_a" }] }));
+  fs.writeFileSync(files.productsFile, JSON.stringify({ products: [] }));
+  fs.writeFileSync(files.faqFile, JSON.stringify({ items: [] }));
+  fs.writeFileSync(files.policiesFile, JSON.stringify({ policies: [] }));
+  fs.writeFileSync(files.ordersFile, JSON.stringify({ orders: [] }));
+  fs.writeFileSync(files.supportTicketsFile, JSON.stringify({ tickets: [] }));
+  fs.writeFileSync(files.chatSessionsFile, JSON.stringify({ sessions: [] }));
+  fs.writeFileSync(files.chatEventsFile, "");
+  fs.writeFileSync(files.chatFeedbackFile, JSON.stringify({ feedback: [] }));
+
+  const store = createMockStore();
+  const ts = Date.UTC(2026, 6, 10, 3, 15, 0);
+  await store.recordEventSummary({ event: { site_id: "site_a", session_id: "s1", event_name: "page_view", path: "/", ts } });
+  const bucketTs = Math.floor(ts / (60 * 60 * 1000)) * (60 * 60 * 1000);
+  const app = express();
+  app.use(express.json());
+  app.use("/api", createChatRoutes({
+    files,
+    middlewares: {},
+    redisEventSummaryStore: store,
+    redisSessionAnalyticsService: {
+      async getSessionTrend() {
+        return [{ ts: bucketTs, event_count: 0, session_count: 2 }];
+      },
+    },
+  }));
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, resolve));
+  try {
+    const port = server.address().port;
+    const response = await fetch(`http://127.0.0.1:${port}/api/event-summary?site_id=site_a&from_ts=${ts - 1000}&to_ts=${ts + 1000}`);
+    const json = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(json.ok, true);
+    assert.equal(json.trend.reduce((sum, item) => sum + item.session_count, 0), 2);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

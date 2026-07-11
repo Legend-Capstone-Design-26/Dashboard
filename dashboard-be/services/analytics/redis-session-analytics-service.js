@@ -7,7 +7,12 @@ const LABEL_PRIORITY = {
   price_sensitive_dropper: "medium",
   over_explorer: "medium",
   window_shopper: "low",
+  unclassified: "low",
 };
+
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+const KST_OFFSET_MS = 9 * HOUR_MS;
 
 const REDIS_UNAVAILABLE_RESPONSE = {
   ok: false,
@@ -85,9 +90,34 @@ function withPriority(summary) {
   }));
 }
 
+function bucketStartTs(ts, bucketMs) {
+  if (bucketMs === DAY_MS) return Math.floor((ts + KST_OFFSET_MS) / DAY_MS) * DAY_MS - KST_OFFSET_MS;
+  return Math.floor(ts / bucketMs) * bucketMs;
+}
+
+function buildEmptySessionTrend({ fromTs, toTs }) {
+  const now = Date.now();
+  const end = typeof toTs === "number" ? toTs : now;
+  const start = typeof fromTs === "number" ? fromTs : end - DAY_MS;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return [];
+  const bucketMs = (end - start) <= DAY_MS ? HOUR_MS : DAY_MS;
+  const trend = [];
+  for (let ts = bucketStartTs(start, bucketMs); ts <= end; ts += bucketMs) {
+    trend.push({ ts, event_count: 0, session_count: 0 });
+  }
+  return trend;
+}
+
 function createRedisSessionAnalyticsService({ redisSessionStore, redisEventSummaryStore }) {
-  async function getLabeledSessions({ siteId, limit = 200, fromTs, toTs } = {}) {
-    const states = await redisSessionStore.listSessionStates({ siteId, limit, fromTs, toTs });
+  async function listAnalyticsSessionStates({ siteId, limit = 1000, fromTs, toTs } = {}) {
+    if (typeof redisSessionStore.listHistoricalSessionSummaries === "function") {
+      return redisSessionStore.listHistoricalSessionSummaries({ siteId, limit, fromTs, toTs });
+    }
+    return redisSessionStore.listSessionStates({ siteId, limit, fromTs, toTs });
+  }
+
+  async function getLabeledSessions({ siteId, limit = 1000, fromTs, toTs } = {}) {
+    const states = await listAnalyticsSessionStates({ siteId, limit, fromTs, toTs });
     return states.map(labelRedisSessionState);
   }
 
@@ -95,7 +125,7 @@ function createRedisSessionAnalyticsService({ redisSessionStore, redisEventSumma
     const labeled = await getLabeledSessions({ siteId, limit, fromTs, toTs });
     return {
       ok: true,
-      source: "redis",
+      source: "redis_historical_sessions",
       fallback_used: false,
       site_id: siteId,
       from_ts: fromTs,
@@ -108,7 +138,7 @@ function createRedisSessionAnalyticsService({ redisSessionStore, redisEventSumma
     const labeled = await getLabeledSessions({ siteId, limit, fromTs, toTs });
     return {
       ok: true,
-      source: "redis",
+      source: "redis_historical_sessions",
       fallback_used: false,
       site_id: siteId,
       from_ts: fromTs,
@@ -123,15 +153,35 @@ function createRedisSessionAnalyticsService({ redisSessionStore, redisEventSumma
     if (redisEventSummaryStore) {
       input.event_summary = await redisEventSummaryStore.getEventSummary({ siteId, fromTs, toTs });
     }
-    input.source = "redis";
+    input.source = "redis_historical_sessions";
     input.fallback_used = false;
     return input;
+  }
+
+  async function getSessionTrend({ siteId, fromTs, toTs, limit = 100000 } = {}) {
+    const sessions = await listAnalyticsSessionStates({ siteId, fromTs, toTs, limit });
+    const trend = buildEmptySessionTrend({ fromTs, toTs });
+    const byTs = new Map(trend.map((item) => [item.ts, item]));
+    if (trend.length === 0) return [];
+    const bucketMs = trend.length >= 2 ? trend[1].ts - trend[0].ts : HOUR_MS;
+
+    for (const session of sessions) {
+      const startedAt = Number(session?.started_at || session?.start_ts || 0);
+      if (!Number.isFinite(startedAt) || startedAt <= 0) continue;
+      const ts = bucketStartTs(startedAt, bucketMs);
+      const bucket = byTs.get(ts);
+      if (bucket) bucket.session_count += 1;
+    }
+
+    return trend;
   }
 
   return {
     getSessions,
     getLabelsSummary,
     buildRedisInsightsInput,
+    getSessionTrend,
+    listAnalyticsSessionStates,
     normalizeRedisSessionStateToSummary,
   };
 }

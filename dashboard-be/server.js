@@ -1550,7 +1550,7 @@ app.get("/api/sessions", requireAuth, requireSiteAccess, async (req, res) => {
   const site_id = String(req.query.site_id || "ab-sample");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
-  const limit_sessions = Math.max(1, Math.min(200, toInt(req.query.limit) ?? 50));
+  const limit_sessions = Math.max(1, Math.min(100000, toInt(req.query.limit) ?? 50));
 
   if (!redisSessionAnalyticsService) return sendRedisUnavailable(res);
 
@@ -1566,7 +1566,7 @@ app.get("/api/labels/summary", requireAuth, requireSiteAccess, async (req, res) 
   const site_id = String(req.query.site_id || "ab-sample");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
-  const limit_sessions = Math.max(1, Math.min(1000, toInt(req.query.limit_sessions) ?? 1000));
+  const limit_sessions = Math.max(1, Math.min(100000, toInt(req.query.limit_sessions) ?? 100000));
 
   if (!redisSessionAnalyticsService) return sendRedisUnavailable(res);
 
@@ -1582,12 +1582,12 @@ app.get("/api/labels/clustering-summary", requireAuth, requireSiteAccess, async 
   const site_id = String(req.query.site_id || "ab-sample");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
-  const limit = Math.max(1, Math.min(1000, toInt(req.query.limit_sessions) ?? 1000));
+  const limit = Math.max(1, Math.min(100000, toInt(req.query.limit_sessions) ?? 100000));
 
-  if (!redisSessionStore || !clusteringLabeler) return sendRedisUnavailable(res);
+  if (!redisSessionAnalyticsService || !clusteringLabeler) return sendRedisUnavailable(res);
 
   try {
-    const states = await redisSessionStore.listSessionStates({ siteId: site_id, limit, fromTs: from_ts, toTs: to_ts });
+    const states = await redisSessionAnalyticsService.listAnalyticsSessionStates({ siteId: site_id, limit, fromTs: from_ts, toTs: to_ts });
 
     const labeled = await Promise.all(
       states.map(async (state) => {
@@ -1599,15 +1599,18 @@ app.get("/api/labels/clustering-summary", requireAuth, requireSiteAccess, async 
 
     const summary = computeLabelsSummary(labeled);
     const taxonomy = await loadTaxonomy(redisRuntime, site_id);
-    const fallbackUsed = !taxonomy || Object.keys(taxonomy).length === 0;
+    const fallbackUsed = labeled.some((item) => item?.label?.source !== "clustering");
+    const unclassifiedSessions = labeled.filter((item) => item?.label?.label === "unclassified").length;
 
     return res.json({
       ok: true,
-      source: "clustering",
+      source: "redis_historical_sessions",
+      mode: "clustering",
       fallback_used: fallbackUsed,
       site_id,
       summary,
       taxonomy: taxonomy || null,
+      unclassified_sessions: unclassifiedSessions,
     });
   } catch (e) {
     return sendRedisUnavailable(res, e);
@@ -1689,6 +1692,7 @@ app.use(
       chatFeedbackFile: CHAT_FEEDBACK_FILE,
     },
     redisEventSummaryStore,
+    redisSessionAnalyticsService,
     middlewares: {
       requireAuth,
       requireSiteAccess,

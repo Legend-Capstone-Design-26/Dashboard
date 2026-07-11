@@ -1,0 +1,35 @@
+TASK 1 BRANCH HYGIENE
+
+$ GIT_MASTER=1 git fetch --all --prune
+
+$ GIT_MASTER=1 git status --short --branch
+## feature/unsupervised...origin/feature/unsupervised
+?? .omo/
+
+$ GIT_MASTER=1 git branch -vv
+  design                            7d32f88 [origin/design] 화면 편집기 링크 변경
+  design_ex                         00f1775 [origin/design_ex] 디자인 원복
+  feature/VE                        7bea895 [origin/feature/VE] [Feat] 개별 수정 기능 추가
+  feature/agent                     6bcbb03 [origin/feature/agent] 디바이스 세션 추가되면 다운되는 문제 수정
+  feature/aws-deployment-foundation d6be92b [origin/feature/aws-deployment-foundation] kafka, redis 배포를 위한 초안작업
+  feature/dashboard                 04a130a [origin/feature/dashboard] 대시보드 요소 수정, 정보의 우선순위 고려
+  feature/design                    9959d0d [origin/feature/design: ahead 1] commit for checkout
+* feature/unsupervised              136e15a [origin/feature/unsupervised] [Modify] 비지도학습 가중치 제거
+  front/design                      7c6739a [origin/front/design: ahead 1] 의존성
+  korean                            73cc25b [origin/korean] v.0.0.1 한국인 persona
+  korean-from-main                  0f7291f [origin/korean-from-main] add/agent 벡엔드 모듈 추가 및 agent 구현 관련 md 파일 추가
+  llm                               811d5c6 [origin/llm] llm
+  main                              5695982 [origin/main] Merge pull request #25 from Legend-Capstone-Design-26/front/design
+
+$ GIT_MASTER=1 git checkout -B merge/unsupervised-into-front-design origin/front/design
+Switched to a new branch 'merge/unsupervised-into-front-design'
+branch 'merge/unsupervised-into-front-design' set up to track 'origin/front/design'.
+
+$ GIT_MASTER=1 git status --short --branch
+## merge/unsupervised-into-front-design...origin/front/design
+?? .omo/
+
+$ GIT_MASTER=1 git rev-parse --abbrev-ref HEAD
+merge/unsupervised-into-front-design
+
+$ GIT_MASTER=1 git diff --name-status origin/front/design..HEAD

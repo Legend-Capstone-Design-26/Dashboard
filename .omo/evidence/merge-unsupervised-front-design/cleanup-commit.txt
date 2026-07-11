@@ -1,0 +1,31 @@
+CLEANUP COMMIT
+
+$ GIT_MASTER=1 git add cleanup paths
+
+$ GIT_MASTER=1 git diff --cached --name-status
+M	dashboard-be/analytics/CLUSTERING_DESIGN.md
+R099	dashboard-be/scripts/test-clustering.js	dashboard-be/scripts/validate-clustering.js
+
+$ node forbidden staged path check
+forbidden staged paths: none
+
+$ GIT_MASTER=1 git commit
+[merge/unsupervised-into-front-design dca21d0] test(clustering): keep manual clustering validation out of node test discovery
+ Committer: junnokimm <junnokimm@junnokimmui-MacBookAir.local>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly. Run the
+following command and follow the instructions in your editor to edit
+your configuration file:
+
+    git config --global --edit
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+ rename dashboard-be/scripts/{test-clustering.js => validate-clustering.js} (99%)
+
+$ GIT_MASTER=1 git log --oneline -1
+dca21d0 test(clustering): keep manual clustering validation out of node test discovery

@@ -1,0 +1,26 @@
+TASK 7 API/UI SMOKE
+
+$ PORT=3101 npm run dev --workspace dashboard-be &
+pid=30206
+
+$ wait for server /login
+server ready on attempt 1
+
+$ curl login and clustering-summary
+{"ok":true,"user":{"id":"3612a1c2dcd50566","username":"admin","display_name":"Dashboard Admin","is_admin":true,"allowed_site_ids":["legend-ecommerce","test_site_011"],"default_site_id":"legend-ecommerce"}}
+HTTP/1.1 503 Service Unavailable
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET,POST,PATCH,DELETE,OPTIONS
+Access-Control-Allow-Headers: Content-Type
+Content-Type: application/json; charset=utf-8
+Content-Length: 208
+ETag: W/"d0-yCeyZurr11lN5lutlumsyILH71k"
+Date: Tue, 30 Jun 2026 06:37:52 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"ok":false,"reason":"redis_unavailable","message":"실시간 데이터 저장소에 연결할 수 없습니다. Redis와 event consumer 상태를 확인해 주세요.","source":"redis","fallback_used":false}
+
+$ cleanup server
+stopped pid=30206

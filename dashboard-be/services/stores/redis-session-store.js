@@ -8,6 +8,77 @@ function buildSessionKey({ siteId, sessionId }) {
   return `session:${siteId}:${sessionId}`;
 }
 
+function buildHistoricalSessionKey({ siteId, sessionId }) {
+  return `session_summary:${siteId}:${sessionId}`;
+}
+
+function buildHistoricalSessionIndexKey({ siteId }) {
+  return `session_summary_index:${siteId}:started_at`;
+}
+
+function normalizePaths(state) {
+  const paths = Array.isArray(state?.paths) ? state.paths : [];
+  const values = paths.concat(state?.last_path ? [state.last_path] : [])
+    .map((path) => String(path || "").trim())
+    .filter(Boolean);
+  return Array.from(new Set(values));
+}
+
+function normalizeHistoricalSessionSummary(state) {
+  const startTs = Number(state?.started_at || state?.start_ts || state?.last_ts || 0) || 0;
+  const endTs = Number(state?.last_ts || state?.last_event_at || state?.updated_at || startTs) || startTs;
+  const uniquePaths = normalizePaths(state);
+  const pageViews = Number(state?.page_view_count ?? state?.page_views ?? state?.pageviews ?? 0) || 0;
+  const clicks = Number(state?.click_count ?? state?.clicks ?? 0) || 0;
+  const checkoutEntered = Boolean(state?.checkout_entered || state?.checkout_started || state?.max_step === "checkout" || state?.max_step === "payment");
+  const checkoutComplete = Boolean(state?.checkout_complete || state?.checkout_completed);
+  return {
+    ...(state || {}),
+    site_id: state?.site_id || null,
+    session_id: state?.session_id || null,
+    anon_user_id: state?.anon_user_id || null,
+    started_at: startTs || null,
+    start_ts: startTs || null,
+    last_event_at: endTs || null,
+    last_ts: endTs || null,
+    end_ts: endTs || null,
+    duration_ms: Math.max(0, endTs - startTs),
+    event_count: Number(state?.event_count || 0),
+    page_view_count: pageViews,
+    page_views: pageViews,
+    pageviews: pageViews,
+    click_count: clicks,
+    clicks,
+    depth: uniquePaths.length,
+    paths: uniquePaths,
+    unique_paths: uniquePaths,
+    dwell_total_ms: Number(state?.dwell_total_ms || state?.last_dwell_ms || 0) || 0,
+    back_count: Number(state?.back_count || 0) || 0,
+    error_count: Number(state?.error_count || 0) || 0,
+    rage_clicks_count: Number(state?.rage_clicks_count || 0) || 0,
+    price_interaction_count: Number(state?.price_interaction_count || 0) || 0,
+    filter_count: Number(state?.filter_count || state?.filter_change_count || 0) || 0,
+    filter_change_count: Number(state?.filter_count || state?.filter_change_count || 0) || 0,
+    search_count: Number(state?.search_count || 0) || 0,
+    cart_add_count: Number(state?.cart_add_count || state?.add_to_cart_count || 0) || 0,
+    add_to_cart_count: Number(state?.cart_add_count || state?.add_to_cart_count || 0) || 0,
+    cart_remove_count: Number(state?.cart_remove_count || 0) || 0,
+    wishlist_count: Number(state?.wishlist_count || 0) || 0,
+    payment_attempt_count: Number(state?.payment_attempt_count || 0) || 0,
+    checkout_started: checkoutEntered,
+    checkout_entered: checkoutEntered,
+    checkout_completed: checkoutComplete,
+    checkout_complete: checkoutComplete,
+    max_step: state?.max_step || "home",
+    ui_variant: state?.ui_variant || null,
+    experiments: Array.isArray(state?.experiments) ? state.experiments : [],
+    evidence: Array.isArray(state?.evidence) ? state.evidence : [
+      uniquePaths[0] ? { ts: startTs || null, event_name: "session_start", path: uniquePaths[0], props: {} } : null,
+      state?.last_event_name ? { ts: endTs || null, event_name: state.last_event_name, path: state.last_path || null, props: {} } : null,
+    ].filter(Boolean),
+  };
+}
+
 async function scanKeys(client, pattern) {
   const prefix = String(client?.options?.keyPrefix || "");
   const physicalPattern = `${prefix}${pattern}`;
@@ -29,6 +100,52 @@ async function scanKeys(client, pattern) {
 }
 
 function createRedisSessionStore({ redisRuntime, sessionTtlSec, assignmentTtlSec }) {
+  async function upsertHistoricalSessionSummaryWithClient(client, { siteId, sessionId, state }) {
+    const summary = normalizeHistoricalSessionSummary({ ...(state || {}), site_id: siteId, session_id: sessionId });
+    if (!summary.site_id || !summary.session_id || typeof summary.started_at !== "number") {
+      return { ok: false, reason: "invalid_session_summary" };
+    }
+    const key = buildHistoricalSessionKey({ siteId: summary.site_id, sessionId: summary.session_id });
+    const indexKey = buildHistoricalSessionIndexKey({ siteId: summary.site_id });
+    const payload = JSON.stringify({ ...summary, updated_at: Date.now() });
+    await client.set(key, payload);
+    await client.zadd(indexKey, summary.started_at, summary.session_id);
+    return { ok: true, key, indexKey };
+  }
+
+  async function upsertHistoricalSessionSummary({ siteId, sessionId, state }) {
+    const client = await redisRuntime.connect();
+    return upsertHistoricalSessionSummaryWithClient(client, { siteId, sessionId, state });
+  }
+
+  async function listHistoricalSessionSummaries({ siteId, limit = 1000, fromTs, toTs } = {}) {
+    const client = await redisRuntime.connect();
+    const indexKey = buildHistoricalSessionIndexKey({ siteId });
+    const min = typeof fromTs === "number" && Number.isFinite(fromTs) ? fromTs : "-inf";
+    const max = typeof toTs === "number" && Number.isFinite(toTs) ? toTs : "+inf";
+    const maxLimit = Math.max(1, Math.min(Number(limit) || 1000, 100000));
+    const sessionIds = await client.zrangebyscore(indexKey, min, max, "LIMIT", 0, maxLimit);
+    if (!Array.isArray(sessionIds) || sessionIds.length === 0) return [];
+
+    const keys = sessionIds.map((sessionId) => buildHistoricalSessionKey({ siteId, sessionId }));
+    const values = await Promise.all(keys.map((key) => client.get(key)));
+    const items = [];
+    for (const value of values) {
+      if (!value) continue;
+      try {
+        const summary = normalizeHistoricalSessionSummary(JSON.parse(value));
+        const startedAt = Number(summary?.started_at || 0);
+        if (typeof fromTs === "number" && Number.isFinite(fromTs) && startedAt < fromTs) continue;
+        if (typeof toTs === "number" && Number.isFinite(toTs) && startedAt > toTs) continue;
+        items.push(summary);
+      } catch {
+        continue;
+      }
+    }
+
+    return items.sort((a, b) => (Number(b?.started_at) || 0) - (Number(a?.started_at) || 0));
+  }
+
   async function listSessionStates({ siteId, limit = 50, fromTs, toTs } = {}) {
     const client = await redisRuntime.connect();
     const pattern = buildSessionKey({ siteId, sessionId: "*" });
@@ -84,6 +201,7 @@ function createRedisSessionStore({ redisRuntime, sessionTtlSec, assignmentTtlSec
     const key = buildSessionKey({ siteId, sessionId });
     const payload = JSON.stringify({ ...(state || {}), updated_at: Date.now() });
     await client.set(key, payload, "EX", sessionTtlSec);
+    await upsertHistoricalSessionSummaryWithClient(client, { siteId, sessionId, state });
     return { ok: true, key };
   }
 
@@ -105,7 +223,12 @@ function createRedisSessionStore({ redisRuntime, sessionTtlSec, assignmentTtlSec
     getVariantAssignment,
     upsertSessionState,
     getSessionState,
+    upsertHistoricalSessionSummary,
+    listHistoricalSessionSummaries,
   };
 }
 
-module.exports = { createRedisSessionStore };
+module.exports = {
+  createRedisSessionStore,
+  normalizeHistoricalSessionSummary,
+};
