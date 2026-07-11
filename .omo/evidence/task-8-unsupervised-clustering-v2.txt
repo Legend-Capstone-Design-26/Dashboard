@@ -1,0 +1,26 @@
+Manual data-surface QA: fake Redis + mock LLM v2 historical clustering
+
+Command:
+node - <<'NODE'
+// Inline harness created 100 historical session summaries through createRedisSessionStore,
+// loaded them through listHistoricalSessionSummaries, ran runClustering with a mock LLM,
+// then labeled one summary through createClusteringLabeler. Fake Redis throws if live keys
+// are scanned, so this proves the historical summary surface is used.
+NODE
+
+Observable result:
+{
+  "summaries": 100,
+  "preservedPathSequence": true,
+  "skipped": false,
+  "k": 2,
+  "taxonomySchema": 2,
+  "normSchema": 2,
+  "labelSource": "clustering",
+  "label": "반복 탐색형",
+  "v2TaxonomyKeyExists": true,
+  "usedLiveListKeys": false
+}
+
+Cleanup:
+No Redis, Docker, Kafka, OpenAI, ports, child processes, or temp files were created. Fake Redis lived in-process and exited with the node process.

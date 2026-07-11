@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "active_work_id": "unsupervised-clustering-v2",
+  "works": {
+    "unsupervised-clustering-v2": {
+      "work_id": "unsupervised-clustering-v2",
+      "active_plan": ".omo/plans/unsupervised-clustering-v2.md",
+      "plan_name": "unsupervised-clustering-v2",
+      "session_ids": ["codex:current"],
+      "status": "active",
+      "worktree_path": null
+    }
+  }
+}

@@ -10,9 +10,10 @@ const { createRedisMetricsStore } = require("../services/stores/redis-metrics-st
 const { createRedisEventSummaryStore } = require("../services/stores/redis-event-summary-store");
 const { createFileSiteRegistryStore } = require("../services/stores/site-registry-store");
 const { mergeSessionState, extractVariantAssignments } = require("../services/analytics/session-state");
-const { runClustering, shouldRecluster } = require("../analytics/clustering/clusteringOrchestrator");
-const { getSessionCount, incrementSessionCount, getLastClusteredCount } = require("../analytics/clustering/clusterStore");
+const { runClustering, shouldRecluster, isEligibleSessionSummary } = require("../analytics/clustering/clusteringOrchestrator");
+const { incrementSessionCount, getLastClusteredCount } = require("../analytics/clustering/clusterStore");
 const { callOpenAIChat } = require("../insights/openaiProvider");
+const { triggerHistoricalClustering } = require("./clustering-trigger");
 
 loadEnvFromFile();
 
@@ -50,26 +51,17 @@ function makeLlmAdapter() {
 // 세션 종료(dwell_time) 이벤트를 감지해 세션 수를 카운트하고 클러스터링 트리거를 확인한다.
 // 클러스터링은 무거운 작업이므로 await 하지 않고 백그라운드에서 실행한다.
 async function maybeTriggerClustering(siteId) {
-  if (!redisRuntime) return;
-  try {
-    const current  = await incrementSessionCount(redisRuntime, siteId);
-    const last     = await getLastClusteredCount(redisRuntime, siteId);
-    if (!shouldRecluster(last, current)) return;
-
-    const sessions = await redisSessionStore.listSessionStates({ siteId, limit: 2000 });
-    if (sessions.length === 0) return;
-
-    const callLlm = makeLlmAdapter();
-    runClustering(sessions, siteId, redisRuntime, callLlm)
-      .then((result) => {
-        if (!result.skipped) {
-          console.log(`[clustering] site=${siteId} k=${result.k} taxonomy=${Object.keys(result.taxonomy || {}).join(", ")}`);
-        }
-      })
-      .catch((err) => console.warn("[clustering] background error", err));
-  } catch (err) {
-    console.warn("[clustering] trigger error", err);
-  }
+  return triggerHistoricalClustering({
+    siteId,
+    redisRuntime,
+    redisSessionStore,
+    incrementSessionCount,
+    getLastClusteredCount,
+    shouldRecluster,
+    isEligibleSessionSummary,
+    runClustering,
+    makeLlmAdapter,
+  });
 }
 
 async function mirrorEventToRedis(event) {

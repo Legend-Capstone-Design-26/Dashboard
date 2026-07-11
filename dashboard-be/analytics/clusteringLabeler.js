@@ -1,5 +1,5 @@
 const { labelSessionSummary }          = require("./labeler");
-const { extractRawVector, applyNorm }  = require("./clustering/featureExtractor");
+const { extractRawVector, applyNorm, FEATURE_SCHEMA_VERSION, FEATURE_KEYS, isCompatibleNormParams }  = require("./clustering/featureExtractor");
 const { nearestCentroidIdx }           = require("./clustering/kmeans");
 const { loadTaxonomy, loadNormParams } = require("./clustering/clusterStore");
 
@@ -38,8 +38,9 @@ function toSummaryLike(state) {
 // 이 연산은 단순 수식이므로 Node.js 에서 직접 수행해 Python 호출 오버헤드를 없앤다.
 
 function assignToCluster(sessionState, taxonomy, normParams) {
+  if (!isCompatibleTaxonomy(taxonomy) || !isCompatibleNormParams(normParams)) return null;
   const activeEntries = Object.entries(taxonomy)
-    .filter(([, entry]) => entry.status === "active" && Array.isArray(entry.centroid));
+    .filter(([, entry]) => entry.status === "active" && isCompatibleCentroid(entry.centroid));
 
   if (activeEntries.length === 0) return null;
 
@@ -49,6 +50,18 @@ function assignToCluster(sessionState, taxonomy, normParams) {
   const idx        = nearestCentroidIdx(normVector, centroids);
   const [name]     = activeEntries[idx];
   return name;
+}
+
+function isCompatibleTaxonomy(taxonomy) {
+  if (!taxonomy || taxonomy.schemaVersion !== FEATURE_SCHEMA_VERSION) return false;
+  if (!Array.isArray(taxonomy.featureKeys) || taxonomy.featureKeys.length !== FEATURE_KEYS.length) return false;
+  return taxonomy.featureKeys.every((key, index) => key === FEATURE_KEYS[index]);
+}
+
+function isCompatibleCentroid(centroid) {
+  return Array.isArray(centroid)
+    && centroid.length === FEATURE_KEYS.length
+    && centroid.every(Number.isFinite);
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -106,4 +119,4 @@ function createClusteringLabeler({ redisRuntime }) {
   return { labelSession, invalidateCache };
 }
 
-module.exports = { createClusteringLabeler };
+module.exports = { createClusteringLabeler, assignToCluster, isCompatibleTaxonomy, isCompatibleCentroid };
