@@ -235,6 +235,7 @@
     price_sensitive_dropper: "가격·혜택 비교형",
     over_explorer: "여러 화면 오래 탐색",
     window_shopper: "가볍게 둘러보기",
+    unclassified: "미분류",
   };
 
   const STATUS_KO = {
@@ -250,6 +251,7 @@
     "window_shopper",
     "ux_friction_dropper",
     "checkout_abandoner",
+    "unclassified",
   ];
 
   const LABEL_DESC = {
@@ -258,6 +260,7 @@
     window_shopper: "가볍게 둘러보다 구매 행동 없이 종료하는 패턴",
     ux_friction_dropper: "불편이나 오류를 겪은 뒤 흐름을 이탈하는 패턴",
     checkout_abandoner: "장바구니·결제 단계에서 구매 완료로 이어지지 않는 패턴",
+    unclassified: "분류에 필요한 신호가 부족해 별도 표시되는 세션",
   };
 
   const LABEL_COLORS = ["#5b76fe", "#7d92ff", "#ff7a45", "#ffb14a", "#ff5f7a"];
@@ -2889,6 +2892,8 @@
     if (sessionsSourceLabel) {
       sessionsSourceLabel.textContent = state.sessionsSource === "design_preview"
         ? "Design preview data"
+        : state.sessionsSource === "redis_historical_sessions"
+        ? "Redis historical sessions"
         : state.sessionsSource === "redis"
         ? "Redis read model"
         : "최근 방문 기록";

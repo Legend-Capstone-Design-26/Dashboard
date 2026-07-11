@@ -1,0 +1,9 @@
+{
+  "url": "http://127.0.0.1:3101/dashboard?site_id=legend-ecommerce",
+  "active": true,
+  "ariaPressed": "true",
+  "className": "toggleBtn active",
+  "noticeHidden": true,
+  "noticeText": "",
+  "labelMode": null
+}

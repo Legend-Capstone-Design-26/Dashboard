@@ -1,0 +1,104 @@
+TASK 6 CI SAFETY CLEANUP
+
+$ test -f dashboard-be/scripts/validate-clustering.js && test ! -e dashboard-be/scripts/test-clustering.js
+rename present
+
+$ node --check dashboard-be/scripts/validate-clustering.js
+
+$ GIT_MASTER=1 git diff --check
+
+$ env -u OPENAI_API_KEY -u UX_INSIGHTS_API_KEY npm test
+
+> ux-dashboard-workspace@1.0.0 test
+> npm run test --workspace dashboard-be
+
+
+> ux-sdk-dashboard-service@1.0.0 test
+> node --test
+
+✔ appendAgentActionLog returns failure instead of throwing on append error (1.735292ms)
+✔ createApprovalRequest includes expected version status hash expiry and idempotency (2.620292ms)
+✔ expired approval is not executable (0.1935ms)
+✔ payload hash mismatch is not executable (0.106625ms)
+✔ buildDraftChangesFromInstruction returns checkout pay button changes (2.240125ms)
+✔ validateDraftChanges rejects invalid action type (0.404667ms)
+✔ validateDraftChanges rejects dangerous css (0.135083ms)
+✔ createExperimentDraft creates status draft experiment (2.747ms)
+✔ publishDraftExperiment turns expected draft into running (2.988791ms)
+✔ publishDraftExperiment refuses non-draft experiment (0.388583ms)
+✔ agent parser detects read-only experiment list intent (1.813666ms)
+✔ agent parser detects publish as write intent (0.572417ms)
+✔ agent parser detects draft creation as write intent (0.177167ms)
+✔ agent creates draft for create_experiment_draft intent and appends action log (3.363875ms)
+✔ agent returns approval_required for publish intent (1.906334ms)
+✔ agent publish approval includes replacement for existing running experiment (1.511416ms)
+✔ agent still blocks rollback intent (0.160625ms)
+✔ approve executes draft publish once and blocks duplicate (0.524167ms)
+✔ cancelled approval cannot be approved (0.211125ms)
+✔ approval status mismatch returns friendly message (0.136875ms)
+✔ agent lists experiments with read-only tool (0.104292ms)
+(node:20772) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ browser sdk attaches richer experiment metadata to emitted events (10.978167ms)
+✔ collect returns 400 when events array is empty (1.503292ms)
+✔ collect returns kafka_unavailable when Kafka store is missing (0.53425ms)
+✔ collect publishes to Kafka primary and returns source metadata (0.196458ms)
+✔ collect does not fallback to file when Kafka publish fails by default (0.170584ms)
+✔ collect can use explicit legacy file fallback only when enabled (0.485209ms)
+✔ Kafka event store publishes one consumer-compatible message per event (0.611208ms)
+✔ consumed event store appends and reads records (1.979042ms)
+✔ composite event store keeps primary reads and fans out writes (0.944334ms)
+✔ experiment store keeps prior versions in history (1.2035ms)
+✔ draft save carries forward parent history (0.749625ms)
+✔ experiment status catalog includes archived (0.931458ms)
+✔ experiment transitions follow agreed lifecycle (0.398875ms)
+✔ parseBoolean handles common env flag forms (1.854084ms)
+✔ generateInsights returns honest fallback status without fake insight cards (15.208167ms)
+✔ buildInsightsInput excludes login-only low-signal sessions (0.641417ms)
+✔ mergeInsights falls back when where is not grounded in allowed paths (1.111209ms)
+✔ mergeInsights preserves valid rich LLM fields (0.278542ms)
+✔ mergeInsights rejects unsupported pathless evidence from LLM (0.17275ms)
+✔ fallback status does not create auth-path-derived insight cards (0.170083ms)
+✔ buildInsightsPrompt asks for rich insight fields (0.133166ms)
+✔ rules labeler assigns expected labels for fixture sessions (12.6055ms)
+✔ window shopper only matches short low-depth low-action browsing (0.267375ms)
+✔ over explorer captures long low-action browse sessions (0.090041ms)
+✔ overlay fallback generator proposes review-oriented transition boosts (2.368459ms)
+✔ overlay fallback reacts to style changes and color cues (4.175084ms)
+✔ overlay normalization drops unknown edges and clamps multipliers (0.654208ms)
+✔ overlay generator returns deterministic fallback through mock llm client (5.144709ms)
+✔ generated overlay records are persisted for runtime lookup (4.157916ms)
+✔ runtime persona runner applies persisted overlay multipliers (11.173791ms)
+✔ persona catalog exposes weighted personas (3.38975ms)
+✔ generateSessionEvents builds timestamped events for a persona (2.770375ms)
+✔ redis event summary records pages clicks funnel and flow (2.393542ms)
+✔ redis event summary returns empty summary for empty read model (0.565292ms)
+✔ event-summary API returns redis_unavailable without file fallback when Redis store is disabled (45.624875ms)
+✔ redis metrics store records and reads variant metrics (2.495583ms)
+✔ redis runtime does not reconnect when client is already ready (0.622167ms)
+✔ redis runtime does not reconnect when client is already connected (0.498167ms)
+✔ redis runtime shares an in-flight connect call (5.748625ms)
+✔ normalizes Redis session state to existing session summary shape (1.81825ms)
+✔ builds sessions and label summary from Redis session states (1.295625ms)
+✔ builds insights input from Redis sessions and Redis event summary (0.478709ms)
+✔ returns empty Redis analytics results for empty session state (0.475625ms)
+✔ redis session store applies from_ts and to_ts filters (0.533375ms)
+✔ redis session store lists session states newest first (2.370958ms)
+✔ redis session store reads multiple session states with individual GETs (0.309125ms)
+✔ same site can keep multiple draft experiments (2.097208ms)
+✔ draft can publish when no other running experiment exists (0.833917ms)
+✔ different draft cannot publish while another experiment is running (0.514666ms)
+✔ replace_running pauses old running experiment and publishes new draft (0.964417ms)
+✔ real-apply policy blocks and then replaces another running experiment (2.776375ms)
+✔ config duplicate-running guard can select the latest running experiment (0.258208ms)
+✔ mergeSessionState rolls forward key session fields (1.305166ms)
+✔ extractVariantAssignments maps experiment metadata into redis assignment writes (0.5315ms)
+✔ session summary counts canonical explicit commerce events (0.8495ms)
+ℹ tests 76
+ℹ suites 0
+ℹ pass 76
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 464.239667

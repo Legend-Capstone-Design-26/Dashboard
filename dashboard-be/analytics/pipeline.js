@@ -89,7 +89,7 @@ function pickRepresentatives(labeledSessions, perLabel, sortBy) {
 
   const byLabel = new Map();
   for (const x of labeledSessions || []) {
-    const lab = x?.label?.label || "unknown";
+    const lab = x?.label?.label || "unclassified";
     if (!byLabel.has(lab)) byLabel.set(lab, []);
     byLabel.get(lab).push(x);
   }
@@ -141,7 +141,7 @@ function computeLabelsSummary(labeledSessions) {
 
   const by = new Map();
   for (const x of list) {
-    const lab = x?.label?.label || "unknown";
+    const lab = x?.label?.label || "unclassified";
     if (!by.has(lab)) by.set(lab, []);
     by.get(lab).push(x);
   }

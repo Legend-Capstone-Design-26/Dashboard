@@ -1,0 +1,36 @@
+TASK 2 MERGE MECHANICS
+
+$ GIT_MASTER=1 git merge --no-ff --no-commit origin/feature/unsupervised
+Auto-merging dashboard-fe/public/dashboard.css
+CONFLICT (content): Merge conflict in dashboard-fe/public/dashboard.css
+Auto-merging dashboard-fe/public/dashboard.html
+Auto-merging dashboard-fe/public/dashboard.js
+Automatic merge failed; fix conflicts and then commit the result.
+
+$ GIT_MASTER=1 git status --short
+A  dashboard-be/analytics/CLUSTERING_DESIGN.md
+A  dashboard-be/analytics/clustering/clusterStore.js
+A  dashboard-be/analytics/clustering/clusteringOrchestrator.js
+A  dashboard-be/analytics/clustering/featureExtractor.js
+A  dashboard-be/analytics/clustering/kmeans.js
+A  dashboard-be/analytics/clustering/llmNamer.js
+A  dashboard-be/analytics/clustering/taxonomyMapper.js
+A  dashboard-be/analytics/clusteringLabeler.js
+A  dashboard-be/scripts/test-clustering.js
+M  dashboard-be/server.js
+M  dashboard-be/services/analytics/session-state.js
+M  dashboard-be/services/runtime/redis.js
+M  dashboard-be/services/stores/redis-metrics-store.js
+M  dashboard-be/services/stores/redis-session-store.js
+M  dashboard-be/test/redis-metrics-store.test.js
+A  dashboard-be/test/redis-runtime.test.js
+M  dashboard-be/test/redis-session-analytics-service.test.js
+M  dashboard-be/test/redis-session-store.test.js
+M  dashboard-be/workers/event-consumer.js
+UU dashboard-fe/public/dashboard.css
+M  dashboard-fe/public/dashboard.html
+M  dashboard-fe/public/dashboard.js
+?? .omo/
+
+$ GIT_MASTER=1 git diff --name-only --diff-filter=U
+dashboard-fe/public/dashboard.css

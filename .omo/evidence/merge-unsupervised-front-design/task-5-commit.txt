@@ -1,0 +1,75 @@
+TASK 5 MERGE COMMIT
+
+$ GIT_MASTER=1 git diff --cached --name-only
+dashboard-be/analytics/CLUSTERING_DESIGN.md
+dashboard-be/analytics/clustering/clusterStore.js
+dashboard-be/analytics/clustering/clusteringOrchestrator.js
+dashboard-be/analytics/clustering/featureExtractor.js
+dashboard-be/analytics/clustering/kmeans.js
+dashboard-be/analytics/clustering/llmNamer.js
+dashboard-be/analytics/clustering/taxonomyMapper.js
+dashboard-be/analytics/clusteringLabeler.js
+dashboard-be/scripts/test-clustering.js
+dashboard-be/server.js
+dashboard-be/services/analytics/session-state.js
+dashboard-be/services/runtime/redis.js
+dashboard-be/services/stores/redis-metrics-store.js
+dashboard-be/services/stores/redis-session-store.js
+dashboard-be/test/redis-metrics-store.test.js
+dashboard-be/test/redis-runtime.test.js
+dashboard-be/test/redis-session-analytics-service.test.js
+dashboard-be/test/redis-session-store.test.js
+dashboard-be/workers/event-consumer.js
+dashboard-fe/public/dashboard.css
+dashboard-fe/public/dashboard.html
+dashboard-fe/public/dashboard.js
+
+$ node forbidden staged path check
+forbidden staged paths: none
+
+$ GIT_MASTER=1 git status --short
+A  dashboard-be/analytics/CLUSTERING_DESIGN.md
+A  dashboard-be/analytics/clustering/clusterStore.js
+A  dashboard-be/analytics/clustering/clusteringOrchestrator.js
+A  dashboard-be/analytics/clustering/featureExtractor.js
+A  dashboard-be/analytics/clustering/kmeans.js
+A  dashboard-be/analytics/clustering/llmNamer.js
+A  dashboard-be/analytics/clustering/taxonomyMapper.js
+A  dashboard-be/analytics/clusteringLabeler.js
+A  dashboard-be/scripts/test-clustering.js
+M  dashboard-be/server.js
+M  dashboard-be/services/analytics/session-state.js
+M  dashboard-be/services/runtime/redis.js
+M  dashboard-be/services/stores/redis-metrics-store.js
+M  dashboard-be/services/stores/redis-session-store.js
+M  dashboard-be/test/redis-metrics-store.test.js
+A  dashboard-be/test/redis-runtime.test.js
+M  dashboard-be/test/redis-session-analytics-service.test.js
+M  dashboard-be/test/redis-session-store.test.js
+M  dashboard-be/workers/event-consumer.js
+M  dashboard-fe/public/dashboard.css
+M  dashboard-fe/public/dashboard.html
+M  dashboard-fe/public/dashboard.js
+?? .omo/
+
+$ GIT_MASTER=1 git commit
+[merge/unsupervised-into-front-design 4652d8b] merge: merge origin/feature/unsupervised into front/design baseline
+ Committer: junnokimm <junnokimm@junnokimmui-MacBookAir.local>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly. Run the
+following command and follow the instructions in your editor to edit
+your configuration file:
+
+    git config --global --edit
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+
+$ GIT_MASTER=1 git log --oneline -1
+4652d8b merge: merge origin/feature/unsupervised into front/design baseline
+
+$ GIT_MASTER=1 git rev-list --parents -n 1 HEAD
+4652d8b9150eb33dd5ab36a11a279bb78c5be614 73dcae5ffaa2ae050fc439f830fc397fa08414c6 136e15a57145b31e180a1df92f5d5c16a20f4ed6

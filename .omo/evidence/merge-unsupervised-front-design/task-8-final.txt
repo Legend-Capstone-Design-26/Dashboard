@@ -1,0 +1,156 @@
+TASK 8 FINAL VERIFICATION
+
+$ GIT_MASTER=1 git status --short --branch
+## merge/unsupervised-into-front-design...origin/front/design [ahead 10]
+?? .omo/
+
+$ GIT_MASTER=1 git log --oneline --decorate -5
+dca21d0 (HEAD -> merge/unsupervised-into-front-design) test(clustering): keep manual clustering validation out of node test discovery
+4652d8b merge: merge origin/feature/unsupervised into front/design baseline
+136e15a (origin/feature/unsupervised, feature/unsupervised) [Modify] 비지도학습 가중치 제거
+73dcae5 (origin/front/design) fix/디자인 수정
+9f24407 [Feat] 비지도학습 유형군 UI 추가
+
+$ GIT_MASTER=1 git merge-base --is-ancestor origin/front/design HEAD
+origin/front/design is ancestor of HEAD
+
+$ GIT_MASTER=1 git diff --check
+
+$ env -u OPENAI_API_KEY -u UX_INSIGHTS_API_KEY npm test
+
+> ux-dashboard-workspace@1.0.0 test
+> npm run test --workspace dashboard-be
+
+
+> ux-sdk-dashboard-service@1.0.0 test
+> node --test
+
+✔ appendAgentActionLog returns failure instead of throwing on append error (1.552834ms)
+✔ createApprovalRequest includes expected version status hash expiry and idempotency (3.716ms)
+✔ expired approval is not executable (0.800542ms)
+✔ payload hash mismatch is not executable (0.427542ms)
+✔ buildDraftChangesFromInstruction returns checkout pay button changes (3.766583ms)
+✔ validateDraftChanges rejects invalid action type (0.353833ms)
+✔ validateDraftChanges rejects dangerous css (0.12975ms)
+✔ createExperimentDraft creates status draft experiment (1.630542ms)
+✔ publishDraftExperiment turns expected draft into running (1.17325ms)
+✔ publishDraftExperiment refuses non-draft experiment (1.300625ms)
+✔ agent parser detects read-only experiment list intent (0.544208ms)
+✔ agent parser detects publish as write intent (0.077458ms)
+✔ agent parser detects draft creation as write intent (0.066792ms)
+✔ agent creates draft for create_experiment_draft intent and appends action log (2.827292ms)
+✔ agent returns approval_required for publish intent (1.592791ms)
+✔ agent publish approval includes replacement for existing running experiment (0.268ms)
+✔ agent still blocks rollback intent (0.118709ms)
+✔ approve executes draft publish once and blocks duplicate (0.474542ms)
+✔ cancelled approval cannot be approved (0.216417ms)
+✔ approval status mismatch returns friendly message (0.140916ms)
+✔ agent lists experiments with read-only tool (0.105375ms)
+(node:52149) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ browser sdk attaches richer experiment metadata to emitted events (6.299958ms)
+✔ collect returns 400 when events array is empty (0.581292ms)
+✔ collect returns kafka_unavailable when Kafka store is missing (0.159625ms)
+✔ collect publishes to Kafka primary and returns source metadata (0.123833ms)
+✔ collect does not fallback to file when Kafka publish fails by default (0.128667ms)
+✔ collect can use explicit legacy file fallback only when enabled (0.472334ms)
+✔ Kafka event store publishes one consumer-compatible message per event (0.689292ms)
+✔ consumed event store appends and reads records (1.389917ms)
+✔ composite event store keeps primary reads and fans out writes (2.722167ms)
+✔ experiment store keeps prior versions in history (1.296416ms)
+✔ draft save carries forward parent history (1.475916ms)
+✔ experiment status catalog includes archived (2.030375ms)
+✔ experiment transitions follow agreed lifecycle (0.120917ms)
+✔ parseBoolean handles common env flag forms (1.659ms)
+✔ generateInsights returns honest fallback status without fake insight cards (9.991792ms)
+✔ buildInsightsInput excludes login-only low-signal sessions (0.635584ms)
+✔ mergeInsights falls back when where is not grounded in allowed paths (0.782125ms)
+✔ mergeInsights preserves valid rich LLM fields (0.170792ms)
+✔ mergeInsights rejects unsupported pathless evidence from LLM (0.15275ms)
+✔ fallback status does not create auth-path-derived insight cards (0.336959ms)
+✔ buildInsightsPrompt asks for rich insight fields (0.138542ms)
+✔ rules labeler assigns expected labels for fixture sessions (9.782541ms)
+✔ window shopper only matches short low-depth low-action browsing (0.285292ms)
+✔ over explorer captures long low-action browse sessions (0.099625ms)
+✔ overlay fallback generator proposes review-oriented transition boosts (2.555417ms)
+✔ overlay fallback reacts to style changes and color cues (0.908834ms)
+✔ overlay normalization drops unknown edges and clamps multipliers (0.229958ms)
+✔ overlay generator returns deterministic fallback through mock llm client (0.75925ms)
+✔ generated overlay records are persisted for runtime lookup (2.823916ms)
+✔ runtime persona runner applies persisted overlay multipliers (2.34475ms)
+✔ persona catalog exposes weighted personas (5.558417ms)
+✔ generateSessionEvents builds timestamped events for a persona (4.354875ms)
+✔ redis event summary records pages clicks funnel and flow (1.751125ms)
+✔ redis event summary returns empty summary for empty read model (0.481209ms)
+✔ event-summary API returns redis_unavailable without file fallback when Redis store is disabled (39.366708ms)
+✔ redis metrics store records and reads variant metrics (2.635ms)
+✔ redis runtime does not reconnect when client is already ready (0.582042ms)
+✔ redis runtime does not reconnect when client is already connected (0.095542ms)
+✔ redis runtime shares an in-flight connect call (5.492083ms)
+✔ normalizes Redis session state to existing session summary shape (1.969917ms)
+✔ builds sessions and label summary from Redis session states (0.990125ms)
+✔ builds insights input from Redis sessions and Redis event summary (0.512333ms)
+✔ returns empty Redis analytics results for empty session state (2.247916ms)
+✔ redis session store applies from_ts and to_ts filters (1.625583ms)
+✔ redis session store lists session states newest first (4.514917ms)
+✔ redis session store reads multiple session states with individual GETs (0.730125ms)
+✔ same site can keep multiple draft experiments (1.817166ms)
+✔ draft can publish when no other running experiment exists (0.782917ms)
+✔ different draft cannot publish while another experiment is running (0.447875ms)
+✔ replace_running pauses old running experiment and publishes new draft (0.984125ms)
+✔ real-apply policy blocks and then replaces another running experiment (0.711125ms)
+✔ config duplicate-running guard can select the latest running experiment (0.104375ms)
+✔ mergeSessionState rolls forward key session fields (1.946167ms)
+✔ extractVariantAssignments maps experiment metadata into redis assignment writes (1.552542ms)
+✔ session summary counts canonical explicit commerce events (0.868334ms)
+ℹ tests 76
+ℹ suites 0
+ℹ pass 76
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 428.633125
+
+$ node --check dashboard-be/server.js
+
+$ node --check dashboard-be/workers/event-consumer.js
+
+$ node --check dashboard-be/services/analytics/session-state.js
+
+$ node --check dashboard-fe/public/dashboard.js
+
+$ rg conflict markers in product files
+
+$ forbidden staged paths
+forbidden staged paths: none
+
+$ forbidden tracked artifacts
+forbidden tracked paths: none
+
+$ GIT_MASTER=1 git diff --stat origin/front/design..HEAD
+ dashboard-be/analytics/CLUSTERING_DESIGN.md        | 289 +++++++++++++++++++++
+ dashboard-be/analytics/clustering/clusterStore.js  |  77 ++++++
+ .../analytics/clustering/clusteringOrchestrator.js | 127 +++++++++
+ .../analytics/clustering/featureExtractor.js       |  93 +++++++
+ dashboard-be/analytics/clustering/kmeans.js        | 177 +++++++++++++
+ dashboard-be/analytics/clustering/llmNamer.js      | 122 +++++++++
+ .../analytics/clustering/taxonomyMapper.js         |  65 +++++
+ dashboard-be/analytics/clusteringLabeler.js        | 109 ++++++++
+ dashboard-be/scripts/validate-clustering.js        | 282 ++++++++++++++++++++
+ dashboard-be/server.js                             |  51 ++++
+ dashboard-be/services/analytics/session-state.js   | 139 ++++++++--
+ dashboard-be/services/runtime/redis.js             |  19 +-
+ .../services/stores/redis-metrics-store.js         |  23 +-
+ .../services/stores/redis-session-store.js         |   4 +-
+ dashboard-be/test/redis-metrics-store.test.js      |  41 ++-
+ dashboard-be/test/redis-runtime.test.js            |  61 +++++
+ .../test/redis-session-analytics-service.test.js   |   2 +-
+ dashboard-be/test/redis-session-store.test.js      |  37 ++-
+ dashboard-be/workers/event-consumer.js             |  41 ++-
+ dashboard-fe/public/dashboard.css                  |  45 ++++
+ dashboard-fe/public/dashboard.html                 |   7 +-
+ dashboard-fe/public/dashboard.js                   | 147 ++++++++++-
+ 22 files changed, 1876 insertions(+), 82 deletions(-)
+
+No git push was run by this worker.

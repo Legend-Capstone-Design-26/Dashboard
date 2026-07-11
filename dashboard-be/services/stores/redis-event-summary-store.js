@@ -3,6 +3,7 @@ const { inferStepFromPath } = require("../../analytics/funnel");
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
+const KST_OFFSET_MS = 9 * HOUR_MS;
 const RECENT_WINDOW_MS = 5 * 60 * 1000;
 
 const JOURNEY_STEPS = [
@@ -32,6 +33,11 @@ function parseCount(value) {
 
 function buildKey(siteId, suffix) {
   return `summary:site:${siteId}:${suffix}`;
+}
+
+function bucketStartTs(ts, bucketMs) {
+  if (bucketMs === DAY_MS) return Math.floor((ts + KST_OFFSET_MS) / DAY_MS) * DAY_MS - KST_OFFSET_MS;
+  return Math.floor(ts / bucketMs) * bucketMs;
 }
 
 function mapZRangeWithScores(items, keyName) {
@@ -99,7 +105,7 @@ function createRedisEventSummaryStore({ redisRuntime }) {
     await client.zremrangebyscore(recentKey, 0, Date.now() - RECENT_WINDOW_MS);
 
     for (const bucketMs of [HOUR_MS, DAY_MS]) {
-      const bucketTs = Math.floor(ts / bucketMs) * bucketMs;
+      const bucketTs = bucketStartTs(ts, bucketMs);
       await client.hincrby(buildKey(siteId, `trend:${bucketMs}:events`), String(bucketTs), 1);
       if (sessionId) await client.sadd(buildKey(siteId, `trend:${bucketMs}:sessions:${bucketTs}`), sessionId);
     }
@@ -138,7 +144,7 @@ function createRedisEventSummaryStore({ redisRuntime }) {
     const bucketMs = (end - start) <= DAY_MS ? HOUR_MS : DAY_MS;
     const eventCounts = await client.hgetall(buildKey(siteId, `trend:${bucketMs}:events`));
     const trend = [];
-    for (let ts = Math.floor(start / bucketMs) * bucketMs; ts <= end; ts += bucketMs) {
+    for (let ts = bucketStartTs(start, bucketMs); ts <= end; ts += bucketMs) {
       const eventCount = parseCount(eventCounts?.[String(ts)]);
       const sessionCount = await client.scard(buildKey(siteId, `trend:${bucketMs}:sessions:${ts}`));
       trend.push({ ts, event_count: eventCount, session_count: parseCount(sessionCount) });
