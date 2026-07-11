@@ -1,5 +1,7 @@
 const { inferStepFromEvent, stepIndex } = require("../../analytics/funnel");
 
+const PATH_SEQUENCE_CAP = 100;
+
 // ─── Semantic Signal Detection ────────────────────────────────────────────────
 // SDK가 click 이벤트와 함께 보내는 모든 텍스트 신호를 합쳐서 의미를 추론한다.
 // data-track-id(element_id)에만 의존하지 않고 버튼 텍스트·aria-label·
@@ -72,7 +74,9 @@ function mergeSessionState(currentState, event) {
 
   const path  = event.path || current.last_path || null;
   const paths = Array.isArray(current.paths) ? current.paths.slice() : [];
+  const pathSequence = Array.isArray(current.path_sequence) ? current.path_sequence.slice() : paths.slice();
   if (path && paths[paths.length - 1] !== path) paths.push(path);
+  if (path) pathSequence.push(path);
 
   const sig     = inferSemanticSignals(event);
   const isClick = event.event_name === "click";
@@ -92,6 +96,7 @@ function mergeSessionState(currentState, event) {
     last_event_name: event.event_name || current.last_event_name || null,
     last_path:       path,
     paths:           paths.slice(-25),
+    path_sequence:   pathSequence.slice(-PATH_SEQUENCE_CAP),
     ui_variant:      event.ui_variant || current.ui_variant || null,
 
     event_count:     (Number(current.event_count)     || 0) + 1,
@@ -141,4 +146,5 @@ module.exports = {
   mergeSessionState,
   extractVariantAssignments,
   inferSemanticSignals,
+  PATH_SEQUENCE_CAP,
 };

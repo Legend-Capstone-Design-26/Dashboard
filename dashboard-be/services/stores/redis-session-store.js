@@ -16,17 +16,31 @@ function buildHistoricalSessionIndexKey({ siteId }) {
   return `session_summary_index:${siteId}:started_at`;
 }
 
-function normalizePaths(state) {
-  const paths = Array.isArray(state?.paths) ? state.paths : [];
-  const values = paths.concat(state?.last_path ? [state.last_path] : [])
+const HISTORICAL_SUMMARY_SCHEMA_VERSION = 2;
+
+function normalizePathList(paths) {
+  return (Array.isArray(paths) ? paths : [])
     .map((path) => String(path || "").trim())
     .filter(Boolean);
+}
+
+function normalizePathSequence(state) {
+  const explicit = normalizePathList(state?.path_sequence);
+  if (explicit.length > 0) return explicit;
+  const fallback = normalizePathList(state?.paths);
+  if (state?.last_path) fallback.push(String(state.last_path).trim());
+  return fallback.filter(Boolean);
+}
+
+function normalizePaths(state) {
+  const values = normalizePathSequence(state);
   return Array.from(new Set(values));
 }
 
 function normalizeHistoricalSessionSummary(state) {
   const startTs = Number(state?.started_at || state?.start_ts || state?.last_ts || 0) || 0;
   const endTs = Number(state?.last_ts || state?.last_event_at || state?.updated_at || startTs) || startTs;
+  const pathSequence = normalizePathSequence(state);
   const uniquePaths = normalizePaths(state);
   const pageViews = Number(state?.page_view_count ?? state?.page_views ?? state?.pageviews ?? 0) || 0;
   const clicks = Number(state?.click_count ?? state?.clicks ?? 0) || 0;
@@ -36,6 +50,7 @@ function normalizeHistoricalSessionSummary(state) {
     ...(state || {}),
     site_id: state?.site_id || null,
     session_id: state?.session_id || null,
+    summary_schema_version: Number(state?.summary_schema_version || HISTORICAL_SUMMARY_SCHEMA_VERSION),
     anon_user_id: state?.anon_user_id || null,
     started_at: startTs || null,
     start_ts: startTs || null,
@@ -50,6 +65,7 @@ function normalizeHistoricalSessionSummary(state) {
     click_count: clicks,
     clicks,
     depth: uniquePaths.length,
+    path_sequence: pathSequence,
     paths: uniquePaths,
     unique_paths: uniquePaths,
     dwell_total_ms: Number(state?.dwell_total_ms || state?.last_dwell_ms || 0) || 0,
@@ -231,4 +247,5 @@ function createRedisSessionStore({ redisRuntime, sessionTtlSec, assignmentTtlSec
 module.exports = {
   createRedisSessionStore,
   normalizeHistoricalSessionSummary,
+  HISTORICAL_SUMMARY_SCHEMA_VERSION,
 };

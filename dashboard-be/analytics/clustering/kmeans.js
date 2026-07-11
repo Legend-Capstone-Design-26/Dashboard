@@ -34,15 +34,29 @@ function meanVector(vectors) {
 // ─── K-Means++ Initialization ─────────────────────────────────────────────────
 // 초기 centroid 를 무작위가 아닌 거리 확률 분포로 선택해 수렴 안정성을 높인다.
 
-function initCentroids(vectors, k) {
-  const centroids = [vectors[Math.floor(Math.random() * vectors.length)]];
+function createSeededRng(seed = 1) {
+  let state = (Number(seed) >>> 0) || 1;
+  return function rng() {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+}
+
+function initCentroids(vectors, k, opts = {}) {
+  const rng = opts.rng || createSeededRng(opts.seed);
+  const centroids = [vectors[Math.floor(rng() * vectors.length)]];
 
   while (centroids.length < k) {
     const dists = vectors.map((v) =>
       Math.min(...centroids.map((c) => euclideanDistSq(v, c)))
     );
     const total = dists.reduce((a, b) => a + b, 0);
-    let r = Math.random() * total;
+    if (total === 0) {
+      centroids.push(vectors[centroids.length % vectors.length]);
+      continue;
+    }
+
+    let r = rng() * total;
 
     let chosen = vectors[vectors.length - 1];
     for (let i = 0; i < dists.length; i++) {
@@ -58,14 +72,16 @@ function initCentroids(vectors, k) {
 // ─── Core K-Means ─────────────────────────────────────────────────────────────
 
 function kMeans(vectors, k, maxIter = 100) {
+  const opts = typeof maxIter === "object" && maxIter !== null ? maxIter : {};
+  const iterations = typeof maxIter === "number" ? maxIter : (opts.maxIter || 100);
   if (vectors.length < k) {
     throw new Error(`k(${k}) > 샘플 수(${vectors.length})`);
   }
 
-  const centroids   = initCentroids(vectors, k).map((c) => [...c]);
+  const centroids   = initCentroids(vectors, k, opts).map((c) => [...c]);
   let   assignments = new Array(vectors.length).fill(0);
 
-  for (let iter = 0; iter < maxIter; iter++) {
+  for (let iter = 0; iter < iterations; iter++) {
     const newAssignments = vectors.map((v) => nearestCentroidIdx(v, centroids));
 
     const converged = newAssignments.every((a, i) => a === assignments[i]);
@@ -84,17 +100,50 @@ function kMeans(vectors, k, maxIter = 100) {
     0
   );
 
-  return { assignments, centroids, wcss };
+  return orderClusters({ assignments, centroids, wcss });
 }
 
 // 로컬 최솟값 회피를 위해 restarts 번 실행 후 WCSS 가 가장 낮은 결과를 선택한다
-function stableKMeans(vectors, k, restarts = 3) {
+function stableKMeans(vectors, k, restarts = 3, opts = {}) {
+  const options = typeof restarts === "object" && restarts !== null ? restarts : opts;
+  const restartCount = typeof restarts === "number" ? restarts : (options.restarts || 3);
+  const baseSeed = options.seed ?? 1;
   let best = null;
-  for (let r = 0; r < restarts; r++) {
-    const result = kMeans(vectors, k);
-    if (!best || result.wcss < best.wcss) best = result;
+  for (let r = 0; r < restartCount; r++) {
+    const result = kMeans(vectors, k, { ...options, seed: deriveSeed(baseSeed, r) });
+    if (!best || result.wcss < best.wcss || (result.wcss === best.wcss && compareCentroids(result.centroids, best.centroids) < 0)) best = result;
   }
   return best;
+}
+
+function deriveSeed(seed, offset) {
+  return ((Number(seed) >>> 0) + (offset * 2654435761)) >>> 0;
+}
+
+function orderClusters(result) {
+  const order = result.centroids.map((centroid, index) => ({ centroid, index }))
+    .sort((a, b) => compareVectors(a.centroid, b.centroid) || a.index - b.index);
+  const remap = new Map(order.map((entry, newIndex) => [entry.index, newIndex]));
+  return {
+    assignments: result.assignments.map((idx) => remap.get(idx)),
+    centroids: order.map((entry) => entry.centroid),
+    wcss: result.wcss,
+  };
+}
+
+function compareCentroids(left, right) {
+  for (let i = 0; i < Math.min(left.length, right.length); i++) {
+    const cmp = compareVectors(left[i], right[i]);
+    if (cmp !== 0) return cmp;
+  }
+  return left.length - right.length;
+}
+
+function compareVectors(left, right) {
+  for (let i = 0; i < Math.min(left.length, right.length); i++) {
+    if (left[i] !== right[i]) return left[i] - right[i];
+  }
+  return left.length - right.length;
 }
 
 // ─── Silhouette Score ─────────────────────────────────────────────────────────
@@ -134,13 +183,13 @@ function silhouetteScore(vectors, assignments, k) {
 // Elbow(WCSS 2차 미분)와 Silhouette 두 지표를 모두 계산하고,
 // 일치하면 그 K, 불일치하면 Silhouette 우선(더 객관적)으로 선택한다.
 
-function findOptimalK(vectors, minK = 3, maxK = 8) {
+function findOptimalK(vectors, minK = 3, maxK = 8, opts = {}) {
   const upperBound = Math.min(maxK, vectors.length - 1);
   if (upperBound < minK) return { chosenK: minK, candidates: [] };
 
   const candidates = [];
   for (let k = minK; k <= upperBound; k++) {
-    const result = stableKMeans(vectors, k);
+    const result = stableKMeans(vectors, k, opts.restarts || 3, { ...opts, seed: deriveSeed(opts.seed ?? 1, k) });
     const sil    = silhouetteScore(vectors, result.assignments, k);
     candidates.push({ k, result, wcss: result.wcss, silhouette: sil });
   }
@@ -174,4 +223,6 @@ module.exports = {
   findOptimalK,
   euclideanDistSq,
   nearestCentroidIdx,
+  initCentroids,
+  createSeededRng,
 };
