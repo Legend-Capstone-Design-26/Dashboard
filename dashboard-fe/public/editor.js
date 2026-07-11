@@ -182,10 +182,10 @@
   function setPickMode(on) {
     pickMode = on;
     togglePickBtn.dataset.state = on ? "on" : "off";
-    togglePickBtn.textContent = on ? "선택모드 ON" : "선택모드 OFF";
+    togglePickBtn.textContent = on ? "요소 선택 켜짐" : "요소 선택 꺼짐";
     togglePickBtn.classList.toggle("is-on", on);
     postToFrame("EDITOR_SET_PICKMODE", { pickMode: on });
-    log(`pickMode -> ${on}`);
+    log(`요소 선택 ${on ? "켜짐" : "꺼짐"}`);
   }
 
   function setVariant(v, options) {
@@ -200,22 +200,22 @@
 
     if (v === "A") {
       postToFrame("EDITOR_PREVIEW_SET_VARIANT", { variant: "A", changes: [] });
-      log("preview -> Variant A (reset)");
+      log("미리보기 -> 원본 화면(A)");
     } else {
       postToFrame("EDITOR_PREVIEW_SET_VARIANT", { variant: "B", changes: changesB });
-      log(`preview -> Variant B (apply ${changesB.length} changes)`);
+      log(`미리보기 -> 편집 화면(B), 변경 ${changesB.length}개`);
     }
   }
 
-  // iframe 로드마다 overlay 주입
+  // iframe 로드마다 선택 도구 주입
   function injectOverlay() {
-    statusText.textContent = "iframe 로드됨. 오버레이 주입 중…";
+    statusText.textContent = "화면을 불러왔습니다. 선택 도구 준비 중…";
     try {
       const doc = frame.contentDocument;
       if (!doc) throw new Error("iframe contentDocument 접근 불가");
 
       if (doc.getElementById("__visual_editor_overlay__")) {
-        statusText.textContent = "오버레이 이미 활성화됨";
+        statusText.textContent = "선택 도구가 이미 켜져 있습니다.";
         setPickMode(pickMode);
         setVariant(currentVariant);
         return;
@@ -227,20 +227,20 @@
       script.async = false;
 
       script.onload = () => {
-        statusText.textContent = "오버레이 활성화됨";
-        log("overlay injected");
+        statusText.textContent = "선택 도구가 준비됐습니다.";
+        log("선택 도구 준비 완료");
         setPickMode(pickMode);
         setVariant(currentVariant, { refreshFrame: false });
       };
 
       script.onerror = () => {
-        statusText.textContent = "오버레이 주입 실패 (CSP/권한 확인)";
-        log("overlay inject failed");
+        statusText.textContent = "선택 도구를 불러오지 못했습니다. 권한을 확인하세요.";
+        log("선택 도구 불러오기 실패");
       };
 
       doc.documentElement.appendChild(script);
     } catch (e) {
-      statusText.textContent = "오버레이 주입 실패(동일 origin인지 확인)";
+      statusText.textContent = "선택 도구를 불러오지 못했습니다. 같은 사이트 화면인지 확인하세요.";
       log(`inject error: ${String(e)}`);
     }
   }
@@ -500,87 +500,14 @@
     return name;
   }
 
-  function estimateChangeImpact(change) {
-    if (!change || typeof change !== "object") {
-      return { impact_pct: 0, impact_direction: "neutral", impact_label: "영향 추정 불가" };
-    }
-
-    let impactPct = 0;
-    let direction = "neutral";
-    let label = "반응 변화 없음";
-
-    const actions = Array.isArray(change.actions) ? change.actions : [];
-    const action = actions[0] || null;
-
-    if (change.type === "inject_css") {
-      const css = String(change.css || "").toLowerCase();
-      if (/display\s*:\s*none|visibility\s*:\s*hidden/.test(css)) {
-        impactPct = -8;
-        direction = "negative";
-        label = "노출 감소 예상";
-      } else if (/color|background|border|outline|font|padding|margin|grid|flex/.test(css)) {
-        impactPct = 10;
-        direction = "positive";
-        label = "레이아웃/시각 변화 예상";
-      } else {
-        impactPct = 4;
-        direction = "positive";
-        label = "고급 CSS 반응 예상";
-      }
-    } else if (action?.type === "set_text") {
-      impactPct = 8;
-      direction = "positive";
-      label = "문구 반응 예상";
-    } else if (action?.type === "set_style") {
-      const styles = action?.styles && typeof action.styles === "object" ? action.styles : {};
-      if (Object.keys(styles).some((key) => /color|background|border|outline/i.test(key))) {
-        impactPct = 12;
-        direction = "positive";
-        label = "색상/강조 반응 예상";
-      } else if (Object.keys(styles).some((key) => /display|visibility/i.test(key))) {
-        impactPct = -7;
-        direction = "negative";
-        label = "노출 변화 예상";
-      } else {
-        impactPct = 6;
-        direction = "positive";
-        label = "스타일 반응 예상";
-      }
-    } else if (action?.type === "hide") {
-      impactPct = -7;
-      direction = "negative";
-      label = "숨김 반응 예상";
-    } else if (action?.type === "show") {
-      impactPct = 5;
-      direction = "positive";
-      label = "노출 확대 예상";
-    } else if (action?.type === "set_attr" && String(action.name || "").toLowerCase() === "href") {
-      impactPct = 11;
-      direction = "positive";
-      label = "링크 이동 반응 예상";
-    } else if (action?.type === "set_attr") {
-      impactPct = 4;
-      direction = "positive";
-      label = "속성 변화 예상";
-    } else if (action?.type === "add_class" || action?.type === "remove_class") {
-      impactPct = 5;
-      direction = "positive";
-      label = "클래스 기반 변화 예상";
-    }
-
-    return {
-      impact_pct: impactPct,
-      impact_direction: direction,
-      impact_label: label,
-    };
-  }
-
   function withChangeMeta(change, info) {
     const base = { ...change };
-    Object.assign(base, estimateChangeImpact(base));
+    delete base.impact_pct;
+    delete base.impact_direction;
+    delete base.impact_label;
     if (base.type === "inject_css") {
       base.label = base.label || "고급 CSS 규칙 적용";
-      base.detail = base.detail || "고급 사용자를 위한 사용자 정의 규칙이에요.";
+      base.detail = base.detail || "개발자용 사용자 정의 규칙이에요.";
       return base;
     }
 
@@ -611,15 +538,15 @@
 
     if (mode === "text") {
       valueLabel.textContent = "새 문구";
-      addChangeBtn.textContent = "문구 변경 추가";
+      addChangeBtn.textContent = "문구 편집 추가";
     } else if (mode === "style") {
-      addChangeBtn.textContent = "스타일 변경 추가";
+      addChangeBtn.textContent = "모양 편집 추가";
     } else if (mode === "visibility") {
-      addChangeBtn.textContent = "노출 변경 추가";
+      addChangeBtn.textContent = "노출 설정 추가";
     } else if (mode === "link") {
-      addChangeBtn.textContent = "링크 변경 추가";
+      addChangeBtn.textContent = "이동 주소 편집 추가";
     } else {
-      addChangeBtn.textContent = "고급 변경 추가";
+      addChangeBtn.textContent = "개발자 편집 추가";
     }
   }
 
@@ -762,7 +689,7 @@
   function renderChangesList() {
     changesList.innerHTML = "";
     if (changesB.length === 0) {
-      changesList.innerHTML = `<div class="changeMeta">변경 없음 (Variant B)</div>`;
+      changesList.innerHTML = `<div class="changeMeta">아직 추가한 편집 내용이 없습니다.</div>`;
       return;
     }
 
@@ -795,7 +722,7 @@
             </div>
           </div>
           <div class="changeBtns">
-            <button class="btn smallBtn" data-act="apply" data-idx="${idx}">프리뷰(B)</button>
+            <button class="btn smallBtn" data-act="apply" data-idx="${idx}">확인</button>
             <button class="btn danger smallBtn" data-act="del" data-idx="${idx}">삭제</button>
           </div>
         </div>
@@ -866,7 +793,7 @@
     if (targets.length === 0) {
       const option = document.createElement("option");
       option.value = "";
-      option.textContent = "preview target 없음";
+      option.textContent = "등록된 편집 화면 없음";
       targetSelect.appendChild(option);
       targetSelect.disabled = true;
       return;
@@ -891,7 +818,7 @@
     }
     urlPrefixInput.value = target.url_prefix || "/";
     updateEditorCopilotMeta();
-    log(`navigate iframe -> ${target.preview_url}`);
+    log(`편집 화면 이동 -> ${target.preview_url}`);
   }
 
   function setTargetByPath(pathname) {
@@ -925,7 +852,7 @@
       : imported.length > 0
         ? `변경 ${imported.length}개 가져옴`
         : "가져온 변경 없음";
-    log(`copilot draft imported (${imported.length} changes)`);
+      log(`AI 초안 가져옴 (${imported.length}개 변경)`);
     if (!options?.keepStorage) {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
     }
@@ -938,7 +865,7 @@
       const payload = JSON.parse(raw);
       applyDraftPayload(payload);
     } catch (e) {
-      log(`copilot draft load failed: ${String(e)}`);
+      log(`AI 초안 불러오기 실패: ${String(e)}`);
     }
   }
 
@@ -972,11 +899,11 @@
   function applyPreviewNow() {
     if (currentVariant !== "B") {
       setVariant("B");
-      log(`preview apply (B, ${changesB.length})`);
+      log(`편집 화면 확인 (B, ${changesB.length}개)`);
       return;
     }
     postToFrame("EDITOR_PREVIEW_SET_VARIANT", { variant: "B", changes: changesB });
-    log(`preview apply (B, ${changesB.length})`);
+    log(`편집 화면 확인 (B, ${changesB.length}개)`);
   }
 
   function getDefaultExpKey() {
@@ -1011,10 +938,10 @@
     const expKey = (expKeyInput.value || "").trim() || getDefaultExpKey();
     const urlPrefix = (urlPrefixInput.value || "").trim() || getDefaultUrlPrefix();
 
-    if (!expKey) { alert("experiment key가 필요합니다."); return; }
-    if (!urlPrefix) { alert("url prefix가 필요합니다."); return; }
+    if (!expKey) { alert("실험 키가 필요합니다."); return; }
+    if (!urlPrefix) { alert("실험 적용 경로가 필요합니다."); return; }
 
-    // Real 적용은 서버에 “running”으로 저장/배포
+    // 실제 저장은 서버에 running 상태로 배포한다.
     const payload = {
       site_id: currentSiteId,
       key: expKey,
@@ -1044,21 +971,21 @@
         if (confirmed) j = await request(true);
       }
       if (!j?.ok) {
-        alert("Real 적용 실패: " + (j?.message || j?.reason || "unknown"));
-        log("real apply failed");
+        alert("실제 저장 실패: " + (j?.message || j?.reason || "unknown"));
+        log("실제 저장 실패");
         return;
       }
 
-      log(`✅ Real applied: ${expKey} (v${j.experiment.version}) url_prefix=${urlPrefix}`);
+      log(`실제 저장 완료: ${expKey} (v${j.experiment.version}) 경로=${urlPrefix}`);
       setExperimentVersion(j?.experiment?.version || null);
 
-      // Real 적용 후: 실제 동작 확인을 위해 새 탭으로 열기
+      // 실제 저장 후 동작 확인을 위해 새 탭으로 연다.
       const liveUrl = appendAbForce(currentTarget?.live_url || currentTarget?.preview_url || "/", "B");
       window.open(liveUrl, "_blank", "noopener,noreferrer");
 
-      alert(`Real 적용 완료!\n이제 새 탭에서 SDK가 서버 설정을 받아 A/B를 자동 실행합니다.\n(유저마다 A/B가 다를 수 있음)`);
+      alert(`실제 저장 완료!\n새 탭에서 서버 설정을 받아 A/B 실험이 실행됩니다.\n방문자마다 원본/편집 화면이 다르게 보일 수 있습니다.`);
     } catch (e) {
-      alert("Real 적용 실패(네트워크): " + String(e));
+      alert("실제 저장 실패(네트워크): " + String(e));
       log(`real apply error: ${String(e)}`);
     }
   }
@@ -1074,7 +1001,7 @@
 
   reloadBtn.addEventListener("click", () => {
     frame.contentWindow.location.reload();
-    log("iframe reload");
+    log("화면 새로고침");
   });
 
   intentButtons.forEach((btn) => {
@@ -1122,7 +1049,7 @@
 
     changesB.push(change);
     renderChangesList();
-    log(`change added (#${changesB.length - 1})`);
+    log(`편집 내용 추가 (#${changesB.length - 1})`);
 
     if (currentVariant === "B") applyPreviewNow();
   });
@@ -1136,11 +1063,11 @@
   });
 
   clearChangesBtn.addEventListener("click", () => {
-    if (!confirm("Variant B 변경을 모두 삭제할까요?")) return;
+    if (!confirm("추가한 편집 내용을 모두 삭제할까요?")) return;
     changesB = [];
     renderChangesList();
     jsonBox.value = "";
-    log("changes cleared");
+    log("편집 내용 모두 삭제");
     if (currentVariant === "B") applyPreviewNow();
   });
 
@@ -1155,7 +1082,7 @@
     if (act === "del") {
       changesB.splice(idx, 1);
       renderChangesList();
-      log(`change deleted (#${idx})`);
+      log(`편집 내용 삭제 (#${idx})`);
       if (currentVariant === "B") applyPreviewNow();
     }
     if (act === "apply") {
@@ -1172,13 +1099,13 @@
       }
     };
     jsonBox.value = JSON.stringify(out, null, 2);
-    log("export json");
+    log("JSON 내보내기");
   });
 
   copyJsonBtn.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(jsonBox.value || "");
-      log("copied json");
+      log("JSON 복사 완료");
     } catch (e) {
       alert("복사 실패: 브라우저 권한을 확인하세요.");
       log(`copy failed: ${String(e)}`);
@@ -1222,10 +1149,10 @@
 
     if (data.type === "EDITOR_APPLY_RESULT") {
       if (data.ok) {
-        statusText.textContent = `미리보기 적용됨 (${data.message || "ok"})`;
+      statusText.textContent = `편집 화면에 반영됨 (${data.message || "ok"})`;
         log(`apply ok: ${data.message || ""}`);
       } else {
-        statusText.textContent = `미리보기 적용 실패 (${data.message || "원인 불명"})`;
+        statusText.textContent = `편집 화면 반영 실패 (${data.message || "원인 불명"})`;
         log(`apply fail: ${data.message || ""}`);
       }
       return;

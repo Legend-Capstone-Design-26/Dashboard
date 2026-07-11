@@ -17,7 +17,7 @@ function createMetricsReadModel({ eventStore, experimentStore }) {
       || "(no_element_id)";
   }
 
-  function getExperimentMetrics({ siteId, key, fromTs, toTs }) {
+  function getExperimentMetrics({ siteId, key, fromTs, toTs, actorType, personaId, runId }) {
     const exp = experimentStore.getByKey(siteId, key);
     if (!exp) {
       return { ok: false, reason: "experiment not found" };
@@ -28,6 +28,9 @@ function createMetricsReadModel({ eventStore, experimentStore }) {
 
     for (const e of eventStore.readAll()) {
       if (e.site_id !== siteId) continue;
+      if (actorType && e.actor_type !== actorType) continue;
+      if (personaId && e.persona_id !== personaId) continue;
+      if (runId && e.simulation_run_id !== runId) continue;
       const ts = getEventTs(e);
       if ((typeof fromTs === "number" || typeof toTs === "number") && typeof ts !== "number") continue;
       if (typeof fromTs === "number" && ts < fromTs) continue;
@@ -40,6 +43,9 @@ function createMetricsReadModel({ eventStore, experimentStore }) {
         event_name: e.event_name,
         anon_user_id: e.anon_user_id,
         session_id: e.session_id,
+        actor_type: e.actor_type || null,
+        persona_id: e.persona_id || null,
+        simulation_run_id: e.simulation_run_id || null,
         path: e.path,
         props: e.props || {},
         exp_variant: hit.variant || "A",

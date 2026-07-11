@@ -7,7 +7,6 @@
   // Hover/select overlay boxes
   const hoverBox = document.createElement("div");
   const selectBox = document.createElement("div");
-  const heatmapLayer = document.createElement("div");
 
   // Editor applied style holder (for inject_css)
   const injectedStyle = document.createElement("style");
@@ -45,49 +44,13 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .__ve_heatmap_layer {
-        position: fixed;
-        inset: 0;
-        z-index: 2147483646;
-        pointer-events: none;
-      }
-      .__ve_heatmap_marker {
-        position: fixed;
-        border-radius: 14px;
-        pointer-events: none;
-        box-sizing: border-box;
-        mix-blend-mode: multiply;
-        display: flex;
-        align-items: flex-start;
-        justify-content: flex-start;
-        padding: 8px 10px;
-        font: 12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-weight: 700;
-        color: #fff;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.42);
-        overflow: hidden;
-      }
-      .__ve_heatmap_marker[data-direction="positive"] { background: rgba(56, 122, 255, 0.25); border: 2px solid rgba(56, 122, 255, 0.85); }
-      .__ve_heatmap_marker[data-direction="negative"] { background: rgba(255, 73, 73, 0.22); border: 2px solid rgba(255, 73, 73, 0.88); }
-      .__ve_heatmap_marker[data-direction="neutral"] { background: rgba(170, 170, 170, 0.18); border: 2px solid rgba(170, 170, 170, 0.7); }
-      .__ve_heatmap_marker .__ve_heatmap_text {
-        display: inline-flex;
-        flex-direction: column;
-        gap: 2px;
-        max-width: 220px;
-      }
-      .__ve_heatmap_marker .__ve_heatmap_pct {
-        font-size: 14px;
-      }
     `;
   document.documentElement.appendChild(style);
 
   hoverBox.className = "__ve_box __ve_hover";
   selectBox.className = "__ve_box __ve_select";
-  heatmapLayer.className = "__ve_heatmap_layer";
   document.documentElement.appendChild(hoverBox);
   document.documentElement.appendChild(selectBox);
-  document.documentElement.appendChild(heatmapLayer);
 
   const badge = document.createElement("div");
   badge.className = "__ve_badge";
@@ -97,94 +60,6 @@
 
   function hideEl(el) { el.style.display = "none"; }
   function showEl(el) { el.style.display = "block"; }
-
-  function clearHeatmap() {
-    heatmapLayer.innerHTML = "";
-  }
-
-  function inferHeatmap(change) {
-    if (!change || typeof change !== "object") return { impact_pct: 0, impact_direction: "neutral", impact_label: "변화 없음" };
-    const actions = Array.isArray(change.actions) ? change.actions : [];
-    const action = actions[0] || null;
-    if (typeof change.impact_pct === "number") {
-      return {
-        impact_pct: change.impact_pct,
-        impact_direction: change.impact_direction || (change.impact_pct > 0 ? "positive" : change.impact_pct < 0 ? "negative" : "neutral"),
-        impact_label: change.impact_label || "예상 반응",
-      };
-    }
-
-    if (change.type === "inject_css") {
-      const css = String(change.css || "").toLowerCase();
-      if (/display\s*:\s*none|visibility\s*:\s*hidden/.test(css)) return { impact_pct: -8, impact_direction: "negative", impact_label: "노출 감소 예상" };
-      if (/color|background|border|outline|font|padding|margin|grid|flex/.test(css)) return { impact_pct: 10, impact_direction: "positive", impact_label: "시각 변화 예상" };
-      return { impact_pct: 4, impact_direction: "positive", impact_label: "고급 CSS 반응" };
-    }
-
-    if (action?.type === "hide") return { impact_pct: -7, impact_direction: "negative", impact_label: "숨김 반응" };
-    if (action?.type === "show") return { impact_pct: 5, impact_direction: "positive", impact_label: "노출 확대" };
-    if (action?.type === "set_text") return { impact_pct: 8, impact_direction: "positive", impact_label: "문구 반응" };
-    if (action?.type === "set_attr" && String(action.name || "").toLowerCase() === "href") return { impact_pct: 11, impact_direction: "positive", impact_label: "링크 이동" };
-    if (action?.type === "set_style") {
-      const styles = action.styles && typeof action.styles === "object" ? action.styles : {};
-      if (Object.keys(styles).some((key) => /display|visibility/i.test(key))) return { impact_pct: -7, impact_direction: "negative", impact_label: "노출 변화" };
-      if (Object.keys(styles).some((key) => /color|background|border|outline/i.test(key))) return { impact_pct: 12, impact_direction: "positive", impact_label: "색/강조 반응" };
-      return { impact_pct: 6, impact_direction: "positive", impact_label: "스타일 반응" };
-    }
-
-    return { impact_pct: 4, impact_direction: "positive", impact_label: "변화 반응" };
-  }
-
-  function renderHeatmap(changes) {
-    clearHeatmap();
-    const list = Array.isArray(changes) ? changes : [];
-    if (list.length === 0) return;
-
-    const markers = [];
-    for (const change of list) {
-      if (!change) continue;
-      const info = inferHeatmap(change);
-      if (!info.impact_pct) continue;
-
-      if (change.type === "inject_css") {
-        markers.push({ rect: { left: 16, top: 16, width: Math.min(420, window.innerWidth - 32), height: 72 }, info, label: change.label || "고급 CSS" });
-        continue;
-      }
-
-      const selector = String(change.selector || "").trim();
-      if (!selector) continue;
-      let els = [];
-      try { els = Array.from(document.querySelectorAll(selector)); } catch { els = []; }
-      if (els.length === 0) continue;
-
-      const targetEls = els.slice(0, 1);
-      for (const el of targetEls) {
-        const r = el.getBoundingClientRect();
-        if (!r || r.width <= 0 || r.height <= 0) continue;
-        markers.push({ rect: r, info, label: change.label || selector });
-      }
-    }
-
-    markers.forEach((marker, index) => {
-      const el = document.createElement("div");
-      el.className = "__ve_heatmap_marker";
-      el.dataset.direction = marker.info.impact_direction || "neutral";
-      const width = Math.max(56, Math.round(marker.rect.width));
-      const height = Math.max(28, Math.round(marker.rect.height));
-      el.style.left = Math.round(marker.rect.left) + "px";
-      el.style.top = Math.round(marker.rect.top) + "px";
-      el.style.width = width + "px";
-      el.style.height = height + "px";
-      el.style.opacity = String(Math.max(0.18, Math.min(0.55, Math.abs(marker.info.impact_pct) / 24)));
-      el.innerHTML = `
-        <div class="__ve_heatmap_text">
-          <span class="__ve_heatmap_pct">${marker.info.impact_pct > 0 ? "+" : ""}${marker.info.impact_pct}%</span>
-          <span>${marker.info.impact_label || "예상 반응"}</span>
-          <span>${String(marker.label || "").slice(0, 48)}</span>
-        </div>`;
-      heatmapLayer.appendChild(el);
-    });
-  }
 
   function post(type, payload) {
     try {
@@ -331,7 +206,6 @@
   function resetAll(options) {
     // CSS 주입 원복
     injectedStyle.textContent = "";
-    clearHeatmap();
 
     // 저장된 원본으로 돌려놓기
     for (const [selector, orig] of originalMap.entries()) {
@@ -516,7 +390,6 @@
         // 항상 “A로 리셋 후 B 적용” 방식이 예측 가능
         resetAll({ silent: true });
         applyChanges(changes);
-        renderHeatmap(changes);
       }
       refreshBoxes();
       return;
@@ -529,5 +402,5 @@
   window.addEventListener("scroll", refreshBoxes, true);
   window.addEventListener("resize", refreshBoxes, true);
 
-  post("EDITOR_LOG", { message: "overlay ready (with preview apply engine)" });
+  post("EDITOR_LOG", { message: "overlay ready" });
 })();

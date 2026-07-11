@@ -1,0 +1,180 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary "대시보드 메뉴" [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: D
+        - generic [ref=e6]:
+          - generic [ref=e7]: Dashboard
+          - generic [ref=e8]: UX Analytics
+      - navigation "주요 메뉴" [ref=e9]:
+        - generic: 메뉴
+        - link "대시보드" [ref=e10] [cursor=pointer]:
+          - /url: "#summaryRow"
+          - generic [ref=e11]: ▦
+          - text: 대시보드
+        - link "사용자 흐름" [ref=e12] [cursor=pointer]:
+          - /url: "#journeyCard"
+          - generic [ref=e13]: ↝
+          - text: 사용자 흐름
+        - link "모니터링" [ref=e14] [cursor=pointer]:
+          - /url: "#trendPanel"
+          - generic [ref=e15]: ⌁
+          - text: 모니터링
+        - link "실험 관리" [ref=e16] [cursor=pointer]:
+          - /url: "#experimentPanel"
+          - generic [ref=e17]: ◈
+          - text: 실험 관리
+        - link "유형별 지표" [ref=e18] [cursor=pointer]:
+          - /url: "#labelsCard"
+          - generic [ref=e19]: ▤
+          - text: 유형별 지표
+        - link "세션 로그" [ref=e20] [cursor=pointer]:
+          - /url: "#sessionsCard"
+          - generic [ref=e21]: ♙
+          - text: 세션 로그
+        - link "AI 인사이트" [ref=e22] [cursor=pointer]:
+          - /url: "#insightsCard"
+          - generic [ref=e23]: ✦
+          - text: AI 인사이트
+        - link "실험실 ↗" [ref=e24] [cursor=pointer]:
+          - /url: /persona-lab
+          - generic [ref=e25]: ⚗
+          - text: 실험실 ↗
+    - generic [ref=e26]:
+      - banner [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: ▥
+          - generic [ref=e30]:
+            - generic [ref=e31]: 대시보드
+            - generic [ref=e32]: 실험 운영과 성과, 고객 행동 요약
+        - generic [ref=e33]:
+          - generic [ref=e34]: 대상 사이트
+          - combobox "대상 사이트 선택" [ref=e35] [cursor=pointer]:
+            - option "legend-ecommerce (legend-ecommerce)" [selected]
+          - button "경로 설정" [ref=e36] [cursor=pointer]
+          - button "새로고침" [ref=e37] [cursor=pointer]
+          - button "로그아웃" [ref=e38] [cursor=pointer]
+          - link "화면 편집기" [ref=e39] [cursor=pointer]:
+            - /url: /editor?site_id=legend-ecommerce
+      - main [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - generic [ref=e43]:
+              - heading "기간 설정" [level=2] [ref=e44]
+              - generic [ref=e45]: 주요 카드와 그래프는 선택한 기간 기준으로 집계됩니다.
+            - generic [ref=e46]:
+              - generic [ref=e47]:
+                - generic [ref=e48]: 기간
+                - combobox "기간 선택" [ref=e49] [cursor=pointer]:
+                  - option "오늘"
+                  - option "최근 7일" [selected]
+                  - option "최근 30일"
+                  - option "사용자 지정"
+              - generic [ref=e50]:
+                - generic [ref=e51]:
+                  - generic [ref=e52]: 시작일
+                  - textbox "시작일" [ref=e53]: 2026-05-23
+                - generic [ref=e54]:
+                  - generic [ref=e55]: 종료일
+                  - textbox "종료일" [ref=e56]: 2026-05-29
+          - generic [ref=e57]: 최근 7일 · 2026. 5. 23. ~ 2026. 5. 29. 기준으로 카드와 그래프를 집계합니다.
+          - generic [ref=e58]:
+            - generic [ref=e59]: 수신 정보 없음
+            - generic [ref=e60]: SDK 연동 상태를 아직 판단할 수 없습니다.
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - text: ◌
+            - generic [ref=e63]: 세션 수
+            - generic [ref=e64]: —
+            - generic [ref=e65]: 이 사이트로 잡힌 방문 세션 합계
+          - generic [ref=e66]:
+            - text: ◎
+            - generic [ref=e67]: 가장 많은 유형
+            - generic [ref=e68]: —
+            - generic [ref=e69]: 지금 트래픽에서 비중이 가장 큰 패턴
+          - generic [ref=e70]:
+            - text: △
+            - generic [ref=e71]: 오늘 먼저 확인할 문제
+            - generic [ref=e72]: —
+            - generic [ref=e73]: 우선 확인이 필요한 항목 수
+        - generic [ref=e74]:
+          - generic [ref=e76]:
+            - heading "사용자 이동 흐름" [level=2] [ref=e77]
+            - generic [ref=e78]: 선택한 기간 동안 사용자가 어떤 페이지 흐름으로 이동하고, 어느 단계에서 이탈하는지 보여줍니다.
+          - generic [ref=e80]: 선택한 기간에 수집된 이동 흐름 데이터가 없습니다.
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - heading "기간별 세션 추이" [level=2] [ref=e84]
+              - generic [ref=e85]: 선택한 기간 동안 수집된 세션 수와 이벤트 수의 변화를 보여줍니다.
+            - generic [ref=e86]:
+              - generic [ref=e87]: 세션 수
+              - generic [ref=e89]: 이벤트 수
+          - generic [ref=e92]: 불러오는 중…
+        - generic [ref=e93]:
+          - generic [ref=e94]:
+            - generic [ref=e95]:
+              - heading "유형별 비중" [level=2] [ref=e96]
+              - generic [ref=e97]: 패턴마다 세션이 얼마나 왔는지
+            - generic [ref=e98]:
+              - generic [ref=e101]:
+                - strong [ref=e102]: "0"
+                - generic [ref=e103]: 세션
+              - generic [ref=e105]: 세션 데이터가 없어요. 이벤트가 쌓이면 여기에 그려집니다.
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - heading "먼저 볼 만한 포인트" [level=2] [ref=e108]
+              - generic [ref=e109]: 매일 오전 08:00 기준으로 업데이트되는 우선 확인 항목
+            - generic [ref=e111]: 인사이트가 생기면 요약이 여기에 올라옵니다.
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - heading "A/B 실험 관리" [level=2] [ref=e115]
+              - generic [ref=e116]: 문구, 스타일, 노출, 링크, CSS 변경이 어떤 사용자 반응을 만드는지 비교합니다.
+            - generic [ref=e117]: 사이트 ID legend-ecommerce
+          - generic [ref=e119]:
+            - generic [ref=e120]: 실험 선택
+            - combobox "실험 선택" [ref=e121] [cursor=pointer]:
+              - option "불러오는 중…" [selected]
+          - table [ref=e123]:
+            - rowgroup [ref=e124]:
+              - row "실험 코드 상태 적용 페이지 버전 마지막 수정 작업" [ref=e125]:
+                - columnheader "실험 코드" [ref=e126]
+                - columnheader "상태" [ref=e127]
+                - columnheader "적용 페이지" [ref=e128]
+                - columnheader "버전" [ref=e129]
+                - columnheader "마지막 수정" [ref=e130]
+                - columnheader "작업" [ref=e131]
+            - rowgroup
+        - generic [ref=e132]:
+          - generic [ref=e133]:
+            - heading "유형별 지표" [level=2] [ref=e134]
+            - generic [ref=e135]: 세션 수·비중·체류·방문 깊이·결제까지 갔는지
+          - table [ref=e137]:
+            - rowgroup [ref=e138]:
+              - row "유형 세션 비중 평균 체류 방문 깊이 결제 완료 비율" [ref=e139]:
+                - columnheader "유형" [ref=e140]
+                - columnheader "세션" [ref=e141]
+                - columnheader "비중" [ref=e142]
+                - columnheader "평균 체류" [ref=e143]
+                - columnheader "방문 깊이" [ref=e144]
+                - columnheader "결제 완료 비율" [ref=e145]
+            - rowgroup [ref=e146]:
+              - row "세션 데이터가 없어요." [ref=e147]:
+                - cell "세션 데이터가 없어요." [ref=e148]
+        - group [ref=e149]:
+          - generic "▸ 최근 세션 상세 보기 최근 방문 기록" [ref=e150] [cursor=pointer]:
+            - text: ▸ 최근 세션 상세 보기
+            - generic [ref=e151]: 최근 방문 기록
+        - generic [ref=e152]:
+          - generic [ref=e154]:
+            - heading "AI UX 인사이트" [level=2] [ref=e155]
+            - generic [ref=e156]: 선택한 기간의 세션, 유형, 이동 흐름을 바탕으로 전체 프로덕트 관점에서 요약합니다.
+          - generic [ref=e158]: 인사이트가 없거나 아직 생성 중이에요.
+        - group [ref=e160]:
+          - generic "▸ 연동 상세 보기 SDK 미리보기 링크와 확인용 정보" [ref=e161] [cursor=pointer]:
+            - text: ▸ 연동 상세 보기
+            - generic [ref=e162]: SDK 미리보기 링크와 확인용 정보
+  - button "AI AI 도우미" [ref=e164] [cursor=pointer]:
+    - generic [ref=e165]: AI
+    - generic [ref=e166]: AI 도우미

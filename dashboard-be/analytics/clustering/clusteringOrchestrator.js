@@ -11,8 +11,10 @@ const {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const COLD_START_THRESHOLD = 100; // 최초 클러스터링에 필요한 최소 세션 수
-const INITIAL_K            = 5;   // cold start 시 사용할 K (기존 rule-base 유형 수와 동일)
+const INITIAL_K            = 4;   // cold start 시 사용할 K (탐색범위 x 몰입강도, 4개 피처 기준)
 const RECLUSTER_RATIO      = 2.0; // 마지막 클러스터링 이후 세션 수가 N배 되면 재실행
+const RECLUSTER_MIN_K      = 3;
+const RECLUSTER_MAX_K      = 5;   // 피처가 4개뿐이라 과도하게 쪼개지 않도록 상한을 낮춘다
 
 // ─── Trigger Logic ────────────────────────────────────────────────────────────
 
@@ -52,7 +54,7 @@ async function runClustering(sessionStates, siteId, redisRuntime, callLlm, opts 
 
   // K 결정: 첫 실행은 INITIAL_K 고정, 재클러스터링은 Elbow+Silhouette 로 탐색
   const chosenK = opts.forceK
-    || (isFirstRun ? INITIAL_K : findOptimalK(vectors, 3, 8).chosenK);
+    || (isFirstRun ? INITIAL_K : findOptimalK(vectors, RECLUSTER_MIN_K, RECLUSTER_MAX_K).chosenK);
 
   const clusterResult = stableKMeans(vectors, chosenK);
   const newCentroids  = clusterResult.centroids;

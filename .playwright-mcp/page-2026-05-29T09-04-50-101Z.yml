@@ -1,0 +1,14 @@
+- generic [ref=e3]:
+  - generic [ref=e6]:
+    - generic [ref=e7]: AB Dashboard
+    - generic [ref=e8]: 운영자 로그인
+  - heading "로그인" [level=1] [ref=e9]
+  - paragraph [ref=e10]: 허용된 계정으로 로그인하면 접근 가능한 site_id만 dashboard/editor에서 볼 수 있습니다.
+  - generic [ref=e11]:
+    - generic [ref=e12]: 아이디
+    - textbox "아이디" [ref=e13]
+  - generic [ref=e14]:
+    - generic [ref=e15]: 비밀번호
+    - textbox "비밀번호" [ref=e16]
+  - button "로그인" [ref=e17] [cursor=pointer]
+  - generic [ref=e19]: 기본 계정은 서버 최초 실행 시 환경 변수로 시드됩니다. 운영에서는 반드시 안전한 비밀번호로 바꾸세요.

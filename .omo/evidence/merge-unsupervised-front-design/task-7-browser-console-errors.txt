@@ -1,0 +1,7 @@
+Total messages: 3 (Errors: 3, Warnings: 0)
+Returning 4 messages for level "error"
+
+[ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:3101/favicon.ico:0
+[ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://127.0.0.1:3101/api/event-summary?site_id=legend-ecommerce&from_ts=1782283102465&to_ts=1782801502465:0
+[ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://127.0.0.1:3101/api/sessions?site_id=legend-ecommerce&limit=12&from_ts=1782283102464&to_ts=1782801502464:0
+[ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://127.0.0.1:3101/api/labels/summary?site_id=legend-ecommerce&from_ts=1782283102465&to_ts=1782801502465:0

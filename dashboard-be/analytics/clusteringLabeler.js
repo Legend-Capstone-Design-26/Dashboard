@@ -77,7 +77,7 @@ function createClusteringLabeler({ redisRuntime }) {
 
   async function labelSession(sessionState) {
     const siteId = sessionState?.site_id;
-    if (!siteId) return { label: "unknown", source: "no_site_id" };
+    if (!siteId) return { label: "unclassified", source: "no_site_id" };
 
     const { taxonomy, normParams } = await getClusteringState(siteId);
 

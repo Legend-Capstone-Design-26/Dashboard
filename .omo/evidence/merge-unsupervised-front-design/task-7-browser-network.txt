@@ -1,0 +1,6 @@
+8. [POST] http://127.0.0.1:3101/api/auth/login => [200] OK
+20. [GET] http://127.0.0.1:3101/api/auth/me => [200] OK
+24. [GET] http://127.0.0.1:3101/api/labels/summary?site_id=legend-ecommerce&from_ts=1782283102465&to_ts=1782801502465 => [503] Service Unavailable
+27. [GET] http://127.0.0.1:3101/api/labels/clustering-summary?site_id=legend-ecommerce&from_ts=1782283119457&to_ts=1782801519457 => [503] Service Unavailable
+
+Note: 18 static requests not shown, run with "static" option to see them.

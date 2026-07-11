@@ -15,7 +15,23 @@ const { createFileEventStore } = require("../services/stores/event-store");
 const { createFileSiteRegistryStore } = require("../services/stores/site-registry-store");
 const { createMetricsReadModel } = require("../services/read-models/metrics-read-model");
 
-function createChatRoutes({ files, middlewares = {}, redisEventSummaryStore = null }) {
+function mergeSessionTrend(summary, sessionTrend) {
+  if (!Array.isArray(sessionTrend) || sessionTrend.length === 0) return summary;
+  const sessionsByTs = new Map(sessionTrend.map((item) => [Number(item.ts), Number(item.session_count) || 0]));
+  const currentTrend = Array.isArray(summary?.trend) && summary.trend.length > 0
+    ? summary.trend
+    : sessionTrend;
+  return {
+    ...summary,
+    trend: currentTrend.map((item) => ({
+      ...item,
+      event_count: Number(item.event_count) || 0,
+      session_count: sessionsByTs.get(Number(item.ts)) || 0,
+    })),
+  };
+}
+
+function createChatRoutes({ files, middlewares = {}, redisEventSummaryStore = null, redisSessionAnalyticsService = null }) {
   const router = express.Router();
   const requireAuth = typeof middlewares.requireAuth === "function" ? middlewares.requireAuth : (_req, _res, next) => next();
   const requireSiteAccess = typeof middlewares.requireSiteAccess === "function" ? middlewares.requireSiteAccess : (_req, _res, next) => next();
@@ -87,7 +103,10 @@ function createChatRoutes({ files, middlewares = {}, redisEventSummaryStore = nu
     }
     try {
       const summary = await redisEventSummaryStore.getEventSummary({ siteId, page, fromTs, toTs, pathMappings });
-      return res.json({ ...summary, source: "redis", fallback_used: false });
+      const sessionTrend = typeof redisSessionAnalyticsService?.getSessionTrend === "function"
+        ? await redisSessionAnalyticsService.getSessionTrend({ siteId, fromTs, toTs })
+        : [];
+      return res.json({ ...mergeSessionTrend(summary, sessionTrend), source: "redis", fallback_used: false });
     } catch (error) {
       console.warn("[redis-summary] event-summary read failed", error);
       return res.status(503).json({

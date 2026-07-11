@@ -1,0 +1,14 @@
+TASK 4 INTEGRATION AUDIT
+
+$ node integration string assertion
+integration strings present
+
+$ node --check dashboard-be/server.js
+
+$ node --check dashboard-be/workers/event-consumer.js
+
+$ node --check dashboard-be/services/analytics/session-state.js
+
+$ node --check dashboard-fe/public/dashboard.js
+
+$ GIT_MASTER=1 git diff --name-only --diff-filter=U

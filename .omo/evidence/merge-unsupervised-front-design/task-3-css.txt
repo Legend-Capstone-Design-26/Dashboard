@@ -1,0 +1,8 @@
+TASK 3 CSS RESOLUTION
+
+$ GIT_MASTER=1 git diff --name-only --diff-filter=U
+
+$ rg conflict markers
+
+$ node selector assertion
+selectors and front/design styles present

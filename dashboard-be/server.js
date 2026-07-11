@@ -22,6 +22,8 @@ const { createRedisRuntime } = require("./services/runtime/redis");
 const { createRedisSessionStore } = require("./services/stores/redis-session-store");
 const { createRedisMetricsStore } = require("./services/stores/redis-metrics-store");
 const { createRedisEventSummaryStore } = require("./services/stores/redis-event-summary-store");
+const { createSimulationStore } = require("./services/simulations/simulation-store");
+const { createSimulationService } = require("./services/simulations/simulation-service");
 const {
   createRedisSessionAnalyticsService,
   redisUnavailableResponse,
@@ -31,6 +33,8 @@ const { createClusteringLabeler } = require("./analytics/clusteringLabeler");
 const { computeLabelsSummary } = require("./analytics/pipeline");
 const { loadTaxonomy } = require("./analytics/clustering/clusterStore");
 const { listPersonas, getPersona } = require("./personas");
+const { listFixedCohortMembers, loadFixedCohort } = require("./personas/cohort-store");
+const { buildTransitionAnalysis, summarizeMappedCohortMembers } = require("./personas/transition-analysis");
 const {
   generateOverlay,
   upsertOverlayRecord,
@@ -145,11 +149,13 @@ const AGENT_ACTIONS_FILE = path.join(DATA_DIR, "agent_actions.jsonl");
 const AGENT_APPROVALS_FILE = path.join(DATA_DIR, "agent_approvals.json");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const USER_SITE_ACCESS_FILE = path.join(DATA_DIR, "user_site_access.json");
+const SIMULATIONS_FILE = path.join(DATA_DIR, "simulations.json");
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 ensureJsonFile(EXP_FILE, { experiments: [] });
 ensureJsonlFile(AGENT_ACTIONS_FILE);
 ensureJsonFile(AGENT_APPROVALS_FILE, { approvals: [] });
+ensureJsonFile(SIMULATIONS_FILE, { runs: [] });
 ensureJsonFile(SITES_FILE, {
   sites: [
     {
@@ -456,7 +462,9 @@ function safeAbsoluteUrl(baseUrl, value) {
 const fileEventStore = createFileEventStore({ eventsFile: EVENTS_FILE });
 const experimentStore = createFileExperimentStore({ experimentsFile: EXP_FILE });
 const siteRegistryStore = createFileSiteRegistryStore({ sitesFile: SITES_FILE });
+const simulationStore = createSimulationStore({ simulationsFile: SIMULATIONS_FILE });
 const metricsReadModel = createMetricsReadModel({ eventStore: fileEventStore, experimentStore });
+const simulationService = createSimulationService({ simulationStore, experimentStore });
 
 detectDuplicateRunningExperiments(experimentStore.load().experiments).forEach((group) => {
   console.warn(`[experiments] multiple running experiments found for site_id=${group.site_id}. Count=${group.experiments.length}.`);
@@ -1069,6 +1077,7 @@ function personaForApi(persona) {
     weight: Number(persona?.weight) || 0,
     runner_type: persona?.runner_type || "timeline",
     age_group: persona?.age_group || normalized.age_group || null,
+    occupation_group: persona?.occupation_group || normalized.occupation_group || null,
     style_key: persona?.style_key || normalized.style_key || null,
     style_label: persona?.style_label || normalized.style_label || normalized.style_key || null,
     normalized_persona: normalized,
@@ -1078,6 +1087,51 @@ function personaForApi(persona) {
 
 app.get("/api/personas", requireAuth, requireSiteAccess, (req, res) => {
   return res.json({ ok: true, site_id: req.authorizedSiteId, personas: listPersonas().map(personaForApi) });
+});
+
+app.get("/api/personas/fixed-cohort", requireAuth, requireSiteAccess, (req, res) => {
+  const limit = Math.max(1, Math.min(100, toInt(req.query.limit) ?? 24));
+  const offset = Math.max(0, toInt(req.query.offset) ?? 0);
+  const cohortId = String(req.query.cohort_id || "fixed_10k_cohort").trim();
+  const filters = {
+    age_group: req.query.age_group,
+    occupation_group: req.query.occupation_group,
+    style_key: req.query.style_key,
+    province: req.query.province,
+    sex: req.query.sex,
+  };
+  const result = listFixedCohortMembers({
+    cohortId,
+    limit,
+    offset,
+    filters,
+  });
+  if (!result) return res.status(404).json({ ok: false, reason: "fixed cohort artifact not found" });
+  const artifact = loadFixedCohort({ cohortId });
+  const mapping = summarizeMappedCohortMembers({ artifact, filters: result.filters, personas: listPersonas() });
+  return res.json({ ok: true, site_id: req.authorizedSiteId, cohort: { ...result, mapped_agent_count: mapping.mapped_agent_count } });
+});
+
+app.post("/api/personas/fixed-cohort/transition-analysis", requireAuth, requireSiteAccess, async (req, res) => {
+  const siteId = req.authorizedSiteId;
+  const experimentKey = String(req.body?.experiment_key || req.body?.key || "").trim();
+  const cohortId = String(req.body?.cohort_id || "fixed_10k_cohort").trim();
+  const filters = req.body?.filters && typeof req.body.filters === "object" ? req.body.filters : {};
+
+  if (!experimentKey) return res.status(400).json({ ok: false, reason: "missing experiment_key" });
+  const experiment = experimentStore.getByKey(siteId, experimentKey);
+  if (!experiment) return res.status(404).json({ ok: false, reason: "experiment not found" });
+
+  const artifact = loadFixedCohort({ cohortId });
+  if (!artifact) return res.status(404).json({ ok: false, reason: "fixed cohort artifact not found" });
+
+  try {
+    const analysis = await buildTransitionAnalysis({ artifact, experiment, filters });
+    if (!analysis.ok) return res.status(analysis.status || 400).json({ ok: false, reason: analysis.reason });
+    return res.json({ ok: true, site_id: siteId, analysis });
+  } catch (error) {
+    return res.status(500).json({ ok: false, reason: `transition analysis failed: ${String(error)}` });
+  }
 });
 
 app.get("/api/persona-overlays", requireAuth, requireSiteAccess, (req, res) => {
@@ -1105,6 +1159,50 @@ app.post("/api/persona-overlays/generate", requireAuth, requireSiteAccess, async
   } catch (error) {
     return res.status(500).json({ ok: false, reason: `persona overlay generation failed: ${String(error)}` });
   }
+});
+
+app.get("/api/simulations/runs", requireAuth, requireSiteAccess, (req, res) => {
+  const siteId = req.authorizedSiteId;
+  const limit = Math.max(1, Math.min(100, toInt(req.query.limit) ?? 20));
+  return res.json({ ok: true, site_id: siteId, runs: simulationService.listRuns({ siteId, limit }) });
+});
+
+app.post("/api/simulations/runs", requireAuth, requireSiteAccess, (req, res) => {
+  const siteId = req.authorizedSiteId;
+  const experimentKey = String(req.body?.experiment_key || req.body?.key || "").trim();
+  const sampleSize = Math.max(20, Math.min(50000, toInt(req.body?.sample_size) ?? 1000));
+  const sampleSeed = String(req.body?.sample_seed || "").trim() || undefined;
+  const mode = String(req.body?.mode || "synthetic").trim();
+  const cohortId = String(req.body?.cohort_id || "").trim() || undefined;
+
+  if (!experimentKey) return res.status(400).json({ ok: false, reason: "missing experiment_key" });
+  if (!["synthetic", "fixed_10k_cohort"].includes(mode)) return res.status(400).json({ ok: false, reason: "unsupported simulation mode" });
+
+  const result = simulationService.createAndRun({
+    siteId,
+    experimentKey,
+    sampleSize: mode === "synthetic" ? sampleSize : undefined,
+    sampleSeed,
+    mode,
+    cohortId,
+    userId: req.authUser?.id || null,
+  });
+  if (!result.ok) return res.status(result.status || 400).json({ ok: false, reason: result.reason });
+
+  const run = { ...result.run, sessions: undefined };
+  return res.status(201).json({ ok: true, run_id: run.run_id, status: run.status, run });
+});
+
+app.get("/api/simulations/runs/:runId", requireAuth, requireSiteAccess, (req, res) => {
+  const run = simulationService.getRun(String(req.params.runId || ""));
+  if (!run || run.site_id !== req.authorizedSiteId) return res.status(404).json({ ok: false, reason: "simulation run not found" });
+  return res.json({ ok: true, run });
+});
+
+app.get("/api/simulations/runs/:runId/results", requireAuth, requireSiteAccess, (req, res) => {
+  const result = simulationService.getResults(String(req.params.runId || ""));
+  if (!result || result.site_id !== req.authorizedSiteId) return res.status(404).json({ ok: false, reason: "simulation run not found" });
+  return res.json({ ok: true, result });
 });
 
 async function proxyPreviewRequest(req, res) {
@@ -1395,6 +1493,9 @@ app.get("/api/metrics", requireAuth, requireSiteAccess, async (req, res) => {
   const key = String(req.query.key || "");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
+  const actorType = String(req.query.actor_type || "").trim() || undefined;
+  const personaId = String(req.query.persona_id || "").trim() || undefined;
+  const runId = String(req.query.run_id || req.query.simulation_run_id || "").trim() || undefined;
   if (!key) return res.status(400).json({ ok: false, reason: "missing key" });
 
   const experiment = experimentStore.getByKey(site_id, key);
@@ -1402,7 +1503,8 @@ app.get("/api/metrics", requireAuth, requireSiteAccess, async (req, res) => {
     return res.status(404).json({ ok: false, reason: "experiment not found" });
   }
 
-  if (redisMetricsStore && typeof from_ts !== "number" && typeof to_ts !== "number") {
+  const hasIsolationFilters = Boolean(actorType || personaId || runId);
+  if (redisMetricsStore && typeof from_ts !== "number" && typeof to_ts !== "number" && !hasIsolationFilters) {
     const realtime = await redisMetricsStore.getExperimentMetrics({
       siteId: site_id,
       key,
@@ -1414,7 +1516,7 @@ app.get("/api/metrics", requireAuth, requireSiteAccess, async (req, res) => {
     }
   }
 
-  const out = metricsReadModel.getExperimentMetrics({ siteId: site_id, key, fromTs: from_ts, toTs: to_ts });
+  const out = metricsReadModel.getExperimentMetrics({ siteId: site_id, key, fromTs: from_ts, toTs: to_ts, actorType, personaId, runId });
   if (!out.ok && out.reason === "experiment not found") {
     return res.status(404).json(out);
   }
@@ -1448,7 +1550,7 @@ app.get("/api/sessions", requireAuth, requireSiteAccess, async (req, res) => {
   const site_id = String(req.query.site_id || "ab-sample");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
-  const limit_sessions = Math.max(1, Math.min(200, toInt(req.query.limit) ?? 50));
+  const limit_sessions = Math.max(1, Math.min(100000, toInt(req.query.limit) ?? 50));
 
   if (!redisSessionAnalyticsService) return sendRedisUnavailable(res);
 
@@ -1464,7 +1566,7 @@ app.get("/api/labels/summary", requireAuth, requireSiteAccess, async (req, res) 
   const site_id = String(req.query.site_id || "ab-sample");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
-  const limit_sessions = Math.max(1, Math.min(1000, toInt(req.query.limit_sessions) ?? 1000));
+  const limit_sessions = Math.max(1, Math.min(100000, toInt(req.query.limit_sessions) ?? 100000));
 
   if (!redisSessionAnalyticsService) return sendRedisUnavailable(res);
 
@@ -1480,12 +1582,12 @@ app.get("/api/labels/clustering-summary", requireAuth, requireSiteAccess, async 
   const site_id = String(req.query.site_id || "ab-sample");
   const from_ts = toNum(req.query.from_ts);
   const to_ts = toNum(req.query.to_ts);
-  const limit = Math.max(1, Math.min(1000, toInt(req.query.limit_sessions) ?? 1000));
+  const limit = Math.max(1, Math.min(100000, toInt(req.query.limit_sessions) ?? 100000));
 
-  if (!redisSessionStore || !clusteringLabeler) return sendRedisUnavailable(res);
+  if (!redisSessionAnalyticsService || !clusteringLabeler) return sendRedisUnavailable(res);
 
   try {
-    const states = await redisSessionStore.listSessionStates({ siteId: site_id, limit, fromTs: from_ts, toTs: to_ts });
+    const states = await redisSessionAnalyticsService.listAnalyticsSessionStates({ siteId: site_id, limit, fromTs: from_ts, toTs: to_ts });
 
     const labeled = await Promise.all(
       states.map(async (state) => {
@@ -1497,15 +1599,18 @@ app.get("/api/labels/clustering-summary", requireAuth, requireSiteAccess, async 
 
     const summary = computeLabelsSummary(labeled);
     const taxonomy = await loadTaxonomy(redisRuntime, site_id);
-    const fallbackUsed = !taxonomy || Object.keys(taxonomy).length === 0;
+    const fallbackUsed = labeled.some((item) => item?.label?.source !== "clustering");
+    const unclassifiedSessions = labeled.filter((item) => item?.label?.label === "unclassified").length;
 
     return res.json({
       ok: true,
-      source: "clustering",
+      source: "redis_historical_sessions",
+      mode: "clustering",
       fallback_used: fallbackUsed,
       site_id,
       summary,
       taxonomy: taxonomy || null,
+      unclassified_sessions: unclassifiedSessions,
     });
   } catch (e) {
     return sendRedisUnavailable(res, e);
@@ -1587,6 +1692,7 @@ app.use(
       chatFeedbackFile: CHAT_FEEDBACK_FILE,
     },
     redisEventSummaryStore,
+    redisSessionAnalyticsService,
     middlewares: {
       requireAuth,
       requireSiteAccess,
