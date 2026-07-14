@@ -21,7 +21,6 @@
   const matchedAgentSummary = document.getElementById("matchedAgentSummary");
   const personaProfile = document.getElementById("personaProfile");
   const experimentSummary = document.getElementById("experimentSummary");
-  const simulationSampleSize = document.getElementById("simulationSampleSize");
   const runSimulationBtn = document.getElementById("runSimulationBtn");
   const simulationContext = document.getElementById("simulationContext");
   const simulationStatus = document.getElementById("simulationStatus");
@@ -115,7 +114,7 @@
     selectedStyleKey: "",
     pending: false,
     cohortSignal: { pending: false, error: "", cohort: null, requestKey: "", requestId: 0, controller: null },
-    transitionAnalysis: { pending: false, error: "", result: null, requestKey: "", requestId: 0, controller: null, expanded: false },
+    transitionAnalysis: { pending: false, error: "", result: null, requestKey: "", requestId: 0, controller: null, expanded: false, selectedPathId: "" },
     simulationPending: false,
     simulationRun: null,
     simulationError: "",
@@ -160,11 +159,6 @@
     const n = Number(value);
     if (!Number.isFinite(n)) return "—";
     return n < 0.001 ? "0.001 미만" : n.toFixed(3);
-  }
-
-  function clampSampleSize(value) {
-    const n = Math.round(Number(value) || 1000);
-    return Math.max(20, Math.min(50000, n));
   }
 
   function ageGroupLabel(ageGroup, fallback = "전체") {
@@ -290,6 +284,7 @@
       requestId: state.transitionAnalysis.requestId + 1,
       controller: null,
       expanded: false,
+      selectedPathId: "",
     };
   }
 
@@ -364,6 +359,14 @@
     });
   }
 
+  function currentSimulationFilters() {
+    return {
+      age_group: state.selectedAgeGroup || "",
+      occupation_group: state.selectedOccupationGroup || "",
+      style_key: state.selectedStyleKey || "",
+    };
+  }
+
   async function refreshCohortSignal() {
     const requestKey = cohortSignalRequestKey();
     if (state.cohortSignal.controller) state.cohortSignal.controller.abort();
@@ -406,7 +409,7 @@
     if (state.transitionAnalysis.controller) state.transitionAnalysis.controller.abort();
     const controller = new AbortController();
     const requestId = state.transitionAnalysis.requestId + 1;
-    state.transitionAnalysis = { pending: true, error: "", result: null, requestKey, requestId, controller, expanded: true };
+    state.transitionAnalysis = { pending: true, error: "", result: null, requestKey, requestId, controller, expanded: true, selectedPathId: "" };
     renderTransitionAnalysis();
     try {
       const json = await jsonFetch("/api/personas/fixed-cohort/transition-analysis", {
@@ -425,11 +428,11 @@
         }),
       });
       if (state.transitionAnalysis.requestKey !== requestKey || state.transitionAnalysis.requestId !== requestId) return;
-      state.transitionAnalysis = { pending: false, error: "", result: json.analysis || null, requestKey, requestId, controller: null, expanded: true };
+      state.transitionAnalysis = { pending: false, error: "", result: json.analysis || null, requestKey, requestId, controller: null, expanded: true, selectedPathId: "" };
     } catch (error) {
       if (error?.name === "AbortError") return;
       if (state.transitionAnalysis.requestKey !== requestKey || state.transitionAnalysis.requestId !== requestId) return;
-      state.transitionAnalysis = { pending: false, error: String(error), result: null, requestKey, requestId, controller: null, expanded: true };
+      state.transitionAnalysis = { pending: false, error: String(error), result: null, requestKey, requestId, controller: null, expanded: true, selectedPathId: "" };
     } finally {
       if (state.transitionAnalysis.requestKey === requestKey && state.transitionAnalysis.requestId === requestId) renderTransitionAnalysis();
     }
@@ -464,8 +467,6 @@
       renderSimulation();
       return;
     }
-    const uiSampleSize = clampSampleSize(simulationSampleSize?.value);
-    if (simulationSampleSize) simulationSampleSize.value = String(uiSampleSize);
     state.simulationPending = true;
     state.simulationError = "";
     renderSimulation();
@@ -473,10 +474,17 @@
       const json = await jsonFetch("/api/simulations/runs", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ site_id: state.siteId, experiment_key: experiment.key, mode: FIXED_COHORT_MODE, cohort_id: FIXED_COHORT_ID }),
+        body: JSON.stringify({
+          site_id: state.siteId,
+          experiment_key: experiment.key,
+          mode: FIXED_COHORT_MODE,
+          cohort_id: FIXED_COHORT_ID,
+          filters: currentSimulationFilters(),
+        }),
       });
       state.simulationRun = json.run || { run_id: json.run_id, status: json.status, results: null };
-      if (labStatus) labStatus.textContent = `${experiment.key} Nemotron 고정 10k 코호트 시뮬레이션을 완료했습니다.`;
+      const matchedCount = Number(state.simulationRun?.cohort_matched_members);
+      if (labStatus) labStatus.textContent = `${experiment.key} Nemotron 고정 10k 코호트 시뮬레이션을 완료했습니다.${Number.isFinite(matchedCount) ? ` 필터 일치 agent ${fmtInt(matchedCount)}명` : ""}`;
     } catch (error) {
       state.simulationError = String(error);
     } finally {
@@ -703,6 +711,187 @@
     }).join("");
   }
 
+  function sortTransitionDriftRows(rows, predicate) {
+    return (Array.isArray(rows) ? rows : [])
+      .filter((row) => Number.isFinite(Number(row?.delta)) && (!predicate || predicate(Number(row.delta))))
+      .sort((left, right) => Math.abs(Number(right.delta) || 0) - Math.abs(Number(left.delta) || 0) || (Number(right.changed_probability) || 0) - (Number(left.changed_probability) || 0));
+  }
+
+  function summarizeActivityLoad(rows) {
+    const load = new Map();
+    (Array.isArray(rows) ? rows : []).forEach((row) => {
+      const changedProbability = Number(row?.changed_probability);
+      const agentCount = Number(row?.agent_count) || 0;
+      if (!row?.from || !row?.to || !Number.isFinite(changedProbability) || changedProbability <= 0) return;
+      const weightedFlow = changedProbability * Math.max(agentCount, 1);
+      const from = load.get(row.from) || { state: row.from, outgoing: 0, incoming: 0, flow: 0, agents: 0 };
+      from.outgoing += changedProbability;
+      from.flow += weightedFlow;
+      from.agents = Math.max(from.agents, agentCount);
+      load.set(row.from, from);
+      const to = load.get(row.to) || { state: row.to, outgoing: 0, incoming: 0, flow: 0, agents: 0 };
+      to.incoming += changedProbability;
+      to.flow += weightedFlow;
+      to.agents = Math.max(to.agents, agentCount);
+      load.set(row.to, to);
+    });
+    return Array.from(load.values())
+      .sort((left, right) => right.flow - left.flow || right.outgoing - left.outgoing || left.state.localeCompare(right.state))
+      .slice(0, 6);
+  }
+
+  function renderTransitionMiningBoard(analysis) {
+    const changedRows = analysis?.b_changed?.transitions || [];
+    const positive = sortTransitionDriftRows(changedRows, (delta) => delta > 0);
+    const negative = sortTransitionDriftRows(changedRows, (delta) => delta < 0);
+    const topGain = positive[0] || null;
+    const topRisk = negative[0] || null;
+    const hotActivities = summarizeActivityLoad(changedRows);
+    const keyFlows = sortTransitionDriftRows(changedRows).slice(0, 5);
+
+    return `
+      <div class="transitionMiningBoard">
+        <div class="transitionMiningHeroCard">
+          <div class="summaryLabel">Process Mining Snapshot</div>
+          <div class="transitionMiningHeroGrid">
+            <div class="transitionMiningMetric ${topGain ? "positive" : ""}">
+              <div class="transitionMiningMetricLabel">강한 상승 전이</div>
+              <div class="transitionMiningMetricValue">${topGain ? escapeHtml(transitionEdgeLabel(topGain.edge_id, topGain.from, topGain.to)) : "—"}</div>
+              <div class="summaryHint">${topGain ? `B ${fmtPct(topGain.changed_probability)} · ${fmtSignedPct(topGain.delta)} · x${escapeHtml(String(topGain.multiplier || 1))}` : "상승 전이가 없습니다."}</div>
+            </div>
+            <div class="transitionMiningMetric ${topRisk ? "negative" : ""}">
+              <div class="transitionMiningMetricLabel">주의 하락 전이</div>
+              <div class="transitionMiningMetricValue">${topRisk ? escapeHtml(transitionEdgeLabel(topRisk.edge_id, topRisk.from, topRisk.to)) : "—"}</div>
+              <div class="summaryHint">${topRisk ? `B ${fmtPct(topRisk.changed_probability)} · ${fmtSignedPct(topRisk.delta)} · x${escapeHtml(String(topRisk.multiplier || 1))}` : "눈에 띄는 하락 전이가 없습니다."}</div>
+            </div>
+          </div>
+        </div>
+        <div class="transitionMiningGrid">
+          <div class="summaryMiniCard transitionMiningPanel">
+            <div class="summaryLabel">Hot Activities</div>
+            <div class="summaryHint">pm4py activity frequency처럼 B안 기준 흐름이 많이 모이는 상태</div>
+            <div class="transitionMiningActivityList">${hotActivities.map((activity, index) => {
+              const intensity = Math.max(16, Math.min(100, Math.round((activity.flow / Math.max(hotActivities[0]?.flow || 1, 1)) * 100)));
+              return `<div class="transitionMiningActivityRow"><div><div class="transitionMiningActivityTitle">${index + 1}. ${escapeHtml(transitionStateLabel(activity.state))}</div><div class="summaryHint">in ${fmtPct(activity.incoming)} · out ${fmtPct(activity.outgoing)} · agents ${fmtInt(activity.agents)}</div></div><div class="transitionMiningBar"><span style="width:${intensity}%"></span></div></div>`;
+            }).join("") || '<div class="emptyState compactEmpty">집계된 activity가 없습니다.</div>'}</div>
+          </div>
+          <div class="summaryMiniCard transitionMiningPanel">
+            <div class="summaryLabel">Key Flow Drift</div>
+            <div class="summaryHint">경로 변화량이 큰 edge를 우선순위로 정렬했습니다.</div>
+            <div class="transitionMiningFlowList">${keyFlows.map((row) => `<div class="transitionMiningFlowRow"><div><div class="simulationSegmentTitle">${escapeHtml(transitionEdgeLabel(row.edge_id, row.from, row.to))}</div><div class="summaryHint">A ${fmtPct(row.baseline_probability)} -> B ${fmtPct(row.changed_probability)} · agents ${fmtInt(row.agent_count)}</div></div><div class="transitionMiningDelta ${Number(row.delta) >= 0 ? "positive" : "negative"}">${fmtSignedPct(row.delta)}</div></div>`).join("") || '<div class="emptyState compactEmpty">변화가 큰 전이가 없습니다.</div>'}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function clusterTransitionsBySource(rows) {
+    const bySource = new Map();
+    (Array.isArray(rows) ? rows : []).forEach((row) => {
+      if (!row?.from || !row?.to) return;
+      if (!bySource.has(row.from)) bySource.set(row.from, []);
+      bySource.get(row.from).push(row);
+    });
+    bySource.forEach((items) => items.sort((left, right) => (Number(right.changed_probability) || 0) - (Number(left.changed_probability) || 0) || (Number(right.delta) || 0) - (Number(left.delta) || 0)));
+    return bySource;
+  }
+
+  function buildPathCandidates(rows) {
+    const edges = Array.isArray(rows) ? rows.filter(Boolean) : [];
+    if (!edges.length) return [];
+    const bySource = clusterTransitionsBySource(edges);
+    const incoming = new Map();
+    edges.forEach((row) => incoming.set(row.to, (incoming.get(row.to) || 0) + (Number(row.changed_probability) || 0)));
+    const roots = Array.from(bySource.keys())
+      .sort((left, right) => {
+        const leftOutgoing = bySource.get(left)?.[0]?.changed_probability || 0;
+        const rightOutgoing = bySource.get(right)?.[0]?.changed_probability || 0;
+        const leftIncoming = incoming.get(left) || 0;
+        const rightIncoming = incoming.get(right) || 0;
+        return (leftIncoming > 0 ? 1 : 0) - (rightIncoming > 0 ? 1 : 0) || rightOutgoing - leftOutgoing || left.localeCompare(right);
+      })
+      .slice(0, 6);
+    const paths = [];
+    roots.forEach((root) => {
+      const visited = new Set();
+      const steps = [];
+      let current = root;
+      let changedScore = 1;
+      let baselineScore = 1;
+      let cumulativeDelta = 0;
+      for (let depth = 0; depth < 5; depth += 1) {
+        const candidates = (bySource.get(current) || []).filter((row) => !visited.has(`${row.from}->${row.to}`));
+        const next = candidates[0];
+        if (!next) break;
+        const edgeKey = `${next.from}->${next.to}`;
+        visited.add(edgeKey);
+        steps.push(next);
+        changedScore *= Math.max(Number(next.changed_probability) || 0, 0.0001);
+        baselineScore *= Math.max(Number(next.baseline_probability) || 0, 0.0001);
+        cumulativeDelta += Number(next.delta) || 0;
+        current = next.to;
+        if (next.to === "exit" || next.to === "checkout_complete" || next.to === "purchase") break;
+      }
+      if (!steps.length) return;
+      const labels = [transitionStateLabel(steps[0].from)].concat(steps.map((step) => transitionActionLabel(step.to)));
+      paths.push({
+        id: `${root}:${steps.map((step) => step.to).join(">")}`,
+        labels,
+        terminal: steps[steps.length - 1]?.to || root,
+        changedScore,
+        baselineScore,
+        cumulativeDelta,
+        steps,
+      });
+    });
+    return paths
+      .sort((left, right) => right.changedScore - left.changedScore || Math.abs(right.cumulativeDelta) - Math.abs(left.cumulativeDelta) || right.steps.length - left.steps.length)
+      .filter((path, index, list) => list.findIndex((item) => item.labels.join("|") === path.labels.join("|")) === index)
+      .slice(0, 4);
+  }
+
+  function renderVariantPaths(rows) {
+    const paths = buildPathCandidates(rows);
+    const selectedPathId = state.transitionAnalysis.selectedPathId || "";
+    if (!paths.length) {
+      return '<div class="summaryMiniCard transitionMiningPanel"><div class="summaryLabel">Top Variant Paths</div><div class="emptyState compactEmpty">표시할 주요 경로가 없습니다.</div></div>';
+    }
+    return `
+      <div class="summaryMiniCard transitionMiningPanel">
+        <div class="summaryLabel">Top Variant Paths</div>
+        <div class="summaryHint">pm4py 경로 뷰처럼 B안 기준 우세 경로를 압축해 보여줍니다.</div>
+        <div class="transitionPathList">${paths.map((path, index) => {
+          const changedPct = Math.max(0, Math.min(1, path.changedScore));
+          const baselinePct = Math.max(0, Math.min(1, path.baselineScore));
+          return `<button type="button" class="transitionPathCard ${selectedPathId === path.id ? "is-active" : ""}" data-transition-path-id="${escapeHtml(path.id)}"><div class="transitionPathHeader"><span class="transitionPathRank">Path ${index + 1}</span><span class="transitionMiningDelta ${path.cumulativeDelta >= 0 ? "positive" : "negative"}">${fmtSignedPct(path.cumulativeDelta)}</span></div><div class="transitionPathRail">${path.labels.map((label, stepIndex) => `<span class="transitionPathNode">${escapeHtml(label)}</span>${stepIndex < path.labels.length - 1 ? '<span class="transitionPathArrow">→</span>' : ''}`).join("")}</div><div class="transitionPathMeta"><span class="badge label">B path score ${fmtPct(changedPct)}</span><span class="badge label">A path score ${fmtPct(baselinePct)}</span><span class="badge label">terminal ${escapeHtml(transitionStateLabel(path.terminal))}</span></div></button>`;
+        }).join("")}</div>
+      </div>`;
+  }
+
+  function renderTransitionBottlenecks(rows) {
+    const list = Array.isArray(rows) ? rows.filter(Boolean) : [];
+    const exitRisks = list
+      .filter((row) => row.to === "exit")
+      .sort((left, right) => (Number(right.changed_probability) || 0) - (Number(left.changed_probability) || 0) || (Number(left.delta) || 0) - (Number(right.delta) || 0))
+      .slice(0, 4);
+    const conversionBottlenecks = list
+      .filter((row) => row.to !== "exit" && Number(row.delta) < 0)
+      .sort((left, right) => Number(left.delta) - Number(right.delta) || (Number(right.agent_count) || 0) - (Number(left.agent_count) || 0))
+      .slice(0, 4);
+    return `
+      <div class="transitionMiningGrid">
+        <div class="summaryMiniCard transitionMiningPanel">
+          <div class="summaryLabel">Exit Risk Paths</div>
+          <div class="summaryHint">이탈로 빠지는 경로 중 B안에서 강한 흐름입니다.</div>
+          <div class="transitionMiningFlowList">${exitRisks.map((row) => `<div class="transitionMiningFlowRow"><div><div class="simulationSegmentTitle">${escapeHtml(transitionEdgeLabel(row.edge_id, row.from, row.to))}</div><div class="summaryHint">B ${fmtPct(row.changed_probability)} · A ${fmtPct(row.baseline_probability)} · agents ${fmtInt(row.agent_count)}</div></div><div class="transitionMiningDelta ${Number(row.delta) >= 0 ? "positive" : "negative"}">${fmtSignedPct(row.delta)}</div></div>`).join("") || '<div class="emptyState compactEmpty">뚜렷한 exit risk가 없습니다.</div>'}</div>
+        </div>
+        <div class="summaryMiniCard transitionMiningPanel">
+          <div class="summaryLabel">Conversion Bottlenecks</div>
+          <div class="summaryHint">구매 방향 전이 중 B안에서 약해진 구간입니다.</div>
+          <div class="transitionMiningFlowList">${conversionBottlenecks.map((row) => `<div class="transitionMiningFlowRow"><div><div class="simulationSegmentTitle">${escapeHtml(transitionEdgeLabel(row.edge_id, row.from, row.to))}</div><div class="summaryHint">B ${fmtPct(row.changed_probability)} · A ${fmtPct(row.baseline_probability)} · agents ${fmtInt(row.agent_count)}</div></div><div class="transitionMiningDelta negative">${fmtSignedPct(row.delta)}</div></div>`).join("") || '<div class="emptyState compactEmpty">눈에 띄는 병목이 없습니다.</div>'}</div>
+        </div>
+      </div>`;
+  }
+
   function transitionEdgeKey(row) {
     return row?.edge_id || `${row?.from || ""}->${row?.to || ""}`;
   }
@@ -752,9 +941,145 @@
     return text.length > 18 ? `${text.slice(0, 15)}...` : text;
   }
 
+  function transitionNodeKind(stateId) {
+    const id = String(stateId || "");
+    if (id === "exit") return "exit";
+    if (id === "checkout_complete" || id === "purchase") return "success";
+    if (id.includes("checkout") || id.includes("payment")) return "conversion";
+    if (id.includes("cart")) return "intent";
+    if (id.includes("review") || id.includes("compare") || id.includes("search") || id.includes("filter")) return "consideration";
+    return "browse";
+  }
+
+  function transitionGraphBucket(stateId) {
+    const id = String(stateId || "unknown");
+    if (id === "home_page") return { id: "home_page", label: "홈", kind: "browse" };
+    if (id === "browse_page") return { id: "browse_page", label: "탐색/비교", kind: "browse" };
+    if (id === "product_page") return { id: "product_page", label: "상품 상세", kind: "consideration" };
+    if (id === "cart_page") return { id: "cart_page", label: "장바구니", kind: "intent" };
+    if (id === "checkout_page") return { id: "checkout_page", label: "결제", kind: "conversion" };
+    if (id === "payment_page") return { id: "payment_page", label: "결제 시도", kind: "conversion" };
+    if (id === "success_page") return { id: "success_page", label: "구매 완료", kind: "success" };
+    if (id === "exit") return { id: "exit", label: "이탈", kind: "exit" };
+    if (id === "checkout_complete" || id === "purchase") return { id: "success_page", label: "구매 완료", kind: "success" };
+    if (id === "payment_attempt") return { id: "payment_page", label: "결제 시도", kind: "conversion" };
+    if (id === "checkout" || id === "checkout_entry") return { id: "checkout_page", label: "결제", kind: "conversion" };
+    if (id.includes("cart")) return { id: "cart_page", label: "장바구니", kind: "intent" };
+    if (["detail_view", "spec_check", "review_check", "review_sort", "review_tab", "trust_check", "coupon_check", "shipping_check", "shipping_info", "delivery_policy", "threshold_check", "price_check"].includes(id)) {
+      return { id: "product_page", label: "상품 상세", kind: "consideration" };
+    }
+    if (["listing_view", "search_entry", "search_query", "filter_apply", "compare_click"].includes(id)) {
+      return { id: "browse_page", label: "탐색/비교", kind: "browse" };
+    }
+    if (["landing", "brand_story", "cta_click"].includes(id)) {
+      return { id: "home_page", label: "홈", kind: "browse" };
+    }
+    return { id, label: transitionStateLabel(id), kind: transitionNodeKind(id) };
+  }
+
+  function aggregateTransitionGraphEdges(edges) {
+    const grouped = new Map();
+    (Array.isArray(edges) ? edges : []).forEach((edge) => {
+      const fromBucket = transitionGraphBucket(edge.from);
+      const toBucket = transitionGraphBucket(edge.to);
+      const key = `${fromBucket.id}->${toBucket.id}`;
+      const current = grouped.get(key) || {
+        edgeId: key,
+        from: fromBucket.id,
+        to: toBucket.id,
+        fromLabel: fromBucket.label,
+        toLabel: toBucket.label,
+        fromKind: fromBucket.kind,
+        toKind: toBucket.kind,
+        aProbability: 0,
+        bProbability: 0,
+        agentCount: 0,
+        multiplierSum: 0,
+        count: 0,
+      };
+      current.aProbability += Number(edge.aProbability) || 0;
+      current.bProbability += Number(edge.bProbability) || 0;
+      current.agentCount = Math.max(current.agentCount, Number(edge.agentCount) || 0);
+      current.multiplierSum += Number(edge.multiplier) || 1;
+      current.count += 1;
+      grouped.set(key, current);
+    });
+    return Array.from(grouped.values()).map((edge) => ({
+      ...edge,
+      delta: edge.bProbability - edge.aProbability,
+      multiplier: edge.count > 0 ? edge.multiplierSum / edge.count : 1,
+    }));
+  }
+
+  function transitionGraphBucketColumn(bucketId) {
+    const id = String(bucketId || "");
+    if (id === "home_page") return 0;
+    if (id === "browse_page") return 1;
+    if (id === "product_page") return 2;
+    if (id === "cart_page") return 3;
+    if (id === "checkout_page" || id === "payment_page") return 4;
+    if (id === "success_page" || id === "exit") return 5;
+    return 2;
+  }
+
+  function transitionGraphNodeSpec(bucketId) {
+    const id = String(bucketId || "");
+    if (id === "product_page") return { width: 176, height: 82 };
+    if (id === "success_page" || id === "exit") return { width: 164, height: 80 };
+    if (id === "checkout_page" || id === "payment_page") return { width: 168, height: 78 };
+    return { width: 152, height: 74 };
+  }
+
+  function transitionGraphNodeMetrics(edges) {
+    const metrics = new Map();
+    const totalFlow = (Array.isArray(edges) ? edges : []).reduce((sum, edge) => sum + Math.max(0, Number(edge.bProbability) || 0), 0) || 1;
+    (Array.isArray(edges) ? edges : []).forEach((edge) => {
+      const from = metrics.get(edge.from) || { incoming: 0, outgoing: 0, load: 0, agents: 0, incomingCount: 0, outgoingCount: 0 };
+      const to = metrics.get(edge.to) || { incoming: 0, outgoing: 0, load: 0, agents: 0, incomingCount: 0, outgoingCount: 0 };
+      const bProbability = Number(edge.bProbability) || 0;
+      const agents = Number(edge.agentCount) || 0;
+      from.outgoing += bProbability;
+      from.load += bProbability * Math.max(agents, 1);
+      from.agents = Math.max(from.agents, agents);
+      from.outgoingCount += 1;
+      to.incoming += bProbability;
+      to.load += bProbability * Math.max(agents, 1);
+      to.agents = Math.max(to.agents, agents);
+      to.incomingCount += 1;
+      metrics.set(edge.from, from);
+      metrics.set(edge.to, to);
+    });
+    metrics.forEach((value) => {
+      value.share = (value.incoming + value.outgoing) / (2 * totalFlow);
+    });
+    return metrics;
+  }
+
+  function transitionGraphEdgeLabel(edge, isActive) {
+    return "";
+  }
+
+  function renderSelectedPathDetails(rows) {
+    const paths = buildPathCandidates(rows);
+    const selectedPath = paths.find((path) => path.id === state.transitionAnalysis.selectedPathId) || null;
+    if (!selectedPath) {
+      return `
+        <div class="summaryMiniCard transitionMiningPanel transitionPathDetailsCard">
+          <div class="summaryLabel">선택한 경로 상세</div>
+          <div class="summaryHint">Top Variant Paths에서 경로를 누르면 각 전이의 확률 변화와 agent 수를 여기서 읽을 수 있습니다.</div>
+        </div>`;
+    }
+    return `
+      <div class="summaryMiniCard transitionMiningPanel transitionPathDetailsCard">
+        <div class="summaryLabel">선택한 경로 상세</div>
+        <div class="summaryHint">${escapeHtml(selectedPath.labels.join(" -> "))}</div>
+        <div class="transitionPathDetailList">${selectedPath.steps.map((step, index) => `<div class="transitionPathDetailRow"><div><div class="simulationSegmentTitle">${index + 1}. ${escapeHtml(transitionEdgeLabel(step.edge_id, step.from, step.to))}</div><div class="summaryHint">A ${fmtPct(step.baseline_probability)} -> B ${fmtPct(step.changed_probability)} · agents ${fmtInt(step.agent_count)}</div></div><div class="transitionMiningDelta ${Number(step.delta) >= 0 ? "positive" : "negative"}">${fmtSignedPct(step.delta)}</div></div>`).join("")}</div>
+      </div>`;
+  }
+
   function transitionGraphNodeLayout(edges) {
-    const width = 760;
-    const height = 330;
+    const width = 1260;
+    const height = 430;
     const nodeIds = Array.from(new Set(edges.flatMap((edge) => [edge.from, edge.to]))).sort();
     const incoming = new Map();
     const outgoing = new Map();
@@ -762,14 +1087,14 @@
       outgoing.set(edge.from, (outgoing.get(edge.from) || 0) + 1);
       incoming.set(edge.to, (incoming.get(edge.to) || 0) + 1);
     });
-    const columns = [[], [], []];
+    const columns = [[], [], [], [], [], []];
     nodeIds.forEach((id) => {
-      const hasIncoming = incoming.has(id);
-      const hasOutgoing = outgoing.has(id);
-      const column = hasOutgoing && !hasIncoming ? 0 : hasIncoming && !hasOutgoing ? 2 : 1;
+      const column = transitionGraphBucketColumn(id);
       columns[column].push(id);
     });
     const points = new Map();
+    const nodeSpecs = new Map();
+    const columnX = [88, 290, 510, 738, 966, 1172];
     columns.forEach((ids, columnIndex) => {
       ids.sort((left, right) => {
         const leftDegree = (incoming.get(left) || 0) + (outgoing.get(left) || 0);
@@ -778,56 +1103,90 @@
       });
       const gap = height / (ids.length + 1);
       ids.forEach((id, index) => {
-        points.set(id, { x: 92 + columnIndex * 288, y: Math.round(gap * (index + 1)) });
+        nodeSpecs.set(id, transitionGraphNodeSpec(id));
+        points.set(id, { x: columnX[columnIndex] || 488, y: Math.round(gap * (index + 1)) });
       });
     });
-    return { width, height, points };
+    return { width, height, points, nodeSpecs };
   }
 
-  function transitionGraphPath(fromPoint, toPoint, index) {
+  function transitionGraphPath(fromPoint, toPoint, index, layout) {
     if (!fromPoint || !toPoint) return "";
+    const fromSpec = layout?.nodeSpecs?.get?.(fromPoint.id) || transitionGraphNodeSpec(fromPoint.id);
+    const toSpec = layout?.nodeSpecs?.get?.(toPoint.id) || transitionGraphNodeSpec(toPoint.id);
+    const fromX = fromPoint.x + (fromSpec.width / 2);
+    const toX = toPoint.x - (toSpec.width / 2);
+    const fromY = fromPoint.y;
+    const toY = toPoint.y;
     const sweep = index % 2 === 0 ? 1 : -1;
-    if (Math.abs(fromPoint.x - toPoint.x) < 24) {
-      const loopX = fromPoint.x + 88 * sweep;
-      const loopY = (fromPoint.y + toPoint.y) / 2 - 48 * sweep;
-      return `M ${fromPoint.x} ${fromPoint.y} Q ${loopX} ${loopY} ${toPoint.x} ${toPoint.y}`;
+    if (Math.abs(fromX - toX) < 42) {
+      const loopX = fromX + 120 * sweep;
+      const loopY = (fromY + toY) / 2 - 56 * sweep;
+      return `M ${fromX} ${fromY} Q ${loopX} ${loopY} ${toX} ${toY}`;
     }
-    const curve = Math.max(76, Math.abs(toPoint.x - fromPoint.x) * 0.36);
-    return `M ${fromPoint.x} ${fromPoint.y} C ${fromPoint.x + curve} ${fromPoint.y}, ${toPoint.x - curve} ${toPoint.y}, ${toPoint.x} ${toPoint.y}`;
+    const curve = Math.max(104, Math.abs(toX - fromX) * 0.38);
+    return `M ${fromX} ${fromY} C ${fromX + curve} ${fromY}, ${toX - curve} ${toY}, ${toX} ${toY}`;
   }
 
   function renderTransitionGraph(analysis) {
     const baselineRows = analysis?.a_baseline?.transitions;
     const changedRows = analysis?.b_changed?.transitions;
-    const edges = selectTransitionGraphEdges(mergeTransitionGraphEdges(baselineRows, changedRows));
+    const rawEdges = mergeTransitionGraphEdges(baselineRows, changedRows);
+    const edges = selectTransitionGraphEdges(aggregateTransitionGraphEdges(rawEdges));
+    const pathCandidates = buildPathCandidates(changedRows);
+    const activePath = pathCandidates.find((path) => path.id === state.transitionAnalysis.selectedPathId) || null;
+    const activeEdgeSet = new Set((activePath?.steps || []).map((step) => {
+      const fromBucket = transitionGraphBucket(step.from);
+      const toBucket = transitionGraphBucket(step.to);
+      return `${fromBucket.id}->${toBucket.id}`;
+    }));
+    const activeNodeSet = new Set(activePath ? [
+      transitionGraphBucket(activePath.steps[0]?.from).id,
+      ...activePath.steps.map((step) => transitionGraphBucket(step.to).id),
+    ] : []);
     if (edges.length === 0) return '<div class="emptyState compactEmpty">네트워크 그래프로 표시할 전이가 없습니다.</div>';
 
     const layout = transitionGraphNodeLayout(edges);
+    const nodeMetrics = transitionGraphNodeMetrics(edges);
     const edgePaths = edges.map((edge, index) => {
-      const fromPoint = layout.points.get(edge.from);
-      const toPoint = layout.points.get(edge.to);
-      const path = transitionGraphPath(fromPoint, toPoint, index);
+      const fromPoint = { ...(layout.points.get(edge.from) || {}), id: edge.from };
+      const toPoint = { ...(layout.points.get(edge.to) || {}), id: edge.to };
+      const path = transitionGraphPath(fromPoint, toPoint, index, layout);
       const deltaClass = transitionGraphDeltaClass(edge.delta);
       const labelX = fromPoint && toPoint ? Math.round((fromPoint.x + toPoint.x) / 2) : 0;
-      const labelY = fromPoint && toPoint ? Math.round((fromPoint.y + toPoint.y) / 2) - 10 + (index % 3) * 12 : 0;
-      const tooltip = `${transitionEdgeTooltip(edge.edgeId, edge.from, edge.to)}\nA ${fmtPct(edge.aProbability)} · B ${fmtPct(edge.bProbability)}\nDelta ${fmtSignedPct(edge.delta)} · x${edge.multiplier || 1}\nagents ${fmtInt(edge.agentCount)}`;
-      const edgeLabel = `${transitionActionLabel(edge.to)} · ${fmtPct(edge.bProbability)} (${fmtSignedPct(edge.delta)})`;
+      const labelY = fromPoint && toPoint ? Math.round((fromPoint.y + toPoint.y) / 2) - 16 + (index % 3) * 14 : 0;
+      const tooltip = `${edge.fromLabel} -> ${edge.toLabel}\nA ${fmtPct(edge.aProbability)} · B ${fmtPct(edge.bProbability)}\nDelta ${fmtSignedPct(edge.delta)} · x${edge.multiplier || 1}\nagents ${fmtInt(edge.agentCount)}`;
+      const isActive = activeEdgeSet.has(edge.edgeId);
+      const isDimmed = activePath && !isActive;
+      const changedStrokeWidth = Math.max(4, Math.min(14, 2 + Math.round((Number(edge.bProbability) || 0) * 22)));
+      const edgeLabel = transitionGraphEdgeLabel(edge, isActive);
       return `<g class="transitionGraphEdgeGroup">
-        <path class="transitionGraphEdge baseline" d="${escapeHtml(path)}"><title>${escapeHtml(tooltip)}</title></path>
-        <path class="transitionGraphEdge changed ${deltaClass}" d="${escapeHtml(path)}"><title>${escapeHtml(tooltip)}</title></path>
-        <text class="transitionGraphEdgeLabel" x="${labelX}" y="${labelY}">${escapeHtml(edgeLabel)}<title>${escapeHtml(tooltip)}</title></text>
+        <path class="transitionGraphEdge baseline ${isActive ? "is-active" : ""} ${isDimmed ? "is-dimmed" : ""}" d="${escapeHtml(path)}"><title>${escapeHtml(tooltip)}</title></path>
+        <path class="transitionGraphEdge changed ${deltaClass} ${isActive ? "is-active" : ""} ${isDimmed ? "is-dimmed" : ""}" d="${escapeHtml(path)}" style="stroke-width:${changedStrokeWidth}"><title>${escapeHtml(tooltip)}</title></path>
+        <text class="transitionGraphEdgeLabel ${isActive ? "is-active" : ""} ${isDimmed ? "is-dimmed" : ""}" x="${labelX}" y="${labelY}">${escapeHtml(edgeLabel)}<title>${escapeHtml(tooltip)}</title></text>
       </g>`;
     }).join("");
-    const nodes = Array.from(layout.points.entries()).map(([id, point]) => `<g class="transitionGraphNode" transform="translate(${point.x} ${point.y})">
-      <circle class="transitionGraphNodeCircle" r="22"><title>${escapeHtml(`${transitionStateLabel(id)}\n${id}`)}</title></circle>
-      <text class="transitionGraphNodeLabel" y="38">${escapeHtml(truncateTransitionStateLabel(transitionStateLabel(id)))}<title>${escapeHtml(`${transitionStateLabel(id)}\n${id}`)}</title></text>
-    </g>`).join("");
+    const nodes = Array.from(layout.points.entries()).map(([id, point]) => {
+      const isActive = activeNodeSet.has(id);
+      const isDimmed = activePath && !isActive;
+      const nodeKind = transitionNodeKind(id);
+      const metrics = nodeMetrics.get(id) || { incoming: 0, outgoing: 0, agents: 0 };
+      const bucket = transitionGraphBucket(id);
+      const title = `${bucket.label}\n${id}\nshare ${fmtPct(metrics.share)}\nin ${fmtPct(metrics.incoming)} · out ${fmtPct(metrics.outgoing)}\nagents ${fmtInt(metrics.agents)}`;
+      const spec = layout.nodeSpecs.get(id) || transitionGraphNodeSpec(id);
+      return `<g class="transitionGraphNode" transform="translate(${point.x} ${point.y})">
+      <rect class="transitionGraphNodeRect bucket-${id} kind-${bucket.kind} ${isActive ? "is-active" : ""} ${isDimmed ? "is-dimmed" : ""}" x="${-spec.width / 2}" y="${-spec.height / 2}" width="${spec.width}" height="${spec.height}" rx="18" ry="18"><title>${escapeHtml(title)}</title></rect>
+      <text class="transitionGraphNodeLabel ${isActive ? "is-active" : ""} ${isDimmed ? "is-dimmed" : ""}" y="-10">${escapeHtml(truncateTransitionStateLabel(bucket.label))}<title>${escapeHtml(title)}</title></text>
+      <text class="transitionGraphNodeMeta ${isActive ? "is-active" : ""} ${isDimmed ? "is-dimmed" : ""}" y="12">${escapeHtml(`share ${fmtPct(metrics.share)}`)}<title>${escapeHtml(title)}</title></text>
+      <text class="transitionGraphNodeSubMeta ${isActive ? "is-active" : ""} ${isDimmed ? "is-dimmed" : ""}" y="28">${escapeHtml(`agents ${fmtInt(metrics.agents)}`)}<title>${escapeHtml(title)}</title></text>
+    </g>`;
+    }).join("");
 
     return `<div class="transitionGraphCard" aria-label="A/B 전이확률 네트워크 그래프">
       <div class="transitionGraphHead">
         <div>
           <div class="summaryLabel">전이 네트워크 개요</div>
-          <div class="summaryHint">delta와 B안 확률이 큰 상위 ${fmtInt(edges.length)}개 edge를 표시합니다.</div>
+          <div class="summaryHint">상세 상태를 홈/탐색/상품/장바구니/결제 같은 화면 단계로 묶어 표시합니다. 노드 안에는 share와 agent 수가 들어갑니다.</div>
         </div>
         <div class="transitionGraphLegend" aria-label="그래프 범례">
           <span class="transitionGraphLegendItem"><span class="transitionGraphLegendLine baseline"></span>A baseline</span>
@@ -894,6 +1253,11 @@
         <div class="summaryHint">provider ${escapeHtml(interpretation.provider || "fallback")} · persona 해석 ${fmtInt(interpretation.interpretation_count || 1)}개 · 대표 ${escapeHtml(localizeKnownSegmentText(representative.group_label || representative.id, "—"))}</div>
         <div class="transitionInterpretation">${escapeHtml(interpretation.reason_summary || "해석 결과 없음")}</div>
       </div>
+      ${renderActionRecommendations({ analysis, simulationRun: state.simulationRun })}
+      ${renderTransitionMiningBoard(analysis)}
+      ${renderTransitionBottlenecks(changed.transitions)}
+      ${renderVariantPaths(changed.transitions)}
+      ${renderSelectedPathDetails(changed.transitions)}
       ${renderTransitionGraph(analysis)}
       <div class="transitionAnalysisColumns">
         <div>
@@ -910,10 +1274,31 @@
 
   function renderCoverageDiagnostics(diagnostics) {
     if (!diagnostics) return "";
+    const cards = [
+      { label: "커버된 모집단 가중치", value: fmtPct(diagnostics.covered_population_weight), hint: "가상 agent 모집단 커버리지" },
+      { label: "누락 가중치", value: fmtPct(diagnostics.missing_population_weight), hint: "cohort에 없는 segment 비중" },
+      { label: "분포 손실", value: fmtPct(diagnostics.distribution_loss_total_variation), hint: "population 대비 total variation" },
+      { label: "유효 샘플 수", value: fmtInt(diagnostics.effective_sample_size), hint: "weight 보정 기준 effective n" },
+      { label: "누락 segment", value: fmtInt(diagnostics.missing_segment_count), hint: "population엔 있으나 cohort엔 없음" },
+      { label: "과소 대표 segment", value: fmtInt(diagnostics.undercovered_segment_count), hint: "population 대비 부족한 segment" },
+    ].filter((card) => card.value && card.value !== "—");
     return `
         <div class="simulationResultGrid">
-          <div class="summaryMiniCard"><div class="summaryLabel">커버된 모집단 가중치</div><div class="summaryMiniValue mono">${fmtPct(diagnostics.covered_population_weight)}</div><div class="summaryHint">가상 agent 모집단 커버리지</div></div>
+          ${cards.map((card) => `<div class="summaryMiniCard"><div class="summaryLabel">${escapeHtml(card.label)}</div><div class="summaryMiniValue mono">${escapeHtml(card.value)}</div><div class="summaryHint">${escapeHtml(card.hint)}</div></div>`).join("")}
         </div>`;
+  }
+
+  function renderSimulationSegments(segments) {
+    const rows = Array.isArray(segments) ? segments.filter(Boolean).slice(0, 6) : [];
+    if (!rows.length) return "";
+    return `
+      <div class="summaryMiniCard">
+        <div class="summaryLabel">세그먼트별 uplift</div>
+        <div class="transitionAnalysisList">${rows.map((row) => {
+          const segmentLabel = localizeKnownSegmentText(row.group_id, row.group_id || "segment");
+          return `<div class="simulationSegmentRow"><div><div class="simulationSegmentTitle">${escapeHtml(segmentLabel)}</div><div class="summaryHint">A ${fmtPct(row.A?.cvr)} -> B ${fmtPct(row.B?.cvr)}</div></div><div class="summaryMiniValue mono">${fmtSignedPct(row.uplift ?? row.diff)}</div></div>`;
+        }).join("")}</div>
+      </div>`;
   }
 
   function simulationModeLabel(mode) {
@@ -938,6 +1323,7 @@
     if (!simulationContext) return;
     const experiment = currentExperiment();
     const persona = currentPersona();
+    const cohort = state.cohortSignal.cohort || null;
     const age = ageGroupLabel(state.selectedAgeGroup, "전체 나이대");
     const occupation = occupationGroupLabel(state.selectedOccupationGroup);
     const stylePersona = state.personas.find((item) => item.style_key === state.selectedStyleKey);
@@ -947,7 +1333,8 @@
       <span class="badge label">${escapeHtml(age)}</span>
       <span class="badge label">${escapeHtml(occupation)}</span>
       <span class="badge label">${escapeHtml(style)}</span>
-      <span class="badge label">${escapeHtml(personaLabel(persona))}</span>`;
+      <span class="badge label">${escapeHtml(personaLabel(persona))}</span>
+      ${cohort ? `<span class="badge label">cohort ${fmtInt(cohort.matched_count || 0)} / ${fmtInt(cohort.total_members || 0)}</span>` : ""}`;
   }
 
   function renderSimulation() {
@@ -981,12 +1368,16 @@
     const sampleSize = Number(run.sample_size) || ((Number(variantA.sessions) || 0) + (Number(variantB.sessions) || 0));
     const populationSize = Number(run.population_size) || 0;
     const diagnostics = run.coverage_diagnostics || results.coverage_diagnostics || null;
+    const filtersApplied = run.filters_applied || currentSimulationFilters();
+    const hasFilters = Object.values(filtersApplied).some(Boolean);
     const coveredPopulationWeight = Number(diagnostics?.covered_population_weight);
     const diagnosticCoverage = Number(diagnostics?.coverage_rate);
     const fallbackCoverage = populationSize > 0 ? sampleSize / populationSize : null;
     const coverage = Number.isFinite(diagnosticCoverage) ? diagnosticCoverage : fallbackCoverage;
     const statusClass = run.status === "completed" ? "running" : run.status === "failed" ? "paused" : "draft";
     const winnerText = summary.winner === "tie" ? "동률" : `Variant ${summary.winner || "—"}`;
+    const matchedMembers = Number(run.cohort_matched_members);
+    const totalMembers = Number(run.cohort_total_members);
 
     if (simulationStatus) simulationStatus.textContent = `run ${run.run_id || "—"} · ${run.status || "completed"}`;
     simulationResults.innerHTML = `
@@ -997,6 +1388,7 @@
           ${run.mode ? `<span class="badge label">mode ${escapeHtml(simulationModeLabel(run.mode))}</span>` : ""}
           ${run.cohort_id ? `<span class="badge label">cohort ${escapeHtml(run.cohort_id)}</span>` : ""}
           <span class="badge label">sample ${fmtInt(sampleSize)}</span>
+          ${Number.isFinite(matchedMembers) ? `<span class="badge label">matched ${fmtInt(matchedMembers)}</span>` : ""}
           <span class="badge label">커버 가중치 ${fmtPct(Number.isFinite(coveredPopulationWeight) ? coveredPopulationWeight : coverage)}</span>
         </div>
         ${renderCohortMetadata(run)}
@@ -1010,7 +1402,12 @@
           <div class="summaryMiniCard"><div class="summaryLabel">Variant A</div><div class="summaryMiniValue mono">${fmtInt(variantA.sessions)} sessions</div><div class="summaryHint">CTR ${fmtPct(variantA.ctr)} · clicks ${fmtInt(variantA.clicks)}</div></div>
           <div class="summaryMiniCard"><div class="summaryLabel">Variant B</div><div class="summaryMiniValue mono">${fmtInt(variantB.sessions)} sessions</div><div class="summaryHint">CTR ${fmtPct(variantB.ctr)} · clicks ${fmtInt(variantB.clicks)}</div></div>
         </div>
+        <div class="simulationResultGrid">
+          <div class="summaryMiniCard"><div class="summaryLabel">필터 적용</div><div class="summaryMiniValue">${hasFilters ? `${escapeHtml(ageGroupLabel(filtersApplied.age_group, "전체 나이대"))} · ${escapeHtml(occupationGroupLabel(filtersApplied.occupation_group))} · ${escapeHtml(styleKeyLabel(filtersApplied.style_key, "전체 유형"))}` : "전체 cohort"}</div><div class="summaryHint">${Number.isFinite(matchedMembers) ? `${fmtInt(matchedMembers)} / ${fmtInt(totalMembers)} members matched` : "fixed cohort slice"}</div></div>
+          <div class="summaryMiniCard"><div class="summaryLabel">분석 단위</div><div class="summaryMiniValue mono">${fmtInt(sampleSize)}</div><div class="summaryHint">필터 일치 agent sessions</div></div>
+        </div>
         ${renderCoverageDiagnostics(diagnostics)}
+        ${renderSimulationSegments(results.segments)}
         <div class="simulationCaveat">주의: 이 결과는 synthetic persona simulation이며 실제 사용자 행동이나 통계적 proof가 아닙니다. 실제 배포 판단에는 운영 데이터와 함께 확인하세요.</div>
       </div>`;
   }
@@ -1047,6 +1444,7 @@
     const experiment = currentExperiment();
     const persona = currentPersona();
     const target = previewTarget();
+    const analysis = state.transitionAnalysis.result;
     const changes = Array.isArray(experiment?.variants?.B) ? experiment.variants.B : [];
     if (!previewFrame || !previewLayer || !previewStage) return;
     if (!target || !(target.preview_url || target.live_url)) {
@@ -1057,8 +1455,18 @@
     }
     const impacts = changes.map(estimateImpact);
     const avg = impacts.length ? Math.round(impacts.reduce((sum, item) => sum + item.pct, 0) / impacts.length) : 0;
-    if (previewSentence) previewSentence.textContent = `${personaLabel(persona)} 고객의 클릭 전환율이 평균 ${avg > 0 ? "+" : ""}${avg}% ${avg >= 0 ? "증가" : "감소"}할 것으로 예상됩니다.`;
-    if (previewMeta) previewMeta.innerHTML = impacts.slice(0, 6).map((item) => `<span class="badge ${item.direction === "positive" ? "impactPos" : "impactNeg"}">${escapeHtml(item.label)} ${item.pct > 0 ? "+" : ""}${item.pct}%</span>`).join("");
+    const strongestGain = sortTransitionDriftRows(analysis?.b_changed?.transitions, (delta) => delta > 0)[0] || null;
+    const strongestRisk = sortTransitionDriftRows(analysis?.b_changed?.transitions, (delta) => delta < 0)[0] || null;
+    if (previewSentence) {
+      previewSentence.textContent = strongestGain
+        ? `${personaLabel(persona)} cohort 기준 ${transitionEdgeLabel(strongestGain.edge_id, strongestGain.from, strongestGain.to)} 전이가 가장 크게 상승합니다. 예상 클릭 반응은 평균 ${avg > 0 ? "+" : ""}${avg}%입니다.`
+        : `${personaLabel(persona)} 고객의 클릭 전환율이 평균 ${avg > 0 ? "+" : ""}${avg}% ${avg >= 0 ? "증가" : "감소"}할 것으로 예상됩니다.`;
+    }
+    if (previewMeta) previewMeta.innerHTML = [
+      strongestGain ? `<span class="badge impactPos">상승 ${escapeHtml(transitionEdgeLabel(strongestGain.edge_id, strongestGain.from, strongestGain.to))} ${fmtSignedPct(strongestGain.delta)}</span>` : "",
+      strongestRisk ? `<span class="badge impactNeg">주의 ${escapeHtml(transitionEdgeLabel(strongestRisk.edge_id, strongestRisk.from, strongestRisk.to))} ${fmtSignedPct(strongestRisk.delta)}</span>` : "",
+      ...impacts.slice(0, 4).map((item) => `<span class="badge ${item.direction === "positive" ? "impactPos" : "impactNeg"}">${escapeHtml(item.label)} ${item.pct > 0 ? "+" : ""}${item.pct}%</span>`),
+    ].filter(Boolean).join("");
 
     previewFrame.onload = () => {
       let doc = null;
@@ -1124,6 +1532,8 @@
     updater();
     resetTransitionAnalysis();
     resetCohortSignal();
+    state.simulationRun = null;
+    state.simulationError = "";
     renderAll();
     refreshCohortSignal();
   }
@@ -1155,9 +1565,15 @@
   if (occupationGroupSelect) occupationGroupSelect.addEventListener("change", () => handleCohortFilterChange(() => { state.selectedOccupationGroup = occupationGroupSelect.value || ""; }));
   if (styleSelect) styleSelect.addEventListener("change", () => handleCohortFilterChange(() => { state.selectedStyleKey = styleSelect.value || ""; }));
   if (personaSelect) personaSelect.addEventListener("change", async () => { state.selectedPersonaId = personaSelect.value || ""; state.metrics = await fetchMetrics(); renderAll(); });
-  if (simulationSampleSize) simulationSampleSize.addEventListener("change", () => { simulationSampleSize.value = String(clampSampleSize(simulationSampleSize.value)); });
   if (runSimulationBtn) runSimulationBtn.addEventListener("click", runSimulation);
   if (analyzeTransitionsBtn) analyzeTransitionsBtn.addEventListener("click", analyzeTransitions);
+  if (transitionAnalysisResults) transitionAnalysisResults.addEventListener("click", (event) => {
+    const pathButton = event.target instanceof Element ? event.target.closest("[data-transition-path-id]") : null;
+    if (!pathButton) return;
+    const nextId = String(pathButton.getAttribute("data-transition-path-id") || "");
+    state.transitionAnalysis.selectedPathId = state.transitionAnalysis.selectedPathId === nextId ? "" : nextId;
+    renderTransitionAnalysis();
+  });
   if (generateOverlayBtn) generateOverlayBtn.addEventListener("click", generateOverlay);
   if (reloadPreviewBtn) reloadPreviewBtn.addEventListener("click", renderPreview);
   if (refreshBtn) refreshBtn.addEventListener("click", () => loadLab().catch((error) => { if (labStatus) labStatus.textContent = String(error); }));
@@ -1165,4 +1581,70 @@
   if (editorLink) editorLink.href = `/editor?site_id=${encodeURIComponent(state.siteId)}`;
 
   loadLab().catch((error) => { if (labStatus) labStatus.textContent = String(error); });
+  function buildActionRecommendations({ analysis, simulationRun }) {
+    const items = [];
+    const changedRows = analysis?.b_changed?.transitions || [];
+    const simulation = simulationRun?.results || null;
+    const topExit = changedRows
+      .filter((row) => row.to === "exit")
+      .sort((left, right) => (Number(right.changed_probability) || 0) - (Number(left.changed_probability) || 0))[0] || null;
+    const topDrop = changedRows
+      .filter((row) => row.to !== "exit" && Number(row.delta) < 0)
+      .sort((left, right) => Number(left.delta) - Number(right.delta))[0] || null;
+    const topGain = changedRows
+      .filter((row) => Number(row.delta) > 0)
+      .sort((left, right) => Number(right.delta) - Number(left.delta))[0] || null;
+    const conversion = simulation?.statistics?.conversion || {};
+    const winner = simulation?.summary?.winner || "tie";
+
+    if (topExit && Number(topExit.changed_probability) >= 0.25) {
+      items.push({
+        tone: "warning",
+        title: "이탈 경로 우선 점검",
+        summary: `${transitionEdgeLabel(topExit.edge_id, topExit.from, topExit.to)} 경로의 B안 이탈 비중이 ${fmtPct(topExit.changed_probability)}로 큽니다.`,
+        action: `${transitionStateLabel(topExit.from)} 구간의 문구, 로딩, 신뢰 요소를 우선 점검하세요.`,
+      });
+    }
+    if (topDrop) {
+      items.push({
+        tone: "risk",
+        title: "구매 병목 보완 필요",
+        summary: `${transitionEdgeLabel(topDrop.edge_id, topDrop.from, topDrop.to)} 전이가 ${fmtSignedPct(topDrop.delta)} 감소했습니다.`,
+        action: `${transitionStateLabel(topDrop.from)}에서 ${transitionActionLabel(topDrop.to)}로 넘어가는 안내 또는 CTA 배치를 강화하는 후속 실험이 적합합니다.`,
+      });
+    }
+    if (topGain) {
+      items.push({
+        tone: "positive",
+        title: "상승 전이 재활용 후보",
+        summary: `${transitionEdgeLabel(topGain.edge_id, topGain.from, topGain.to)} 전이가 가장 크게 상승했습니다.`,
+        action: `이 전이를 만든 요소를 인접 페이지나 후속 step에도 확장 적용할 수 있습니다.`,
+      });
+    }
+    if (simulation && conversion.ok) {
+      items.push({
+        tone: winner === "B" && conversion.significant ? "positive" : winner === "A" ? "warning" : "neutral",
+        title: "Simulation 판정",
+        summary: winner === "tie"
+          ? `현재 synthetic 결과는 동률에 가깝습니다. uplift ${fmtSignedPct(simulation.summary?.uplift ?? conversion.uplift)}.`
+          : `현재 synthetic winner는 Variant ${winner}입니다. uplift ${fmtSignedPct(simulation.summary?.uplift ?? conversion.uplift)}.` ,
+        action: conversion.significant
+          ? `유의성이 있어도 실제 운영 데이터로 재검증하세요. 특히 cohort 필터와 다른 실제 유입군 차이를 함께 봐야 합니다.`
+          : `유의성이 약하므로 CTA만이 아니라 checkout 이후 마찰 요인을 함께 바꾸는 실험으로 넓히는 편이 좋습니다.`,
+      });
+    }
+
+    return items.slice(0, 4);
+  }
+
+  function renderActionRecommendations({ analysis, simulationRun }) {
+    const items = buildActionRecommendations({ analysis, simulationRun });
+    if (!items.length) return "";
+    return `
+      <div class="summaryMiniCard transitionMiningPanel actionRecommendationCard">
+        <div class="summaryLabel">Recommended Next Actions</div>
+        <div class="summaryHint">transition drift와 simulation 결과를 함께 보고 바로 실행할 다음 액션을 제안합니다.</div>
+        <div class="actionRecommendationList">${items.map((item) => `<div class="actionRecommendationRow ${escapeHtml(item.tone)}"><div><div class="actionRecommendationTitle">${escapeHtml(item.title)}</div><div class="actionRecommendationSummary">${escapeHtml(item.summary)}</div></div><div class="summaryHint">${escapeHtml(item.action)}</div></div>`).join("")}</div>
+      </div>`;
+  }
 })();

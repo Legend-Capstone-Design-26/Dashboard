@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-07-01T10:29:33.329Z",
+  "generated_at": "2026-07-14T04:39:52.124Z",
   "overlays": [
     {
       "overlay_id": "exp_checkout_cta_v1::B::30대-직장인리뷰의존형",
@@ -77,6 +77,23 @@
       "reason_summary": "헤더 링크 문구 변경이 사용자의 탐색 의욕에 약간 긍정적인 영향을 미쳐 검색에서 목록 보기 전이 비율이 소폭 증가할 것으로 예상됩니다.",
       "edge_weight_multipliers": {
         "search_query->listing_view": 1.1
+      }
+    },
+    {
+      "overlay_id": "exp_home_cta_v1::B::20대-일반-소비자트렌드충동형",
+      "experiment_key": "exp_home_cta_v1",
+      "variant": "B",
+      "persona_id": "20대-일반-소비자트렌드충동형",
+      "group_id": "20s__other__impulsive",
+      "style_key": "impulsive",
+      "provider": "mock",
+      "provider_reason": "mock_mode",
+      "generated_at": 1784003992124,
+      "reason_summary": "variant B의 UI/UX 변경 유형과 페르소나 반응 경향을 바탕으로 기본 오버레이를 생성했습니다.",
+      "edge_weight_multipliers": {
+        "landing->cta_click": 1.2,
+        "checkout_entry->payment_attempt": 1.1,
+        "detail_view->cart_entry": 1.2
       }
     }
   ]

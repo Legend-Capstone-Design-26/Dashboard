@@ -15,6 +15,25 @@ const FIXED_COHORT_MODE = "fixed_10k_cohort";
 const SYNTHETIC_MODE = "synthetic";
 const STEP_ORDER = ["home", "browse", "product", "cart", "checkout", "payment", "purchase"];
 
+function normalizeFilters(filters = {}) {
+  return {
+    age_group: String(filters.age_group || "").trim(),
+    occupation_group: String(filters.occupation_group || "").trim(),
+    style_key: String(filters.style_key || "").trim(),
+    province: String(filters.province || "").trim(),
+    sex: String(filters.sex || "").trim(),
+  };
+}
+
+function memberMatchesFilters(member, filters) {
+  if (filters.age_group && member.age_group !== filters.age_group) return false;
+  if (filters.occupation_group && member.occupation_group !== filters.occupation_group) return false;
+  if (filters.style_key && member.style_key !== filters.style_key) return false;
+  if (filters.province && member.province !== filters.province) return false;
+  if (filters.sex && member.sex !== filters.sex) return false;
+  return true;
+}
+
 function hashString(value) {
   return crypto.createHash("sha256").update(String(value)).digest("hex");
 }
@@ -496,11 +515,12 @@ function buildResults(sessions) {
 function createSimulationService({ simulationStore, experimentStore, cohortProvider } = {}) {
   const provider = cohortProvider || { loadFixedCohort, hasFixedCohort, loadPopulationSegments };
 
-  function createAndRun({ siteId, experimentKey, sampleSize, sampleSeed, userId, mode = SYNTHETIC_MODE, cohortId }) {
+  function createAndRun({ siteId, experimentKey, sampleSize, sampleSeed, userId, mode = SYNTHETIC_MODE, cohortId, filters }) {
     const experiment = experimentStore.getByKey(siteId, experimentKey);
     if (!experiment) return { ok: false, status: 404, reason: "experiment not found" };
 
     const normalizedMode = String(mode || SYNTHETIC_MODE).trim() || SYNTHETIC_MODE;
+    const normalizedFilters = normalizeFilters(filters);
     if (![SYNTHETIC_MODE, FIXED_COHORT_MODE].includes(normalizedMode)) {
       return { ok: false, status: 400, reason: "unsupported simulation mode" };
     }
@@ -511,6 +531,8 @@ function createSimulationService({ simulationStore, experimentStore, cohortProvi
     let observedPopulationSize = null;
     let normalizedCohortId = null;
     let cohortMetadata = null;
+    let cohortTotalMembers = null;
+    let cohortMatchedMembers = null;
 
     if (normalizedMode === FIXED_COHORT_MODE) {
       normalizedCohortId = String(cohortId || DEFAULT_FIXED_COHORT_ID).trim() || DEFAULT_FIXED_COHORT_ID;
@@ -527,11 +549,22 @@ function createSimulationService({ simulationStore, experimentStore, cohortProvi
       if (!artifact) {
         return { ok: false, status: 404, reason: `fixed cohort not found: ${normalizedCohortId}` };
       }
+      const allMembers = Array.isArray(artifact.members) ? artifact.members.filter(Boolean) : [];
+      const filteredMembers = allMembers.filter((member) => memberMatchesFilters(member, normalizedFilters));
+      cohortTotalMembers = allMembers.length;
+      cohortMatchedMembers = filteredMembers.length;
+      if (filteredMembers.length === 0) {
+        return { ok: false, status: 422, reason: "no fixed cohort members match selected filters" };
+      }
       cohortMetadata = artifact.metadata && typeof artifact.metadata === "object" ? artifact.metadata : {};
       const populationProfile = typeof provider.loadPopulationSegments === "function"
         ? provider.loadPopulationSegments()
         : null;
-      samplePlan = buildFixedCohortSample({ artifact, cohortId: normalizedCohortId, populationProfile });
+      samplePlan = buildFixedCohortSample({
+        artifact: { ...artifact, members: filteredMembers },
+        cohortId: normalizedCohortId,
+        populationProfile,
+      });
       normalizedCohortId = artifact.cohort_id || normalizedCohortId;
       populationSource = cohortMetadata.dataset || POPULATION_SOURCE;
       populationSize = Number(cohortMetadata.requested_population_size) || DEFAULT_POPULATION_SIZE;
@@ -566,6 +599,9 @@ function createSimulationService({ simulationStore, experimentStore, cohortProvi
       started_at: now,
       finished_at: null,
       progress: { sampled: 0, processed: 0, failed: 0 },
+      filters_applied: normalizedFilters,
+      cohort_total_members: cohortTotalMembers,
+      cohort_matched_members: cohortMatchedMembers,
       sample_groups: [],
       coverage_diagnostics: null,
       sessions: [],
@@ -641,6 +677,9 @@ function createSimulationService({ simulationStore, experimentStore, cohortProvi
       mode: run.mode,
       cohort_id: run.cohort_id || null,
       cohort_metadata: run.cohort_metadata || null,
+      filters_applied: run.filters_applied || normalizeFilters(),
+      cohort_total_members: run.cohort_total_members || null,
+      cohort_matched_members: run.cohort_matched_members || null,
       population_source: run.population_source,
       population_size: run.population_size,
       observed_population_size: run.observed_population_size || null,
