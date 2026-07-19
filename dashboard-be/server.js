@@ -135,6 +135,7 @@ app.get("/persona-lab", requireAuth, (req, res) => res.sendFile(path.join(FRONTE
 // data dir
 const DATA_DIR = path.join(__dirname, "data");
 const EVENTS_FILE = path.join(DATA_DIR, "events.jsonl");
+const RESEARCH_EVENTS_FILE = path.join(infraConfig.eventIngest.jsonlDir, infraConfig.eventIngest.jsonlFilename);
 const EXP_FILE = path.join(DATA_DIR, "experiments.json");
 const SITES_FILE = path.join(DATA_DIR, "sites.json");
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
@@ -459,11 +460,12 @@ function safeAbsoluteUrl(baseUrl, value) {
     return new URL("/", baseUrl).toString();
   }
 }
-const fileEventStore = createFileEventStore({ eventsFile: EVENTS_FILE });
+const legacyFileEventStore = createFileEventStore({ eventsFile: EVENTS_FILE });
+const researchJsonlEventStore = createFileEventStore({ eventsFile: RESEARCH_EVENTS_FILE });
 const experimentStore = createFileExperimentStore({ experimentsFile: EXP_FILE });
 const siteRegistryStore = createFileSiteRegistryStore({ sitesFile: SITES_FILE });
 const simulationStore = createSimulationStore({ simulationsFile: SIMULATIONS_FILE });
-const metricsReadModel = createMetricsReadModel({ eventStore: fileEventStore, experimentStore });
+const metricsReadModel = createMetricsReadModel({ eventStore: legacyFileEventStore, experimentStore });
 const simulationService = createSimulationService({ simulationStore, experimentStore });
 
 detectDuplicateRunningExperiments(experimentStore.load().experiments).forEach((group) => {
@@ -494,6 +496,9 @@ const clusteringLabeler = redisRuntime ? createClusteringLabeler({ redisRuntime 
 const kafkaEventStore = kafkaRuntime
   ? createKafkaEventStore({ kafkaRuntime, topic: infraConfig.kafka.topicEvents })
   : null;
+const ingestEventStore = infraConfig.eventIngest.mode === "jsonl"
+  ? researchJsonlEventStore
+  : kafkaEventStore;
 function slugify(value) {
   return String(value || "")
     .toLowerCase()
@@ -984,9 +989,8 @@ function toInt(x) {
 
 // ---------- collect endpoint ----------
 app.post("/collect", createCollectHandler({
-  kafkaEventStore,
-  legacyFileEventStore: fileEventStore,
-  enableLegacyFileFallback: infraConfig.kafka.legacyFileCollectFallback,
+  eventStore: ingestEventStore,
+  source: infraConfig.eventIngest.mode,
   createRequestId: rid,
   logger: console,
 }));

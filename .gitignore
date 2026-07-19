@@ -11,6 +11,9 @@ npm-debug.log*
 
 # runtime/generated data
 dashboard-be/data/events.jsonl
+dashboard-be/data/research/raw/*.jsonl
+dashboard-be/data/research/processed/*.jsonl
+dashboard-be/data/research/results/*
 dashboard-be/data/experiments.json
 dashboard-be/data/support_tickets.json
 dashboard-be/data/chat_sessions.json

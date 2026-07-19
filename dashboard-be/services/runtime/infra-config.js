@@ -1,4 +1,11 @@
+const path = require("path");
+
 const { loadEnvFromFile } = require("../llm/config");
+
+const EVENT_INGEST_MODES = Object.freeze({
+  KAFKA: "kafka",
+  JSONL: "jsonl",
+});
 
 function parseBoolean(value, fallback = false) {
   if (typeof value === "boolean") return value;
@@ -9,9 +16,28 @@ function parseBoolean(value, fallback = false) {
   return fallback;
 }
 
+function parseEventIngestMode(value) {
+  const normalized = String(value || EVENT_INGEST_MODES.KAFKA).trim().toLowerCase();
+  if (normalized === EVENT_INGEST_MODES.KAFKA || normalized === EVENT_INGEST_MODES.JSONL) return normalized;
+  throw new Error(`Invalid EVENT_INGEST_MODE: ${normalized || "(empty)"}. Allowed values: kafka, jsonl`);
+}
+
+function getDashboardBackendDir() {
+  return path.join(__dirname, "..", "..");
+}
+
+function resolveEventJsonlDir(dirPath) {
+  return path.resolve(getDashboardBackendDir(), String(dirPath || "./data/research/raw"));
+}
+
 function getInfraConfig() {
   loadEnvFromFile();
   return {
+    eventIngest: {
+      mode: parseEventIngestMode(process.env.EVENT_INGEST_MODE),
+      jsonlDir: resolveEventJsonlDir(process.env.EVENT_JSONL_DIR),
+      jsonlFilename: String(process.env.EVENT_JSONL_FILENAME || "events.jsonl").trim() || "events.jsonl",
+    },
     kafka: {
       enabled: parseBoolean(process.env.ENABLE_KAFKA_DUAL_WRITE, false),
       brokers: String(process.env.KAFKA_BROKERS || "localhost:9092")
@@ -35,6 +61,9 @@ function getInfraConfig() {
 }
 
 module.exports = {
+  EVENT_INGEST_MODES,
+  parseEventIngestMode,
+  resolveEventJsonlDir,
   getInfraConfig,
   parseBoolean,
 };

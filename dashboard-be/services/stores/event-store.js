@@ -1,4 +1,4 @@
-const { appendJsonl, readJsonl } = require("../data-store");
+const { appendJsonlBatch, readJsonl } = require("../data-store");
 
 function createFileEventStore({ eventsFile }) {
   function appendBatch(events, meta) {
@@ -7,13 +7,11 @@ function createFileEventStore({ eventsFile }) {
 
     const receivedAt = typeof meta?.received_at === "number" ? meta.received_at : Date.now();
     const requestId = typeof meta?.request_id === "string" ? meta.request_id : "";
-    for (const event of list) {
-      appendJsonl(eventsFile, {
+    appendJsonlBatch(eventsFile, list.map((event) => ({
         ...event,
         received_at: receivedAt,
         request_id: requestId,
-      });
-    }
+      })));
     return { written: list.length, received_at: receivedAt, request_id: requestId };
   }
 

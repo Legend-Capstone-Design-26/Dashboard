@@ -39,6 +39,13 @@ function appendJsonl(filePath, record) {
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`, "utf8");
 }
 
+function appendJsonlBatch(filePath, records) {
+  const list = Array.isArray(records) ? records.filter(Boolean) : [];
+  if (list.length === 0) return;
+  ensureDir(path.dirname(filePath));
+  fs.appendFileSync(filePath, `${list.map((record) => JSON.stringify(record)).join("\n")}\n`, "utf8");
+}
+
 function readJsonl(filePath) {
   if (!fs.existsSync(filePath)) return [];
   const lines = fs.readFileSync(filePath, "utf8").split("\n");
@@ -60,5 +67,6 @@ module.exports = {
   readJson,
   writeJson,
   appendJsonl,
+  appendJsonlBatch,
   readJsonl,
 };
