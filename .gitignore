@@ -13,6 +13,9 @@ npm-debug.log*
 dashboard-be/data/events.jsonl
 dashboard-be/data/research/raw/*.jsonl
 dashboard-be/data/research/processed/*.jsonl
+dashboard-be/data/research/features/*.csv
+dashboard-be/data/research/features/*.jsonl
+dashboard-be/data/research/features/*.json
 dashboard-be/data/research/results/*
 dashboard-be/data/experiments.json
 dashboard-be/data/support_tickets.json

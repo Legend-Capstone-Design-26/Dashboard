@@ -11,6 +11,7 @@
     "infra:logs": "docker compose logs -f kafka redis",
     "test": "node --test",
     "research:build-sessions": "node scripts/build-session-summaries.js",
+    "research:export-features": "node scripts/export-session-features.js",
     "scenario": "node scripts/scenario-data.js",
     "simulate": "node scripts/simulate.js",
     "load:k6": "k6 run load/persona-load.js"

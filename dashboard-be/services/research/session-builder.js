@@ -1,29 +1,14 @@
 const fs = require("fs");
 const path = require("path");
-const readline = require("readline");
 
 const { mergeSessionState } = require("../analytics/session-state");
 const { normalizeHistoricalSessionSummary } = require("../stores/redis-session-store");
 const { extractRawVector, FEATURE_KEYS } = require("../../analytics/clustering/featureExtractor");
+const { createLineError, resolveBuilderPath, streamJsonlRecords } = require("./jsonl-stream");
 
 const DEFAULT_INPUT_PATH = "data/research/raw/events.jsonl";
 const DEFAULT_OUTPUT_PATH = "data/research/processed/sessions.jsonl";
 const RESEARCH_METADATA_KEYS = ["source", "generation_run_id", "ground_truth_type"];
-
-function getDashboardBackendDir() {
-  return path.join(__dirname, "..", "..");
-}
-
-function resolveBuilderPath(filePath, fallbackPath) {
-  return path.resolve(getDashboardBackendDir(), String(filePath || fallbackPath));
-}
-
-function createLineError(lineNumber, message) {
-  const error = new Error(`line ${lineNumber}: ${message}`);
-  error.lineNumber = lineNumber;
-  error.code = "SESSION_BUILDER_INVALID_LINE";
-  return error;
-}
 
 function toRequiredText(value) {
   const normalized = String(value || "").trim();
@@ -105,43 +90,10 @@ function sortSessionSummaries(summaries) {
 async function readAndGroupEventsFromJsonl(filePath, options = {}) {
   const skipInvalid = options.skipInvalid === true;
   const sessions = new Map();
-  const stats = {
-    input_lines: 0,
-    parsed_events: 0,
-    invalid_lines: 0,
-    skipped_events: 0,
-  };
-
-  const stream = fs.createReadStream(filePath, { encoding: "utf8" });
-  const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
-
-  try {
-    for await (const rawLine of reader) {
-      stats.input_lines += 1;
-      const lineNumber = stats.input_lines;
-      if (!rawLine.trim()) continue;
-
-      let parsed;
-      try {
-        parsed = JSON.parse(rawLine);
-      } catch {
-        const error = createLineError(lineNumber, "invalid JSON");
-        if (!skipInvalid) throw error;
-        stats.invalid_lines += 1;
-        stats.skipped_events += 1;
-        continue;
-      }
-
-      let event;
-      try {
-        event = normalizeEventRecord(parsed, lineNumber);
-      } catch (error) {
-        if (!skipInvalid) throw error;
-        stats.invalid_lines += 1;
-        stats.skipped_events += 1;
-        continue;
-      }
-
+  const stats = await streamJsonlRecords(filePath, {
+    skipInvalid,
+    parseRecord: normalizeEventRecord,
+    onRecord: async (event, lineNumber) => {
       const sessionKey = `${event.site_id}::${event.session_id}`;
       const current = sessions.get(sessionKey) || {
         site_id: event.site_id,
@@ -152,24 +104,22 @@ async function readAndGroupEventsFromJsonl(filePath, options = {}) {
         research_metadata: {},
       };
 
-      try {
-        current.research_metadata = mergeResearchMetadata(current.research_metadata, extractResearchMetadata(event), lineNumber);
-      } catch (error) {
-        if (!skipInvalid) throw error;
-        stats.invalid_lines += 1;
-        stats.skipped_events += 1;
-        continue;
-      }
+      current.research_metadata = mergeResearchMetadata(current.research_metadata, extractResearchMetadata(event), lineNumber);
       current.input_event_count += 1;
       current.events.push(event);
       sessions.set(sessionKey, current);
-      stats.parsed_events += 1;
-    }
-  } finally {
-    reader.close();
-  }
+    },
+  });
 
-  return { sessions: [...sessions.values()], stats };
+  return {
+    sessions: [...sessions.values()],
+    stats: {
+      input_lines: stats.input_lines,
+      parsed_events: stats.parsed_rows,
+      invalid_lines: stats.invalid_lines,
+      skipped_events: stats.skipped_rows,
+    },
+  };
 }
 
 function buildHistoricalSummaryRecord(sessionGroup) {
