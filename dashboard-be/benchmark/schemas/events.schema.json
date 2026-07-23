@@ -1,0 +1,148 @@
+{
+  "dataset": "synthetic_ecommerce_events",
+  "format": "jsonl",
+  "primary_grain": "event",
+  "description": "Canonical event-level schema for the LLM-generated ecommerce benchmark.",
+  "columns": [
+    {
+      "name": "session_id",
+      "type": "string",
+      "required": true,
+      "description": "Session identifier used to join event rows to session-level ground truth."
+    },
+    {
+      "name": "anon_user_id",
+      "type": "string",
+      "required": true,
+      "description": "Synthetic anonymous user identifier."
+    },
+    {
+      "name": "site_id",
+      "type": "string",
+      "required": true,
+      "description": "Dashboard site identifier."
+    },
+    {
+      "name": "request_id",
+      "type": "string",
+      "required": true,
+      "description": "Batch/request correlation id compatible with the collector payload."
+    },
+    {
+      "name": "schema_version",
+      "type": "int32",
+      "required": true,
+      "description": "Collector schema version. Default 1."
+    },
+    {
+      "name": "app_id",
+      "type": "string",
+      "required": true,
+      "description": "Synthetic generator application id."
+    },
+    {
+      "name": "ts",
+      "type": "int64",
+      "required": true,
+      "description": "Client event timestamp in milliseconds since epoch."
+    },
+    {
+      "name": "received_at",
+      "type": "int64",
+      "required": true,
+      "description": "Collector receive timestamp in milliseconds since epoch."
+    },
+    {
+      "name": "event_name",
+      "type": "string",
+      "required": true,
+      "description": "Raw event type such as page_view, click, search, add_to_cart, checkout_start, payment_attempt, checkout_complete."
+    },
+    {
+      "name": "url",
+      "type": "string",
+      "required": true,
+      "description": "Absolute page URL."
+    },
+    {
+      "name": "path",
+      "type": "string",
+      "required": true,
+      "description": "Path-only page identifier used by session analytics."
+    },
+    {
+      "name": "referrer",
+      "type": "string",
+      "required": false,
+      "nullable": true,
+      "description": "Previous page or traffic source landing reference."
+    },
+    {
+      "name": "user_agent",
+      "type": "string",
+      "required": true,
+      "description": "Synthetic browser user-agent string."
+    },
+    {
+      "name": "lang",
+      "type": "string",
+      "required": true,
+      "description": "Browser language, usually ko-KR."
+    },
+    {
+      "name": "screen",
+      "type": "struct<w:int32,h:int32>",
+      "required": true,
+      "description": "Synthetic device screen size."
+    },
+    {
+      "name": "viewport",
+      "type": "struct<w:int32,h:int32>",
+      "required": true,
+      "description": "Synthetic browser viewport size."
+    },
+    {
+      "name": "ui_variant",
+      "type": "string",
+      "required": false,
+      "nullable": true,
+      "description": "Assigned UI variant when synthetic AB assignment is used."
+    },
+    {
+      "name": "experiments",
+      "type": "list<struct<key:string,variant:string,version:string>>",
+      "required": true,
+      "description": "Collector-compatible experiment assignments."
+    },
+    {
+      "name": "props",
+      "type": "json",
+      "required": true,
+      "description": "Event-specific payload. Stored as nested JSON/object in parquet."
+    },
+    {
+      "name": "device",
+      "type": "string",
+      "required": true,
+      "description": "Context variable such as mobile or desktop. Not a ground-truth label."
+    },
+    {
+      "name": "traffic_source",
+      "type": "string",
+      "required": true,
+      "description": "Context variable such as search_engine, direct, ad, social, email."
+    },
+    {
+      "name": "source_type",
+      "type": "string",
+      "required": true,
+      "description": "Data provenance marker. Must be synthetic for this benchmark."
+    },
+    {
+      "name": "generator_version",
+      "type": "string",
+      "required": true,
+      "description": "Synthetic generator version used to create the row."
+    }
+  ]
+}

@@ -175,6 +175,32 @@ test("historical session summaries survive live session key expiration", async (
   assert.equal(historical[0].depth, 2);
 });
 
+test("historical session summaries preserve ordered path_sequence and dashboard aliases", async () => {
+  const runtime = createFakeRedisRuntime({}, "uxsdk:");
+  const store = createRedisSessionStore({ redisRuntime: runtime, sessionTtlSec: 1800, assignmentTtlSec: 100 });
+
+  await store.upsertHistoricalSessionSummary({
+    siteId: "site_a",
+    sessionId: "s_repeat",
+    state: {
+      site_id: "site_a",
+      session_id: "s_repeat",
+      started_at: 1000,
+      last_ts: 2000,
+      path_sequence: ["/product", "/cart", "/product"],
+      paths: ["/product", "/cart"],
+      page_view_count: 3,
+    },
+  });
+
+  const historical = await store.listHistoricalSessionSummaries({ siteId: "site_a", limit: 10 });
+  assert.equal(historical[0].summary_schema_version, 2);
+  assert.deepEqual(historical[0].path_sequence, ["/product", "/cart", "/product"]);
+  assert.deepEqual(historical[0].unique_paths, ["/product", "/cart"]);
+  assert.deepEqual(historical[0].paths, ["/product", "/cart"]);
+  assert.equal(historical[0].depth, 2);
+});
+
 test("historical analytics keep KPI labels and trend consistent after live TTL expiry", async () => {
   const kstDayStart = Date.UTC(2026, 6, 9, 15, 0, 0); // 2026-07-10 00:00 Asia/Seoul
   const firstStartedAt = Date.UTC(2026, 6, 10, 14, 30, 0); // crosses into 2026-07-11 KST by last_ts

@@ -1,0 +1,119 @@
+{
+  "personas": [
+    {
+      "persona_id": "goal_oriented_buyer",
+      "name": "목표구매형",
+      "goal": "명확한 구매 의도를 가지고 빠르게 원하는 상품을 찾아 결제를 완료한다.",
+      "typical_behaviors": [
+        "구체적 검색 또는 빠른 상품 진입",
+        "탐색 범위가 좁음",
+        "짧은 세션 내 장바구니 및 체크아웃 진입",
+        "높은 구매 완료 확률"
+      ],
+      "probabilistic_constraints": {
+        "search_count": [0, 2],
+        "product_detail_count": [1, 3],
+        "cart_add_count": [1, 2],
+        "checkout_probability": [0.8, 1.0],
+        "purchase_probability": [0.75, 1.0],
+        "session_event_count": [8, 13]
+      },
+      "negative_constraints": [
+        "장시간 카테고리 순회를 반복하지 않음",
+        "리뷰/필터/검색을 반복적으로 수행하지 않음"
+      ]
+    },
+    {
+      "persona_id": "explorer",
+      "name": "탐색형",
+      "goal": "구매보다 탐색과 탐방 자체에 더 가깝다.",
+      "typical_behaviors": [
+        "카테고리와 여러 상품 페이지를 넓게 이동",
+        "상세 페이지와 리뷰를 여러 번 방문 가능",
+        "체류시간이 길고 구매 전환이 낮음"
+      ],
+      "probabilistic_constraints": {
+        "search_count": [0, 2],
+        "filter_count": [0, 3],
+        "product_detail_count": [3, 8],
+        "review_visit_probability": [0.3, 0.8],
+        "checkout_probability": [0.0, 0.15],
+        "purchase_probability": [0.0, 0.05],
+        "session_event_count": [9, 18]
+      },
+      "negative_constraints": [
+        "빠르게 결제 완료하지 않음",
+        "장바구니 추가 직후 구매 완료로 직행하지 않음"
+      ]
+    },
+    {
+      "persona_id": "price_comparison",
+      "name": "가격비교형",
+      "goal": "여러 상품과 가격 조건을 비교한 뒤 가장 합리적인 선택을 하거나 이탈한다.",
+      "typical_behaviors": [
+        "검색 반복",
+        "필터 또는 정렬 사용",
+        "여러 상품 상세 페이지 비교",
+        "리뷰 탐색과 이전 결과로 복귀"
+      ],
+      "probabilistic_constraints": {
+        "search_count": [2, 6],
+        "filter_count": [1, 4],
+        "product_detail_count": [3, 7],
+        "review_visit_probability": [0.5, 0.9],
+        "checkout_probability": [0.0, 0.35],
+        "purchase_probability": [0.0, 0.15],
+        "session_event_count": [10, 18]
+      },
+      "negative_constraints": [
+        "첫 상품에서 바로 결제하지 않음",
+        "검색과 비교 없이 충동구매하지 않음"
+      ]
+    },
+    {
+      "persona_id": "impulse_buyer",
+      "name": "충동구매형",
+      "goal": "노출된 상품이나 프로모션에 반응해 빠르게 구매한다.",
+      "typical_behaviors": [
+        "검색 없이 또는 매우 짧게 탐색",
+        "프로모션/추천 상품 진입",
+        "빠른 장바구니 및 구매 완료"
+      ],
+      "probabilistic_constraints": {
+        "search_count": [0, 1],
+        "product_detail_count": [1, 2],
+        "cart_add_count": [1, 2],
+        "checkout_probability": [0.8, 1.0],
+        "purchase_probability": [0.75, 1.0],
+        "session_event_count": [6, 10]
+      },
+      "negative_constraints": [
+        "여러 상품을 길게 비교하지 않음",
+        "검색과 필터를 반복하지 않음"
+      ]
+    },
+    {
+      "persona_id": "cart_abandoner",
+      "name": "장바구니 이탈형",
+      "goal": "구매 의도는 있지만 마찰, 망설임, 조건 문제로 결제 완료 전에 이탈한다.",
+      "typical_behaviors": [
+        "장바구니 추가",
+        "체크아웃 진입 또는 직전 단계에서 망설임",
+        "장바구니 재확인, 제거/재추가 가능",
+        "구매 미완료"
+      ],
+      "probabilistic_constraints": {
+        "search_count": [0, 3],
+        "product_detail_count": [1, 4],
+        "cart_add_count": [1, 3],
+        "checkout_probability": [0.7, 1.0],
+        "purchase_probability": [0.0, 0.05],
+        "session_event_count": [8, 15]
+      },
+      "negative_constraints": [
+        "checkout_complete를 생성하지 않음",
+        "장바구니 추가 없이 checkout_start를 생성하지 않음"
+      ]
+    }
+  ]
+}

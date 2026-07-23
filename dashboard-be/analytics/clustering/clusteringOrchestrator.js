@@ -1,7 +1,7 @@
-const { normalizeAll, extractRawVector, FEATURE_KEYS, applyNorm, computeRawMean } = require("./featureExtractor");
+const { normalizeAll, extractRawVector, FEATURE_KEYS, FEATURE_SCHEMA_VERSION, computeRawMean } = require("./featureExtractor");
 const { stableKMeans, findOptimalK, nearestCentroidIdx }                         = require("./kmeans");
 const { mapClustersToTaxonomy, findDeprecated }                                   = require("./taxonomyMapper");
-const { buildFeatureProfile, nameCluster, resolveMappingDecision }                = require("./llmNamer");
+const { buildFeatureProfile, buildClusterDescription, nameCluster, resolveMappingDecision } = require("./llmNamer");
 const {
   saveTaxonomy, loadTaxonomy,
   saveNormParams,
@@ -14,7 +14,8 @@ const COLD_START_THRESHOLD = 100; // 최초 클러스터링에 필요한 최소 
 const INITIAL_K            = 4;   // cold start 시 사용할 K (탐색범위 x 몰입강도, 4개 피처 기준)
 const RECLUSTER_RATIO      = 2.0; // 마지막 클러스터링 이후 세션 수가 N배 되면 재실행
 const RECLUSTER_MIN_K      = 3;
-const RECLUSTER_MAX_K      = 5;   // 피처가 4개뿐이라 과도하게 쪼개지 않도록 상한을 낮춘다
+const RECLUSTER_MAX_K      = 5;
+const DEFAULT_CLUSTERING_SEED = 20260711;
 
 // ─── Trigger Logic ────────────────────────────────────────────────────────────
 
@@ -23,11 +24,44 @@ function shouldRecluster(lastCount, currentCount) {
   return currentCount >= lastCount * RECLUSTER_RATIO;
 }
 
+function isEligibleSessionSummary(summary) {
+  try {
+    if (!summary?.session_id) return false;
+    if (!(Number(summary?.started_at) > 0)) return false;
+    if (!hasTrainingSignal(summary)) return false;
+    const vector = extractRawVector(summary || {});
+    return vector.length === FEATURE_KEYS.length && vector.every(Number.isFinite);
+  } catch {
+    return false;
+  }
+}
+
+function hasTrainingSignal(summary) {
+  if (Array.isArray(summary?.path_sequence) && summary.path_sequence.length > 0) return true;
+  if (Array.isArray(summary?.paths) && summary.paths.length > 0) return true;
+  return [
+    "page_view_count", "page_views", "pageviews", "event_count", "click_count", "clicks",
+    "dwell_total_ms", "error_count", "rage_clicks_count", "search_count", "filter_count",
+    "filter_change_count", "price_interaction_count", "cart_add_count", "add_to_cart_count",
+    "cart_remove_count", "payment_attempt_count",
+  ].some((key) => Number(summary?.[key]) > 0)
+    || Boolean(summary?.checkout_entered || summary?.checkout_started || summary?.checkout_complete || summary?.checkout_completed);
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // normalized centroid → raw centroid (LLM 프롬프트용)
 function denormalizeCentroid(centroid, normParams) {
   return centroid.map((v, i) => v * normParams.ranges[i] + normParams.mins[i]);
+}
+
+// LLM reason 이 실제 설명으로 쓸 만한 값인지 판단한다.
+// 파싱 실패 시 채워지는 내부 사유 문자열은 사용자 노출용 설명으로 쓰지 않는다.
+const INTERNAL_REASONS = new Set(["LLM 응답 검증 실패", "기존 유형 유지"]);
+function usableDescription(reason) {
+  const trimmed = String(reason || "").trim();
+  if (trimmed.length < 4 || INTERNAL_REASONS.has(trimmed)) return "";
+  return trimmed;
 }
 
 // 이미 사용된 이름과 충돌하지 않도록 suffix 를 붙인다
@@ -43,20 +77,22 @@ function deduplicateName(name, usedNames) {
 // callLlm: async ({ system, user }) => { content: string }
 
 async function runClustering(sessionStates, siteId, redisRuntime, callLlm, opts = {}) {
-  if (sessionStates.length < COLD_START_THRESHOLD) {
-    return { skipped: true, reason: "insufficient_data", count: sessionStates.length };
+  const eligibleSessions = (Array.isArray(sessionStates) ? sessionStates : []).filter(isEligibleSessionSummary);
+  if (eligibleSessions.length < COLD_START_THRESHOLD) {
+    return { skipped: true, reason: "insufficient_data", count: eligibleSessions.length };
   }
 
-  const { vectors, normParams } = normalizeAll(sessionStates);
-  const globalRawMean           = computeRawMean(sessionStates);
-  const existingTaxonomy        = (await loadTaxonomy(redisRuntime, siteId)) || {};
+  const { vectors, normParams } = normalizeAll(eligibleSessions);
+  const globalRawMean           = computeRawMean(eligibleSessions);
+  const loadedTaxonomy          = (await loadTaxonomy(redisRuntime, siteId)) || {};
+  const existingTaxonomy        = loadedTaxonomy.schemaVersion === FEATURE_SCHEMA_VERSION ? loadedTaxonomy : {};
   const isFirstRun              = Object.keys(existingTaxonomy).length === 0;
 
   // K 결정: 첫 실행은 INITIAL_K 고정, 재클러스터링은 Elbow+Silhouette 로 탐색
   const chosenK = opts.forceK
-    || (isFirstRun ? INITIAL_K : findOptimalK(vectors, RECLUSTER_MIN_K, RECLUSTER_MAX_K).chosenK);
+    || (isFirstRun ? INITIAL_K : findOptimalK(vectors, RECLUSTER_MIN_K, RECLUSTER_MAX_K, { seed: opts.seed ?? DEFAULT_CLUSTERING_SEED }).chosenK);
 
-  const clusterResult = stableKMeans(vectors, chosenK);
+  const clusterResult = stableKMeans(vectors, chosenK, opts.restarts || 3, { seed: opts.seed ?? DEFAULT_CLUSTERING_SEED });
   const newCentroids  = clusterResult.centroids;
   const mappings      = mapClustersToTaxonomy(newCentroids, existingTaxonomy);
 
@@ -69,9 +105,11 @@ async function runClustering(sessionStates, siteId, redisRuntime, callLlm, opts 
     const featureProfile = buildFeatureProfile(rawCentroid, globalRawMean);
     const mapping      = mappings[ci];
     let   finalName;
+    let   llmReason = "";
 
     if (mapping.type === "existing") {
       finalName = mapping.matchedName;
+      llmReason = String(existingTaxonomy[mapping.matchedName]?.description || "");
     } else if (mapping.type === "ambiguous") {
       const decision = await resolveMappingDecision({
         featureProfile,
@@ -80,11 +118,15 @@ async function runClustering(sessionStates, siteId, redisRuntime, callLlm, opts 
         callLlm,
       });
       finalName = decision.name;
+      llmReason = decision.keepExisting
+        ? String(existingTaxonomy[mapping.matchedName]?.description || "")
+        : String(decision.reason || "");
     } else {
       // 완전히 새로운 클러스터
       const existingNames = [...Object.keys(nextTaxonomy), ...Object.keys(existingTaxonomy)];
-      const { name } = await nameCluster({ featureProfile, existingNames, callLlm });
+      const { name, reason } = await nameCluster({ featureProfile, existingNames, callLlm });
       finalName = name;
+      llmReason = String(reason || "");
     }
 
     const uniqueName = deduplicateName(finalName, assignedNames);
@@ -93,6 +135,7 @@ async function runClustering(sessionStates, siteId, redisRuntime, callLlm, opts 
     nextTaxonomy[uniqueName] = {
       centroid,
       rawCentroid,
+      description:  usableDescription(llmReason) || buildClusterDescription(rawCentroid, globalRawMean),
       status:       "active",
       clusterIndex: ci,
       updatedAt:    Date.now(),
@@ -109,15 +152,21 @@ async function runClustering(sessionStates, siteId, redisRuntime, callLlm, opts 
     };
   }
 
+  nextTaxonomy.schemaVersion = FEATURE_SCHEMA_VERSION;
+  nextTaxonomy.featureKeys = [...FEATURE_KEYS];
+  nextTaxonomy.createdAt = existingTaxonomy.createdAt || Date.now();
+  nextTaxonomy.updatedAt = Date.now();
+
   await saveTaxonomy(redisRuntime, siteId, nextTaxonomy);
   await saveNormParams(redisRuntime, siteId, normParams);
-  await saveLastClusteredCount(redisRuntime, siteId, sessionStates.length);
+  await saveLastClusteredCount(redisRuntime, siteId, eligibleSessions.length);
 
   return {
     skipped:    false,
     k:          chosenK,
     taxonomy:   nextTaxonomy,
     deprecated,
+    count:      eligibleSessions.length,
   };
 }
 
@@ -126,4 +175,7 @@ module.exports = {
   shouldRecluster,
   COLD_START_THRESHOLD,
   INITIAL_K,
+  DEFAULT_CLUSTERING_SEED,
+  isEligibleSessionSummary,
+  hasTrainingSignal,
 };

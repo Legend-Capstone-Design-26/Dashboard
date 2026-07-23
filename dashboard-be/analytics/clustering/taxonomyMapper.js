@@ -53,7 +53,10 @@ function findDeprecated(taxonomy, mappingResults) {
       .map((m) => m.matchedName)
       .filter(Boolean)
   );
-  return Object.keys(taxonomy).filter((name) => !assigned.has(name));
+  return Object.entries(taxonomy)
+    .filter(([, entry]) => entry && typeof entry === "object" && entry.status === "active")
+    .map(([name]) => name)
+    .filter((name) => !assigned.has(name));
 }
 
 module.exports = {
