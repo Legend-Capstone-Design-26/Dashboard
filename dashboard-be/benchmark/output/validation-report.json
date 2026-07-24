@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-07-22T09:35:05.532Z",
+  "input": {
+    "output_dir": "C:\\바탕화면\\capstone\\Dashboard\\dashboard-be\\benchmark\\output",
+    "events_path": "C:\\바탕화면\\capstone\\Dashboard\\dashboard-be\\benchmark\\output\\events.jsonl",
+    "sessions_path": "C:\\바탕화면\\capstone\\Dashboard\\dashboard-be\\benchmark\\output\\sessions.json"
+  },
+  "counts": {
+    "sessions": 50,
+    "events": 437,
+    "sessions_with_events": 50,
+    "orphan_event_sessions": 0
+  },
+  "metrics": {
+    "parse_success_rate": 1,
+    "schema_valid_rate": 1,
+    "temporal_violation_rate": 0,
+    "transition_validity_rate": 1,
+    "hard_constraint_satisfaction_rate": 1
+  }
+}

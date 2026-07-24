@@ -216,6 +216,100 @@ test("createAndRun uses population segment profile for fixed cohort diagnostics 
   assert.equal(result.run.sample_groups.find((group) => group.group_id === "20s__student__impulsive").population_weight, 0.25);
 });
 
+test("createAndRun filters fixed cohort members before simulation", () => {
+  const cohort = {
+    cohort_id: "nemotron-korea-fixed-test",
+    metadata: {
+      dataset: "nvidia/Nemotron-Personas-Korea",
+      requested_population_size: 7000000,
+      observed_num_rows_total: 1000000,
+      generated_at: "2026-06-26T00:00:00.000Z",
+    },
+    members: [
+      { uuid: "m1", row_idx: 10, group_id: "30s__professional__comparison", age_group: "30s", occupation_group: "professional", style_key: "comparison", weight: 700 },
+      { uuid: "m2", row_idx: 20, group_id: "30s__professional__comparison", age_group: "30s", occupation_group: "professional", style_key: "comparison", weight: 700 },
+      { uuid: "m3", row_idx: 30, group_id: "20s__student__impulsive", age_group: "20s", occupation_group: "student", style_key: "impulsive", weight: 700 },
+      { uuid: "m4", row_idx: 40, group_id: "50s__self_employed__fast_decision", age_group: "50s", occupation_group: "self_employed", style_key: "fast_decision", weight: 700 },
+    ],
+  };
+  const service = createSimulationService({
+    simulationStore: createMemorySimulationStore(),
+    experimentStore: createExperimentStore(),
+    cohortProvider: {
+      hasFixedCohort() { return true; },
+      loadFixedCohort() { return JSON.parse(JSON.stringify(cohort)); },
+      loadPopulationSegments() { return null; },
+    },
+  });
+
+  const result = service.createAndRun({
+    siteId: "legend-ecommerce",
+    experimentKey: "exp_checkout_cta_v1",
+    mode: FIXED_COHORT_MODE,
+    cohortId: "fixed_10k_cohort",
+    filters: {
+      age_group: "30s",
+      occupation_group: "professional",
+      style_key: "comparison",
+    },
+    sampleSeed: "seed-fixed-filtered",
+    userId: "admin",
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.run.cohort_total_members, 4);
+  assert.equal(result.run.cohort_matched_members, 2);
+  assert.deepEqual(result.run.filters_applied, {
+    age_group: "30s",
+    occupation_group: "professional",
+    style_key: "comparison",
+    province: "",
+    sex: "",
+  });
+  assert.equal(result.run.sessions.length, 2);
+  assert.equal(result.run.results.variants.A.sessions, 1);
+  assert.equal(result.run.results.variants.B.sessions, 1);
+
+  const fetched = service.getResults(result.run.run_id);
+  assert.equal(fetched.cohort_matched_members, 2);
+  assert.deepEqual(fetched.filters_applied, result.run.filters_applied);
+});
+
+test("createAndRun rejects fixed cohort filters with no matches", () => {
+  const cohort = {
+    cohort_id: "nemotron-korea-fixed-test",
+    metadata: {
+      dataset: "nvidia/Nemotron-Personas-Korea",
+      requested_population_size: 7000000,
+      observed_num_rows_total: 1000000,
+    },
+    members: [
+      { uuid: "m1", row_idx: 10, group_id: "30s__professional__comparison", age_group: "30s", occupation_group: "professional", style_key: "comparison", weight: 700 },
+    ],
+  };
+  const service = createSimulationService({
+    simulationStore: createMemorySimulationStore(),
+    experimentStore: createExperimentStore(),
+    cohortProvider: {
+      hasFixedCohort() { return true; },
+      loadFixedCohort() { return JSON.parse(JSON.stringify(cohort)); },
+      loadPopulationSegments() { return null; },
+    },
+  });
+
+  const result = service.createAndRun({
+    siteId: "legend-ecommerce",
+    experimentKey: "exp_checkout_cta_v1",
+    mode: FIXED_COHORT_MODE,
+    cohortId: "fixed_10k_cohort",
+    filters: { age_group: "20s" },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.status, 422);
+  assert.equal(result.reason, "no fixed cohort members match selected filters");
+});
+
 test("createAndRun reports missing fixed cohort artifact clearly", () => {
   const service = createSimulationService({
     simulationStore: createMemorySimulationStore(),

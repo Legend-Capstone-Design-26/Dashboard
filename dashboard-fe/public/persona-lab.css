@@ -5,7 +5,21 @@
   grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr);
   gap: var(--space-5);
   align-items: center;
-  background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-interactive) 18%, var(--color-border-input));
+  background:
+    radial-gradient(circle at 8% 12%, color-mix(in srgb, var(--color-interactive) 18%, transparent), transparent 28%),
+    radial-gradient(circle at 88% 18%, color-mix(in srgb, var(--color-success) 12%, transparent), transparent 24%),
+    linear-gradient(135deg, #ffffff 0%, #eef2ff 54%, #f7fbff 100%);
+}
+
+.personaHeroCard::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, var(--color-interactive), color-mix(in srgb, var(--color-success) 72%, var(--color-interactive)));
 }
 
 .personaHeroCard h1 {
@@ -20,6 +34,28 @@
   max-width: 720px;
   color: var(--color-text-secondary);
   font-size: 16px;
+}
+
+.personaHeroStory {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.heroStoryChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-interactive) 22%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 82%, #eef4ff);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .02em;
 }
 
 .eyebrow {
@@ -37,10 +73,138 @@
   gap: var(--space-3);
 }
 
+.personaHeroStats .summaryMiniCard {
+  border-radius: calc(var(--radius-card) + 2px);
+  border: 1px solid color-mix(in srgb, var(--color-interactive) 14%, transparent);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.personaLabWrap .summaryMiniCard,
+.personaLabWrap .summaryMiniValue,
+.personaLabWrap .summaryLabel,
+.personaLabWrap .summaryHint,
+.personaLabWrap .muted,
+.personaLabWrap .simulationSegmentTitle,
+.personaLabWrap .transitionMiningMetricValue,
+.personaLabWrap .transitionMiningActivityTitle,
+.personaLabWrap .actionRecommendationTitle,
+.personaLabWrap .actionRecommendationSummary,
+.personaLabWrap .transitionInterpretation {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.labMissionGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.labActionStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.missionStageCard {
+  position: relative;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, var(--color-border-input) 82%, transparent);
+  box-shadow: 0 18px 40px rgba(18, 32, 56, 0.06);
+}
+
+.missionStagePrimary {
+  background:
+    radial-gradient(circle at 92% 10%, color-mix(in srgb, var(--color-interactive) 9%, transparent), transparent 22%),
+    linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+
+.missionStageDark {
+  border-color: color-mix(in srgb, var(--color-interactive) 26%, transparent);
+  background:
+    radial-gradient(circle at 85% 18%, color-mix(in srgb, var(--color-interactive) 18%, transparent), transparent 26%),
+    linear-gradient(180deg, #1b2430 0%, #212d3b 100%);
+  color: #ffffff;
+}
+
+.missionStageDark .muted,
+.missionStageDark .summaryHint,
+.missionStageDark .summaryLabel {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.missionStageDark h2,
+.missionStageDark .summaryMiniValue,
+.missionStageDark .summaryMiniCard,
+.missionStageDark .badge {
+  color: #ffffff;
+}
+
+.missionStageDark .simulationResults,
+.missionStageDark .transitionAnalysisResults,
+.missionStageDark .summaryMiniCard,
+.missionStageDark .transitionAnalysisRow,
+.missionStageDark .simulationSegmentRow {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.missionStageDark .badge.label {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.missionStageBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin-bottom: var(--space-3);
+  padding: 0 11px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-interactive) 14%, transparent);
+  color: var(--color-interactive);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.missionStageDark .missionStageBadge {
+  background: rgba(255, 255, 255, 0.09);
+  color: #dce9ff;
+}
+
 .labControlGrid {
   display: grid;
-  grid-template-columns: 1.2fr repeat(4, minmax(160px, .8fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-3);
+}
+
+.labControlGrid > :first-child {
+  grid-column: span 2;
+}
+
+.labControlGrid > :last-child {
+  grid-column: 1 / -1;
+}
+
+.labControlCard .filterField span,
+.simulationActionRow .filterField span {
+  margin-bottom: 6px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.labControlCard .selectInput,
+.simulationActionRow .selectInput {
+  min-height: 52px;
+  border-width: 1px;
 }
 
 .matchedAgentSummary {
@@ -53,7 +217,12 @@
   border-radius: var(--radius-card);
   background:
     radial-gradient(circle at 8% 12%, color-mix(in srgb, var(--color-interactive) 10%, transparent), transparent 30%),
-    linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
+     linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
+}
+
+.matchedAgentSummary .summaryMiniCard {
+  min-height: 118px;
+  justify-content: center;
 }
 
 .matchedAgentCards {
@@ -67,6 +236,10 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.matchedAgentMeta .summaryHint {
+  flex: 1 1 220px;
 }
 
 .matchedAgentStatus {
@@ -113,6 +286,11 @@
 .overlayLabCard,
 .previewLabCard { overflow: hidden; }
 
+.overlayLabCard {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fbfbff 100%);
+}
+
 .overlayPreviewReason { margin-bottom: var(--space-3); }
 
 .simulationLabCard {
@@ -144,6 +322,272 @@
   line-height: 1.6;
 }
 
+.transitionMiningBoard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.transitionMiningHeroCard {
+  border: 1px solid color-mix(in srgb, var(--color-interactive) 18%, transparent);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  background:
+    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--color-success) 12%, transparent), transparent 22%),
+    linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.transitionMiningHeroGrid,
+.transitionMiningGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.transitionMiningMetric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 134px;
+  padding: var(--space-4);
+  border-radius: calc(var(--radius-card) + 2px);
+  border: 1px solid var(--color-border-input);
+  background: var(--color-surface);
+}
+
+.transitionMiningMetric.positive {
+  border-color: color-mix(in srgb, var(--color-success) 34%, transparent);
+  background: color-mix(in srgb, var(--pastel-teal) 24%, var(--color-surface));
+}
+
+.transitionMiningMetric.negative {
+  border-color: color-mix(in srgb, var(--color-danger) 28%, transparent);
+  background: color-mix(in srgb, var(--color-danger-surface) 42%, var(--color-surface));
+}
+
+.transitionMiningMetricLabel {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.transitionMiningMetricValue {
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2.2vw, 34px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.transitionMiningPanel {
+  gap: var(--space-3);
+}
+
+.transitionMiningActivityList,
+.transitionMiningFlowList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.transitionPathList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.transitionPathCard {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  cursor: pointer;
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 14px 16px;
+  border-radius: calc(var(--radius-card) - 2px);
+  border: 1px solid var(--color-border-input);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.transitionPathCard.is-active {
+  border-color: color-mix(in srgb, var(--color-interactive) 42%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-interactive) 18%, transparent);
+  background: linear-gradient(180deg, #f7faff 0%, #eef4ff 100%);
+}
+
+.transitionPathDetailsCard {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.transitionPathDetailList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.transitionPathDetailRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-border-input);
+  background: var(--color-surface);
+}
+
+.transitionPathHeader,
+.transitionPathMeta,
+.transitionPathRail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.transitionPathRank {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-interactive) 12%, transparent);
+  color: var(--color-interactive);
+  font-size: 11px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.transitionPathNode {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  max-width: 100%;
+}
+
+.transitionPathArrow {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.transitionMiningActivityRow,
+.transitionMiningFlowRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-border-input);
+  background: var(--color-surface);
+}
+
+.transitionMiningFlowRow > div:first-child,
+.transitionMiningActivityRow > div:first-child,
+.simulationSegmentRow > div:first-child,
+.transitionAnalysisRow > div:first-child,
+.actionRecommendationRow > div:first-child {
+  min-width: 0;
+}
+
+.transitionMiningActivityTitle {
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.transitionMiningBar {
+  width: 118px;
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-border-input) 88%, transparent);
+  overflow: hidden;
+}
+
+.transitionMiningBar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-interactive), color-mix(in srgb, var(--color-success) 68%, var(--color-interactive)));
+}
+
+.transitionMiningDelta {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.transitionMiningDelta.positive { color: var(--color-success); }
+.transitionMiningDelta.negative { color: var(--color-danger); }
+
+.actionRecommendationCard {
+  background:
+    radial-gradient(circle at 92% 16%, color-mix(in srgb, var(--pastel-orange) 30%, transparent), transparent 24%),
+    linear-gradient(180deg, #ffffff 0%, #fffdfa 100%);
+}
+
+.actionRecommendationList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.actionRecommendationRow {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  min-height: 142px;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border-input);
+  background: var(--color-surface);
+}
+
+.actionRecommendationRow.positive {
+  border-color: color-mix(in srgb, var(--color-success) 34%, transparent);
+  background: color-mix(in srgb, var(--pastel-teal) 20%, var(--color-surface));
+}
+
+.actionRecommendationRow.warning,
+.actionRecommendationRow.risk {
+  border-color: color-mix(in srgb, var(--pastel-yellow-dark) 24%, transparent);
+  background: color-mix(in srgb, var(--pastel-orange) 28%, var(--color-surface));
+}
+
+.actionRecommendationRow.neutral {
+  background: color-mix(in srgb, var(--color-surface-muted) 72%, var(--color-surface));
+}
+
+.actionRecommendationTitle {
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.actionRecommendationSummary {
+  margin-top: 6px;
+  color: var(--color-text);
+  line-height: 1.55;
+}
+
 .transitionGraphCard {
   --transition-graph-positive: var(--color-success);
   --transition-graph-negative: var(--color-danger);
@@ -158,7 +602,7 @@
     radial-gradient(circle at 84% 22%, var(--transition-graph-green-glow), transparent 26%),
     linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
   padding: var(--space-4);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .transitionGraphHead {
@@ -208,9 +652,18 @@
   background-size: 40px 40px;
 }
 
+.transitionGraphViewport::-webkit-scrollbar {
+  height: 10px;
+}
+
+.transitionGraphViewport::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-interactive) 20%, transparent);
+}
+
 .transitionGraphSvg {
   width: 100%;
-  min-width: 720px;
+  min-width: 1240px;
   height: auto;
   display: block;
 }
@@ -230,11 +683,34 @@
   transform: translateY(-5px);
 }
 
+.transitionGraphEdge.baseline.is-active,
+.transitionGraphEdge.changed.is-active {
+  opacity: 1;
+}
+
+.transitionGraphEdge.baseline.is-dimmed,
+.transitionGraphEdge.changed.is-dimmed,
+.transitionGraphEdgeLabel.is-dimmed,
+.transitionGraphNodeRect.is-dimmed,
+.transitionGraphNodeLabel.is-dimmed,
+.transitionGraphNodeMeta.is-dimmed {
+  opacity: 0.18;
+}
+
 .transitionGraphEdge.changed {
   stroke-width: 4;
   opacity: 0.9;
   filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--color-text-secondary) 14%, transparent));
   transform: translateY(5px);
+}
+
+.transitionGraphEdge.changed.is-active {
+  stroke-width: 7;
+  filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--color-interactive) 18%, transparent));
+}
+
+.transitionGraphEdgeGroup:hover .transitionGraphEdgeLabel {
+  opacity: 1;
 }
 
 .transitionGraphEdge.changed.positive {
@@ -257,41 +733,138 @@
 .transitionGraphArrow.neutral { fill: var(--transition-graph-neutral); }
 
 .transitionGraphEdgeLabel {
-  fill: var(--color-text-secondary);
+  fill: var(--color-text);
   paint-order: stroke;
-  stroke: var(--color-surface);
-  stroke-width: 5px;
+  stroke: rgba(255, 255, 255, 0.96);
+  stroke-width: 8px;
   stroke-linejoin: round;
   font-size: 11px;
   font-family: var(--font-display);
   font-weight: 800;
   text-anchor: middle;
   pointer-events: none;
+  letter-spacing: -0.01em;
+  opacity: 0;
 }
 
-.transitionGraphNodeCircle {
+.transitionGraphEdgeLabel.is-active {
+  fill: var(--color-text);
+  stroke: rgba(255, 255, 255, 1);
+  stroke-width: 9px;
+  font-size: 12px;
+  opacity: 1;
+}
+
+.transitionGraphNodeRect {
   fill: var(--color-surface);
   stroke: var(--color-interactive);
   stroke-width: 2;
   filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--color-interactive) 14%, transparent));
 }
 
+.transitionGraphNodeRect.is-active {
+  stroke-width: 4;
+  filter: drop-shadow(0 14px 22px color-mix(in srgb, var(--color-interactive) 22%, transparent));
+}
+
+.transitionGraphNodeRect.kind-browse {
+  fill: color-mix(in srgb, var(--color-surface) 84%, #edf4ff);
+  stroke: color-mix(in srgb, var(--color-interactive) 72%, #dbeafe);
+}
+
+.transitionGraphNodeRect.kind-consideration {
+  fill: color-mix(in srgb, var(--color-surface) 84%, #f4f1ff);
+  stroke: color-mix(in srgb, #8b5cf6 54%, #ddd6fe);
+}
+
+.transitionGraphNodeRect.kind-intent {
+  fill: color-mix(in srgb, var(--color-surface) 82%, #eefdf4);
+  stroke: color-mix(in srgb, var(--color-success) 70%, #bbf7d0);
+}
+
+.transitionGraphNodeRect.kind-conversion {
+  fill: color-mix(in srgb, var(--color-surface) 76%, #fff5e8);
+  stroke: color-mix(in srgb, #f59e0b 62%, #fde68a);
+}
+
+.transitionGraphNodeRect.kind-success {
+  fill: color-mix(in srgb, var(--color-surface) 70%, #ecfdf5);
+  stroke: color-mix(in srgb, var(--color-success) 90%, #86efac);
+  stroke-width: 3;
+}
+
+.transitionGraphNodeRect.kind-exit {
+  fill: color-mix(in srgb, var(--color-surface) 68%, #fff1f2);
+  stroke: color-mix(in srgb, var(--color-danger) 78%, #fecdd3);
+  stroke-width: 3;
+}
+
+.transitionGraphNodeRect.bucket-product_page {
+  filter: drop-shadow(0 16px 26px color-mix(in srgb, var(--color-interactive) 18%, transparent));
+}
+
+.transitionGraphNodeRect.bucket-success_page,
+.transitionGraphNodeRect.bucket-exit {
+  filter: drop-shadow(0 14px 24px rgba(15, 23, 42, 0.12));
+}
+
+.transitionGraphNodeRect.is-dimmed {
+  opacity: 0.16;
+}
+
 .transitionGraphNodeLabel {
   fill: var(--color-text);
-  paint-order: stroke;
-  stroke: var(--color-surface);
-  stroke-width: 5px;
-  stroke-linejoin: round;
   font-size: 12px;
   font-family: var(--font-display);
   font-weight: 800;
   text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.transitionGraphNodeLabel.is-active {
+  fill: var(--color-interactive-pressed);
+}
+
+.transitionGraphNodeMeta {
+  fill: var(--color-text-secondary);
+  font-size: 9px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.transitionGraphNodeMeta.is-active {
+  fill: var(--color-text);
+}
+
+.transitionGraphNodeSubMeta {
+  fill: color-mix(in srgb, var(--color-text-secondary) 86%, transparent);
+  font-size: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.transitionGraphNodeSubMeta.is-active {
+  fill: var(--color-text-secondary);
+}
+
+.transitionGraphNodeRect.kind-success.is-active,
+.transitionGraphNodeRect.kind-exit.is-active {
+  stroke-width: 5;
 }
 
 .transitionAnalysisColumns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
+}
+
+.labActionStack .simulationResultGrid,
+.labActionStack .simulationVariantGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .transitionAnalysisRow {
@@ -314,6 +887,20 @@
 
 .simulationSampleInput { width: 100%; }
 
+.simulationContext {
+  align-items: center;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in srgb, var(--color-interactive) 25%, transparent);
+  border-radius: var(--radius-btn);
+  background: color-mix(in srgb, var(--color-surface) 86%, #f2f7ff);
+}
+
+.missionStageDark .simulationContext {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .simulationContext,
 .simulationBadgeRow,
 .simulationSegmentMeta {
@@ -322,11 +909,23 @@
   gap: var(--space-2);
 }
 
+.simulationContext .badge,
+.simulationBadgeRow .badge,
+.simulationSegmentMeta .badge,
+.transitionPathMeta .badge {
+  max-width: 100%;
+}
+
 .simulationResults {
   border-radius: var(--radius-btn);
   border: 1px solid var(--color-border-input);
   background: var(--color-surface-elevated);
   padding: var(--space-3);
+}
+
+.missionStageDark .simulationResults {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.03) 100%);
 }
 
 .simulationResultStack {
@@ -340,6 +939,33 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-3);
+}
+
+.simulationResultGrid .summaryMiniCard,
+.simulationVariantGrid .summaryMiniCard {
+  min-height: 124px;
+  border-radius: calc(var(--radius-card) + 2px);
+}
+
+.simulationResultGrid .summaryMiniValue,
+.simulationVariantGrid .summaryMiniValue {
+  font-size: clamp(24px, 2vw, 34px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.transitionAnalysisStack > .summaryMiniCard,
+.transitionMiningPanel,
+.actionRecommendationCard {
+  min-height: 0;
+}
+
+.transitionMiningPanel .summaryMiniValue,
+.actionRecommendationCard .summaryMiniValue,
+.transitionPathCard .summaryMiniValue {
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
 }
 
 .simulationVariantGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -361,6 +987,10 @@
   padding: var(--space-3);
 }
 
+.simulationSegmentRow .summaryMiniValue {
+  font-size: 18px;
+}
+
 .simulationSegmentTitle {
   color: var(--color-text);
   font-family: var(--font-display);
@@ -370,25 +1000,65 @@
 .simulationCaveat {
   color: var(--color-text-secondary);
   line-height: 1.5;
+  padding: 14px 16px;
+  border-radius: var(--radius-btn);
+  background: color-mix(in srgb, var(--pastel-orange) 32%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--pastel-yellow-dark) 24%, transparent);
+}
+
+@media (max-width: 1240px) {
+  .personaHeroCard,
+  .labMissionGrid,
+  .transitionPathList,
+  .actionRecommendationList,
+  .transitionMiningGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .labControlGrid,
+  .labControlGrid > :first-child,
+  .labControlGrid > :last-child {
+    grid-column: auto;
+  }
+
+  .transitionGraphSvg {
+    min-width: 1120px;
+  }
+}
+
+.missionStageDark .simulationCaveat {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 @media (max-width: 980px) {
+  .labMissionGrid,
   .personaHeroCard,
   .personaLabMainGrid,
   .labControlGrid,
   .matchedAgentCards,
   .simulationActionRow,
+  .transitionMiningHeroGrid,
+  .transitionMiningGrid,
+  .transitionPathList,
+  .actionRecommendationList,
+  .labActionStack .simulationResultGrid,
+  .labActionStack .simulationVariantGrid,
   .transitionAnalysisColumns,
   .transitionAnalysisRow,
   .simulationResultGrid { grid-template-columns: 1fr; }
   .transitionGraphHead { align-items: stretch; flex-direction: column; }
   .transitionGraphLegend { justify-content: flex-start; }
-  .personaHeroStats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .personaHeroStats { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
   .personaHeroStats,
   .simulationVariantGrid,
-  .simulationSegmentRow { grid-template-columns: 1fr; }
-  .transitionGraphSvg { min-width: 620px; }
+  .simulationSegmentRow,
+  .transitionMiningActivityRow,
+  .transitionMiningFlowRow { grid-template-columns: 1fr; }
+  .transitionGraphSvg { min-width: 980px; }
+  .transitionMiningBar { width: 100%; }
 }

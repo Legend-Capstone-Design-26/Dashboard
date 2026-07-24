@@ -14,7 +14,9 @@
     "research:export-features": "node scripts/export-session-features.js",
     "scenario": "node scripts/scenario-data.js",
     "simulate": "node scripts/simulate.js",
-    "load:k6": "k6 run load/persona-load.js"
+    "load:k6": "k6 run load/persona-load.js",
+    "benchmark:generate": "node scripts/generate-synthetic-benchmark.js",
+    "benchmark:validate": "node scripts/validate-synthetic-benchmark.js"
   },
   "dependencies": {
     "@enejwl/ux-sdk": "file:../vendor/enejwl-ux-sdk-0.1.1.tgz",

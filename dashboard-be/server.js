@@ -1121,6 +1121,12 @@ app.post("/api/personas/fixed-cohort/transition-analysis", requireAuth, requireS
   const experimentKey = String(req.body?.experiment_key || req.body?.key || "").trim();
   const cohortId = String(req.body?.cohort_id || "fixed_10k_cohort").trim();
   const filters = req.body?.filters && typeof req.body.filters === "object" ? req.body.filters : {};
+  const fastTransitionOverlayClient = {
+    mode: "fast_fallback",
+    async rewrite({ draftAnswer }) {
+      return { text: draftAnswer, reason: "fast_fallback" };
+    },
+  };
 
   if (!experimentKey) return res.status(400).json({ ok: false, reason: "missing experiment_key" });
   const experiment = experimentStore.getByKey(siteId, experimentKey);
@@ -1130,7 +1136,7 @@ app.post("/api/personas/fixed-cohort/transition-analysis", requireAuth, requireS
   if (!artifact) return res.status(404).json({ ok: false, reason: "fixed cohort artifact not found" });
 
   try {
-    const analysis = await buildTransitionAnalysis({ artifact, experiment, filters });
+    const analysis = await buildTransitionAnalysis({ artifact, experiment, filters, llmClient: fastTransitionOverlayClient });
     if (!analysis.ok) return res.status(analysis.status || 400).json({ ok: false, reason: analysis.reason });
     return res.json({ ok: true, site_id: siteId, analysis });
   } catch (error) {
@@ -1178,6 +1184,7 @@ app.post("/api/simulations/runs", requireAuth, requireSiteAccess, (req, res) => 
   const sampleSeed = String(req.body?.sample_seed || "").trim() || undefined;
   const mode = String(req.body?.mode || "synthetic").trim();
   const cohortId = String(req.body?.cohort_id || "").trim() || undefined;
+  const filters = req.body?.filters && typeof req.body.filters === "object" ? req.body.filters : {};
 
   if (!experimentKey) return res.status(400).json({ ok: false, reason: "missing experiment_key" });
   if (!["synthetic", "fixed_10k_cohort"].includes(mode)) return res.status(400).json({ ok: false, reason: "unsupported simulation mode" });
@@ -1189,6 +1196,7 @@ app.post("/api/simulations/runs", requireAuth, requireSiteAccess, (req, res) => 
     sampleSeed,
     mode,
     cohortId,
+    filters,
     userId: req.authUser?.id || null,
   });
   if (!result.ok) return res.status(result.status || 400).json({ ok: false, reason: result.reason });

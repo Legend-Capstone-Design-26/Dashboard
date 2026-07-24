@@ -49,7 +49,13 @@
           <div>
             <div class="eyebrow">Persona Simulation Workspace</div>
             <h1>관리자용 페르소나 실험실</h1>
-            <p>실험, 페르소나, 대상 페이지를 고르고 variant B의 UI/UX 변경이 어떤 행동 전이를 만들지 검증합니다.</p>
+            <p>실험을 고르고, 코호트를 좁히고, 전이 변화와 synthetic 결과를 한 흐름으로 읽는 운영 실험실입니다.</p>
+            <div class="personaHeroStory">
+              <span class="heroStoryChip">1. cohort 선택</span>
+              <span class="heroStoryChip">2. 전이 해석</span>
+              <span class="heroStoryChip">3. simulation 실행</span>
+              <span class="heroStoryChip">4. segment 근거 확인</span>
+            </div>
           </div>
           <div class="personaHeroStats">
             <div class="summaryMiniCard">
@@ -67,67 +73,75 @@
           </div>
         </section>
 
-        <section class="card labControlCard">
-          <div class="cardHead">
-            <div>
-              <h2>실험 조건</h2>
-              <div class="muted">사이트, 실험, 페르소나를 선택하면 결과와 오버레이 생성 영역이 갱신됩니다.</div>
+        <section class="labMissionGrid" aria-label="실험실 실행 흐름">
+          <section class="card labControlCard missionStageCard missionStagePrimary">
+            <div class="missionStageBadge">Step 1</div>
+            <div class="cardHead">
+              <div>
+                <h2>실험 조건</h2>
+                <div class="muted">사이트, 실험, cohort 필터를 정하면 아래 해석과 simulation 결과가 같은 기준으로 갱신됩니다.</div>
+              </div>
+              <a class="btnGhost" id="editorLink" href="/editor" target="_blank" rel="noopener">화면 편집기 열기</a>
             </div>
-            <a class="btnGhost" id="editorLink" href="/editor" target="_blank" rel="noopener">화면 편집기 열기</a>
-          </div>
-          <div class="labControlGrid">
-            <label class="filterField vertical" for="experimentSelect"><span>실험</span><select id="experimentSelect" class="selectInput"><option value="">불러오는 중…</option></select></label>
-            <label class="filterField vertical" for="ageGroupSelect"><span>나이대</span><select id="ageGroupSelect" class="selectInput"><option value="">전체 나이대</option></select></label>
-            <label class="filterField vertical" for="occupationGroupSelect"><span>직업군</span><select id="occupationGroupSelect" class="selectInput"><option value="">전체 직업군</option></select></label>
-            <label class="filterField vertical" for="styleSelect"><span>행동 유형</span><select id="styleSelect" class="selectInput"><option value="">전체 유형</option></select></label>
-            <label class="filterField vertical" for="personaSelect"><span>대표 페르소나</span><select id="personaSelect" class="selectInput"><option value="">페르소나 선택</option></select></label>
-          </div>
-          <div id="matchedAgentSummary" class="matchedAgentSummary" aria-live="polite"></div>
-          <div class="summaryHint" id="labStatus">실험실을 초기화하는 중입니다.</div>
+            <div class="labControlGrid">
+              <label class="filterField vertical" for="experimentSelect"><span>실험</span><select id="experimentSelect" class="selectInput"><option value="">불러오는 중…</option></select></label>
+              <label class="filterField vertical" for="ageGroupSelect"><span>나이대</span><select id="ageGroupSelect" class="selectInput"><option value="">전체 나이대</option></select></label>
+              <label class="filterField vertical" for="occupationGroupSelect"><span>직업군</span><select id="occupationGroupSelect" class="selectInput"><option value="">전체 직업군</option></select></label>
+              <label class="filterField vertical" for="styleSelect"><span>행동 유형</span><select id="styleSelect" class="selectInput"><option value="">전체 유형</option></select></label>
+              <label class="filterField vertical" for="personaSelect"><span>대표 페르소나</span><select id="personaSelect" class="selectInput"><option value="">페르소나 선택</option></select></label>
+            </div>
+            <div id="matchedAgentSummary" class="matchedAgentSummary" aria-live="polite"></div>
+            <div class="summaryHint" id="labStatus">실험실을 초기화하는 중입니다.</div>
+          </section>
+
+          <section class="labActionStack" aria-label="분석과 실행">
+            <section class="card transitionAnalysisCard missionStageCard" aria-labelledby="transitionAnalysisTitle">
+              <div class="missionStageBadge">Step 2</div>
+              <div class="cardHead">
+                <div>
+                  <h2 id="transitionAnalysisTitle">선택 agent 전이확률 분석</h2>
+                  <div class="muted">현재 cohort 필터 기준으로 A안 baseline 전이확률과 B안 변경 후 전이확률을 비교합니다.</div>
+                </div>
+                <button class="btnPrimary" id="analyzeTransitionsBtn" type="button">전이확률 확인하기</button>
+              </div>
+              <div class="summaryHint" id="transitionAnalysisStatus">실험과 cohort 필터를 선택한 뒤 분석하세요.</div>
+              <div id="transitionAnalysisResults" class="transitionAnalysisResults" hidden><div class="emptyState compactEmpty">아직 전이확률 분석 결과가 없습니다.</div></div>
+            </section>
+
+            <section class="card simulationLabCard missionStageCard missionStageDark" aria-labelledby="simulationLabTitle">
+              <div class="missionStageBadge">Step 3</div>
+              <div class="cardHead">
+                <div>
+                  <h2 id="simulationLabTitle">가상 agent로 돌려보기</h2>
+                  <div class="muted">현재 실험과 cohort 필터를 기준으로 Nemotron 고정 10k 코호트의 일치 집합만 실행합니다.</div>
+                </div>
+                <button class="btnPrimary" id="runSimulationBtn" type="button">시뮬레이션 실행</button>
+              </div>
+              <div class="simulationActionRow">
+                <label class="filterField vertical" for="simulationSampleSize">
+                  <span>실행 소스</span>
+                  <input id="simulationSampleSize" class="selectInput simulationSampleInput" type="text" value="Nemotron fixed 10k cohort" readonly disabled />
+                </label>
+                <div class="simulationContext" id="simulationContext" aria-live="polite"></div>
+              </div>
+              <div class="summaryHint" id="simulationStatus">실험을 선택한 뒤 cohort 필터에 맞는 agent 집합으로 실행하세요.</div>
+              <div id="simulationResults" class="simulationResults">
+                <div class="emptyState compactEmpty">가상 agent 실행 결과가 아직 없습니다. 결과는 synthetic persona simulation이며 실제 사용자 행동의 증명은 아닙니다.</div>
+              </div>
+            </section>
+          </section>
         </section>
 
-        <section class="card overlayLabCard">
+        <section class="card overlayLabCard missionStageCard" aria-labelledby="overlayStageTitle">
+          <div class="missionStageBadge">Insight</div>
           <div class="overlayBuilderHead">
             <div>
-              <h2>UI/UX 반응 오버레이</h2>
-              <div class="muted">선택한 페르소나가 variant B 변경에 어떻게 반응할지 전이 multiplier로 생성합니다.</div>
+              <h2 id="overlayStageTitle">대표 페르소나 반응 오버레이</h2>
+              <div class="muted">선택한 대표 페르소나가 variant B 변경에 어떻게 반응할지 전이 multiplier로 생성합니다.</div>
             </div>
             <button class="btnPrimary" id="generateOverlayBtn" type="button">오버레이 생성</button>
           </div>
           <div id="overlayPreview" class="overlayBuilderPreview"><div class="emptyState compactEmpty">아직 생성된 오버레이가 없습니다.</div></div>
-        </section>
-
-        <section class="card transitionAnalysisCard" aria-labelledby="transitionAnalysisTitle">
-          <div class="cardHead">
-            <div>
-              <h2 id="transitionAnalysisTitle">선택 agent 전이확률 분석</h2>
-              <div class="muted">현재 cohort 필터 기준으로 A안 baseline 전이확률과 B안 변경 후 전이확률을 비교합니다.</div>
-            </div>
-            <button class="btnPrimary" id="analyzeTransitionsBtn" type="button">전이확률 확인하기</button>
-          </div>
-          <div class="summaryHint" id="transitionAnalysisStatus">실험과 cohort 필터를 선택한 뒤 분석하세요.</div>
-          <div id="transitionAnalysisResults" class="transitionAnalysisResults" hidden><div class="emptyState compactEmpty">아직 전이확률 분석 결과가 없습니다.</div></div>
-        </section>
-
-        <section class="card simulationLabCard" aria-labelledby="simulationLabTitle">
-          <div class="cardHead">
-            <div>
-              <h2 id="simulationLabTitle">가상 agent로 돌려보기</h2>
-              <div class="muted">현재 실험과 페르소나 필터를 기준으로 synthetic persona simulation을 실행합니다.</div>
-            </div>
-            <button class="btnPrimary" id="runSimulationBtn" type="button">시뮬레이션 실행</button>
-          </div>
-          <div class="simulationActionRow">
-            <label class="filterField vertical" for="simulationSampleSize">
-              <span>샘플 수</span>
-              <input id="simulationSampleSize" class="selectInput simulationSampleInput" type="number" min="20" max="50000" step="10" value="1000" />
-            </label>
-            <div class="simulationContext" id="simulationContext" aria-live="polite"></div>
-          </div>
-          <div class="summaryHint" id="simulationStatus">실험을 선택한 뒤 샘플 수를 정하고 실행하세요.</div>
-          <div id="simulationResults" class="simulationResults">
-            <div class="emptyState compactEmpty">가상 agent 실행 결과가 아직 없습니다. 결과는 synthetic persona simulation이며 실제 사용자 행동의 증명은 아닙니다.</div>
-          </div>
         </section>
 
         <section class="twoCol personaLabMainGrid">
@@ -172,6 +186,6 @@
       </main>
     </div>
   </div>
-  <script src="/persona-lab.js"></script>
+  <script src="/persona-lab.js?v=20260714c"></script>
 </body>
 </html>
