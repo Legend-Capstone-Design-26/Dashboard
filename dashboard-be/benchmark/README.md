@@ -39,6 +39,7 @@ This directory defines the canonical schema and dataset plan for the LLM-based e
 - `schemas/events.schema.json`
 - `schemas/sessions.schema.json`
 - `manifests/balanced-7500.template.json`
+- `manifests/hard-2500.template.json`
 
 ## Notes
 

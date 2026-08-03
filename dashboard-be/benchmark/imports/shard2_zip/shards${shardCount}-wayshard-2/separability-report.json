@@ -1,0 +1,1234 @@
+{
+  "generated_at": "2026-08-02T08:04:08.060Z",
+  "output_dir": "D:\\KwangwoonUniv\\Capstone\\Dashboard\\dashboard-be\\benchmark\\output\\shards${shardCount}-wayshard-2",
+  "counts": {
+    "sessions": 2500,
+    "personas": 5
+  },
+  "event_counts": [
+    {
+      "quantity": "page_view",
+      "group": "event",
+      "ovl_min": 0,
+      "ovl_mean": 0.193,
+      "worst_pair": "explorer vs goal_oriented_buyer",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.024,
+          "ks": 0.976
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.22999999999999998,
+          "ks": 0.77
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.166,
+          "ks": 0.834
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.138,
+          "ks": 0.862
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.62,
+          "ks": 0.30199999999999994
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.748,
+          "ks": 0.18800000000000006
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.002,
+          "ks": 0.998
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.002,
+          "ks": 0.998
+        }
+      ]
+    },
+    {
+      "quantity": "checkout_start",
+      "group": "event",
+      "ovl_min": 0,
+      "ovl_mean": 0.40920000000000006,
+      "worst_pair": "explorer vs goal_oriented_buyer",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.004,
+          "ks": 0.996
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.996,
+          "ks": 0.004
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.996,
+          "ks": 0.004
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.05,
+          "ks": 0.95
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.954,
+          "ks": 0.04600000000000004
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.046,
+          "ks": 0.954
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.046,
+          "ks": 0.954
+        }
+      ]
+    },
+    {
+      "quantity": "payment_attempt",
+      "group": "event",
+      "ovl_min": 0,
+      "ovl_mean": 0.4187999999999999,
+      "worst_pair": "explorer vs goal_oriented_buyer",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.758,
+          "ks": 0.242
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.242,
+          "ks": 0.758
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.304,
+          "ks": 0.696
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.794,
+          "ks": 0.20599999999999996
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.062,
+          "ks": 0.938
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.964,
+          "ks": 0.03600000000000003
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.93,
+          "ks": 0.062
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.036,
+          "ks": 0.964
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.098,
+          "ks": 0.9019999999999999
+        }
+      ]
+    },
+    {
+      "quantity": "checkout_complete",
+      "group": "event",
+      "ovl_min": 0,
+      "ovl_mean": 0.4276,
+      "worst_pair": "cart_abandoner vs goal_oriented_buyer",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.138,
+          "ks": 0.862
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.138,
+          "ks": 0.862
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.862,
+          "ks": 0.138
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.138,
+          "ks": 0.862
+        }
+      ]
+    },
+    {
+      "quantity": "filter_change",
+      "group": "event",
+      "ovl_min": 0.002,
+      "ovl_mean": 0.42919999999999997,
+      "worst_pair": "impulse_buyer vs price_comparison",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.394,
+          "ks": 0.6060000000000001
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.9560000000000001,
+          "ks": 0.04399999999999993
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.914,
+          "ks": 0.08599999999999997
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.088,
+          "ks": 0.912
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.35,
+          "ks": 0.6499999999999999
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.308,
+          "ks": 0.692
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.278,
+          "ks": 0.722
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.958,
+          "ks": 0.04200000000000004
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.044,
+          "ks": 0.956
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.002,
+          "ks": 0.998
+        }
+      ]
+    },
+    {
+      "quantity": "search",
+      "group": "event",
+      "ovl_min": 0.02,
+      "ovl_mean": 0.5369999999999999,
+      "worst_pair": "cart_abandoner vs price_comparison",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.966,
+          "ks": 0.03400000000000003
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.982,
+          "ks": 0.018000000000000016
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.798,
+          "ks": 0.20199999999999996
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.02,
+          "ks": 0.98
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.956,
+          "ks": 0.03400000000000003
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.764,
+          "ks": 0.236
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.028,
+          "ks": 0.972
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.798,
+          "ks": 0.20199999999999996
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.038,
+          "ks": 0.962
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.02,
+          "ks": 0.98
+        }
+      ]
+    },
+    {
+      "quantity": "dwell_time",
+      "group": "event",
+      "ovl_min": 0.03,
+      "ovl_mean": 0.38099999999999995,
+      "worst_pair": "explorer vs goal_oriented_buyer",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.308,
+          "ks": 0.692
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.214,
+          "ks": 0.786
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.252,
+          "ks": 0.748
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.5840000000000001,
+          "ks": 0.408
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.03,
+          "ks": 0.97
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.068,
+          "ks": 0.9319999999999999
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.316,
+          "ks": 0.6839999999999999
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.776,
+          "ks": 0.186
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.602,
+          "ks": 0.378
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.6599999999999999,
+          "ks": 0.33999999999999997
+        }
+      ]
+    },
+    {
+      "quantity": "add_to_cart",
+      "group": "event",
+      "ovl_min": 0.054,
+      "ovl_mean": 0.43640000000000007,
+      "worst_pair": "cart_abandoner vs price_comparison",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.14,
+          "ks": 0.86
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.9400000000000001,
+          "ks": 0.05999999999999994
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.934,
+          "ks": 0.06599999999999995
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.054,
+          "ks": 0.946
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.14,
+          "ks": 0.86
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.14,
+          "ks": 0.86
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.914,
+          "ks": 0.08599999999999997
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.994,
+          "ks": 0.006000000000000005
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.054,
+          "ks": 0.946
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.054,
+          "ks": 0.946
+        }
+      ]
+    },
+    {
+      "quantity": "click",
+      "group": "event",
+      "ovl_min": 0.36,
+      "ovl_mean": 0.6388,
+      "worst_pair": "impulse_buyer vs price_comparison",
+      "verdict": "적정",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.786,
+          "ks": 0.21199999999999997
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.526,
+          "ks": 0.47400000000000003
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.52,
+          "ks": 0.48000000000000004
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.84,
+          "ks": 0.16000000000000003
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.738,
+          "ks": 0.26200000000000007
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.732,
+          "ks": 0.26800000000000007
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.628,
+          "ks": 0.372
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.8919999999999999,
+          "ks": 0.10199999999999998
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.366,
+          "ks": 0.6340000000000001
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.36,
+          "ks": 0.6400000000000001
+        }
+      ]
+    },
+    {
+      "quantity": "remove_from_cart",
+      "group": "event",
+      "ovl_min": 0.534,
+      "ovl_mean": 0.7864,
+      "worst_pair": "cart_abandoner vs goal_oriented_buyer",
+      "verdict": "적정",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.67,
+          "ks": 0.32999999999999996
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.534,
+          "ks": 0.46599999999999997
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.534,
+          "ks": 0.46599999999999997
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.56,
+          "ks": 0.43999999999999995
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.864,
+          "ks": 0.136
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.864,
+          "ks": 0.136
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.89,
+          "ks": 0.10999999999999999
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.974,
+          "ks": 0.026000000000000023
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.974,
+          "ks": 0.026000000000000023
+        }
+      ]
+    },
+    {
+      "quantity": "error",
+      "group": "event",
+      "ovl_min": 0.62,
+      "ovl_mean": 0.8216000000000001,
+      "worst_pair": "cart_abandoner vs impulse_buyer",
+      "verdict": "적정",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.6699999999999999,
+          "ks": 0.33
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.65,
+          "ks": 0.35000000000000003
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.62,
+          "ks": 0.37999999999999995
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.782,
+          "ks": 0.21800000000000003
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.98,
+          "ks": 0.020000000000000018
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.95,
+          "ks": 0.04999999999999993
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.888,
+          "ks": 0.11199999999999999
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.97,
+          "ks": 0.029999999999999916
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.8680000000000001,
+          "ks": 0.132
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.8380000000000001,
+          "ks": 0.16199999999999992
+        }
+      ]
+    }
+  ],
+  "page_counts": [
+    {
+      "quantity": "checkout",
+      "group": "page",
+      "ovl_min": 0,
+      "ovl_mean": 0.2954,
+      "worst_pair": "explorer vs goal_oriented_buyer",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.004,
+          "ks": 0.996
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.558,
+          "ks": 0.38999999999999996
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.45000000000000007,
+          "ks": 0.49799999999999994
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.049999999999999996,
+          "ks": 0.95
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.954,
+          "ks": 0.04600000000000004
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.85,
+          "ks": 0.15000000000000002
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.044,
+          "ks": 0.956
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.044,
+          "ks": 0.956
+        }
+      ]
+    },
+    {
+      "quantity": "complete",
+      "group": "page",
+      "ovl_min": 0,
+      "ovl_mean": 0.4276,
+      "worst_pair": "cart_abandoner vs goal_oriented_buyer",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.138,
+          "ks": 0.862
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.138,
+          "ks": 0.862
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.862,
+          "ks": 0.138
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0,
+          "ks": 1
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.138,
+          "ks": 0.862
+        }
+      ]
+    },
+    {
+      "quantity": "review",
+      "group": "page",
+      "ovl_min": 0.004,
+      "ovl_mean": 0.3756,
+      "worst_pair": "explorer vs impulse_buyer",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.048,
+          "ks": 0.952
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.908,
+          "ks": 0.09199999999999997
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.906,
+          "ks": 0.09399999999999997
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.086,
+          "ks": 0.9139999999999999
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.006,
+          "ks": 0.994
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.004,
+          "ks": 0.996
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.792,
+          "ks": 0.20799999999999996
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.996,
+          "ks": 0.0020000000000000018
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.006,
+          "ks": 0.994
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.004,
+          "ks": 0.996
+        }
+      ]
+    },
+    {
+      "quantity": "product",
+      "group": "page",
+      "ovl_min": 0.016,
+      "ovl_mean": 0.3276,
+      "worst_pair": "explorer vs impulse_buyer",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.026,
+          "ks": 0.974
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.638,
+          "ks": 0.362
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.84,
+          "ks": 0.158
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.174,
+          "ks": 0.826
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.049999999999999996,
+          "ks": 0.95
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.016,
+          "ks": 0.984
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.264,
+          "ks": 0.736
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.612,
+          "ks": 0.388
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.508,
+          "ks": 0.49200000000000005
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.14800000000000002,
+          "ks": 0.852
+        }
+      ]
+    },
+    {
+      "quantity": "search",
+      "group": "page",
+      "ovl_min": 0.03,
+      "ovl_mean": 0.5058,
+      "worst_pair": "cart_abandoner vs price_comparison",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.846,
+          "ks": 0.15400000000000003
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.9380000000000001,
+          "ks": 0.05999999999999994
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.7340000000000001,
+          "ks": 0.20399999999999996
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.03,
+          "ks": 0.97
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.8979999999999999,
+          "ks": 0.09400000000000008
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.728,
+          "ks": 0.236
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.044,
+          "ks": 0.956
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.77,
+          "ks": 0.20199999999999996
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.04,
+          "ks": 0.96
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.03,
+          "ks": 0.97
+        }
+      ]
+    },
+    {
+      "quantity": "cart",
+      "group": "page",
+      "ovl_min": 0.034,
+      "ovl_mean": 0.2792,
+      "worst_pair": "explorer vs goal_oriented_buyer",
+      "verdict": "정답지",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.14,
+          "ks": 0.86
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.216,
+          "ks": 0.784
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.3,
+          "ks": 0.7
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.066,
+          "ks": 0.934
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.034,
+          "ks": 0.86
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.108,
+          "ks": 0.86
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.914,
+          "ks": 0.08599999999999997
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.916,
+          "ks": 0.08399999999999996
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.046,
+          "ks": 0.934
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.052000000000000005,
+          "ks": 0.934
+        }
+      ]
+    },
+    {
+      "quantity": "category",
+      "group": "page",
+      "ovl_min": 0.248,
+      "ovl_mean": 0.5861999999999999,
+      "worst_pair": "explorer vs goal_oriented_buyer",
+      "verdict": "너무쉬움",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.41,
+          "ks": 0.59
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.5640000000000001,
+          "ks": 0.42799999999999994
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.78,
+          "ks": 0.19999999999999996
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.8140000000000001,
+          "ks": 0.18599999999999994
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.248,
+          "ks": 0.752
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.61,
+          "ks": 0.39
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.37,
+          "ks": 0.63
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.586,
+          "ks": 0.408
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.72,
+          "ks": 0.242
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.76,
+          "ks": 0.24
+        }
+      ]
+    },
+    {
+      "quantity": "home",
+      "group": "page",
+      "ovl_min": 0.788,
+      "ovl_mean": 0.8748000000000001,
+      "worst_pair": "explorer vs impulse_buyer",
+      "verdict": "정보없음",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 0.828,
+          "ks": 0.126
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 0.962,
+          "ks": 0.038
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 0.922,
+          "ks": 0.07799999999999996
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 0.828,
+          "ks": 0.134
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 0.852,
+          "ks": 0.14
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 0.788,
+          "ks": 0.20399999999999996
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 0.992,
+          "ks": 0.008000000000000007
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 0.936,
+          "ks": 0.06399999999999995
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 0.852,
+          "ks": 0.14800000000000002
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 0.788,
+          "ks": 0.21199999999999997
+        }
+      ]
+    },
+    {
+      "quantity": "other",
+      "group": "page",
+      "ovl_min": 1,
+      "ovl_mean": 1,
+      "worst_pair": "cart_abandoner vs explorer",
+      "verdict": "정보없음",
+      "pairs": [
+        {
+          "pair": "cart_abandoner vs explorer",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "cart_abandoner vs goal_oriented_buyer",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "cart_abandoner vs impulse_buyer",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "cart_abandoner vs price_comparison",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "explorer vs goal_oriented_buyer",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "explorer vs impulse_buyer",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "explorer vs price_comparison",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "goal_oriented_buyer vs impulse_buyer",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "goal_oriented_buyer vs price_comparison",
+          "ovl": 1,
+          "ks": 0
+        },
+        {
+          "pair": "impulse_buyer vs price_comparison",
+          "ovl": 1,
+          "ks": 0
+        }
+      ]
+    }
+  ],
+  "transition_jsd_mean": 0.29144367305769714,
+  "sequence_edit_distance": {
+    "within": 0.2167873205796126,
+    "between": 0.5541004349816847,
+    "ratio": 2.5559632985001897
+  },
+  "giveaway_quantities": [
+    "page_view",
+    "checkout_start",
+    "payment_attempt",
+    "checkout_complete",
+    "filter_change",
+    "search",
+    "dwell_time",
+    "add_to_cart",
+    "checkout",
+    "complete",
+    "review",
+    "product",
+    "search",
+    "cart"
+  ]
+}

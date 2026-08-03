@@ -1,0 +1,158 @@
+{
+  "examples": [
+    {
+      "persona_id": "goal_oriented_buyer",
+      "context": {
+        "device": "mobile",
+        "traffic_source": "search_engine",
+        "category": "beauty",
+        "promotion_exposed": false,
+        "new_user": true,
+        "logged_in": false,
+        "error_injected": false
+      },
+      "session": {
+        "session_id": "example_goal_oriented_buyer_001",
+        "scenario_id": "goal_buyer_search_checkout",
+        "expected_behavior_summary": "The user searches for a specific product, quickly reviews the detail page, adds it to cart, and completes checkout.",
+        "outcome": {
+          "checkout_entered": true,
+          "purchase_completed": true
+        },
+        "events": [
+          {
+            "event_name": "page_view",
+            "path": "/",
+            "after_ms": 0,
+            "props": { "title": "Home", "reason": "load" }
+          },
+          {
+            "event_name": "search",
+            "path": "/search",
+            "after_ms": 1800,
+            "props": { "query": "hydrating cream" }
+          },
+          {
+            "event_name": "page_view",
+            "path": "/product/beauty_1001",
+            "after_ms": 1300,
+            "props": { "title": "Hydrating Cream" }
+          },
+          {
+            "event_name": "dwell_time",
+            "path": "/product/beauty_1001",
+            "after_ms": 2500,
+            "props": { "dwell_ms": 2500, "reason": "product_detail_read", "title": "Product" }
+          },
+          {
+            "event_name": "add_to_cart",
+            "path": "/product/beauty_1001",
+            "after_ms": 700,
+            "props": { "product_id": "beauty_1001" }
+          },
+          {
+            "event_name": "page_view",
+            "path": "/cart",
+            "after_ms": 900,
+            "props": { "title": "Cart" }
+          },
+          {
+            "event_name": "checkout_start",
+            "path": "/checkout",
+            "after_ms": 1200,
+            "props": { "source": "cart" }
+          },
+          {
+            "event_name": "payment_attempt",
+            "path": "/checkout",
+            "after_ms": 1500,
+            "props": { "result": "submitted" }
+          },
+          {
+            "event_name": "checkout_complete",
+            "path": "/order-complete",
+            "after_ms": 1100,
+            "props": { "product_id": "beauty_1001" }
+          }
+        ]
+      }
+    },
+    {
+      "persona_id": "price_comparison",
+      "context": {
+        "device": "desktop",
+        "traffic_source": "direct",
+        "category": "electronics",
+        "promotion_exposed": true,
+        "new_user": false,
+        "logged_in": true,
+        "error_injected": false
+      },
+      "session": {
+        "session_id": "example_price_comparison_001",
+        "scenario_id": "price_compare_review_revisit",
+        "expected_behavior_summary": "The user compares multiple electronics products with search, filter, review reading, and revisits before exiting without checkout.",
+        "outcome": {
+          "checkout_entered": false,
+          "purchase_completed": false
+        },
+        "events": [
+          {
+            "event_name": "page_view",
+            "path": "/",
+            "after_ms": 0,
+            "props": { "title": "Home", "reason": "load" }
+          },
+          {
+            "event_name": "search",
+            "path": "/search",
+            "after_ms": 2200,
+            "props": { "query": "wireless earbuds" }
+          },
+          {
+            "event_name": "filter_change",
+            "path": "/search",
+            "after_ms": 1600,
+            "props": { "filter": "price_low_to_high" }
+          },
+          {
+            "event_name": "page_view",
+            "path": "/product/electronics_2001",
+            "after_ms": 1800,
+            "props": { "title": "Earbuds A" }
+          },
+          {
+            "event_name": "page_view",
+            "path": "/review/electronics_2001",
+            "after_ms": 2100,
+            "props": { "title": "Review" }
+          },
+          {
+            "event_name": "page_view",
+            "path": "/search",
+            "after_ms": 1700,
+            "props": { "title": "Search revisit" }
+          },
+          {
+            "event_name": "page_view",
+            "path": "/product/electronics_2002",
+            "after_ms": 1900,
+            "props": { "title": "Earbuds B" }
+          },
+          {
+            "event_name": "page_view",
+            "path": "/review/electronics_2002",
+            "after_ms": 2000,
+            "props": { "title": "Review" }
+          },
+          {
+            "event_name": "dwell_time",
+            "path": "/product/electronics_2002",
+            "after_ms": 3200,
+            "props": { "dwell_ms": 3200, "reason": "comparison_pause", "title": "Product" }
+          }
+        ]
+      }
+    }
+  ]
+}

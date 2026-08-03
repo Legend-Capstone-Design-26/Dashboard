@@ -148,6 +148,7 @@ function allowedEventNames() {
 }
 
 function deriveDifficulty(split, rng) {
+  if (split === "hard") return "hard";
   if (split === "stress") return chance(rng, 0.5) ? "hard" : "medium";
   if (split === "eval") return chance(rng, 0.5) ? "medium" : "easy";
   return chance(rng, 0.2) ? "medium" : "easy";
@@ -186,7 +187,11 @@ function buildSessionSpecs(manifest, personaCardsById) {
       const promotionExposed = Boolean(pick(contextVars.promotion_exposed || [false], rng));
       const newUser = Boolean(pick(contextVars.new_user || [true], rng));
       const loggedIn = Boolean(pick(contextVars.logged_in || [false], rng));
-      const errorInjected = split === "stress" ? true : Boolean(pick(contextVars.error_injected || [false], rng));
+      const errorInjected = split === "stress"
+        ? true
+        : split === "hard"
+          ? (chance(rng, 0.6) || Boolean(pick(contextVars.error_injected || [false], rng)))
+          : Boolean(pick(contextVars.error_injected || [false], rng));
       const sessionId = `bench_${personaConfig.persona_id}_${String(personaIndex + 1).padStart(4, "0")}`;
       const anonUserId = `bench_user_${String(globalIndex).padStart(6, "0")}`;
       const difficulty = deriveDifficulty(split, rng);

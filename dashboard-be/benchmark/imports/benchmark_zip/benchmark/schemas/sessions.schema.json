@@ -1,0 +1,146 @@
+{
+  "dataset": "synthetic_ecommerce_sessions",
+  "format": "json",
+  "primary_grain": "session",
+  "description": "Canonical session-level ground-truth schema for the LLM-generated ecommerce benchmark.",
+  "columns": [
+    {
+      "name": "session_id",
+      "type": "string",
+      "required": true,
+      "description": "Primary join key back to events.parquet."
+    },
+    {
+      "name": "anon_user_id",
+      "type": "string",
+      "required": true,
+      "description": "Synthetic anonymous user identifier."
+    },
+    {
+      "name": "site_id",
+      "type": "string",
+      "required": true,
+      "description": "Dashboard site identifier."
+    },
+    {
+      "name": "persona_id",
+      "type": "string",
+      "required": true,
+      "description": "Ground-truth persona id. Must never be fed into clustering features."
+    },
+    {
+      "name": "ground_truth_label",
+      "type": "string",
+      "required": true,
+      "description": "Human-readable canonical ground-truth label for reporting and evaluation."
+    },
+    {
+      "name": "split",
+      "type": "string",
+      "required": true,
+      "description": "Benchmark partition such as benchmark, eval, or stress."
+    },
+    {
+      "name": "difficulty",
+      "type": "string",
+      "required": true,
+      "description": "Scenario difficulty such as easy, medium, hard."
+    },
+    {
+      "name": "scenario_id",
+      "type": "string",
+      "required": true,
+      "description": "Generator scenario or persona-card variant id."
+    },
+    {
+      "name": "device",
+      "type": "string",
+      "required": true,
+      "description": "Context variable used during generation."
+    },
+    {
+      "name": "traffic_source",
+      "type": "string",
+      "required": true,
+      "description": "Context variable used during generation."
+    },
+    {
+      "name": "category",
+      "type": "string",
+      "required": true,
+      "description": "Merchandise category used in the session scenario."
+    },
+    {
+      "name": "promotion_exposed",
+      "type": "boolean",
+      "required": true,
+      "description": "Whether a promotion/banner/coupon exposure was part of the context."
+    },
+    {
+      "name": "new_user",
+      "type": "boolean",
+      "required": true,
+      "description": "Whether the synthetic user is a first-time visitor."
+    },
+    {
+      "name": "logged_in",
+      "type": "boolean",
+      "required": true,
+      "description": "Whether the synthetic user is already authenticated."
+    },
+    {
+      "name": "error_injected",
+      "type": "boolean",
+      "required": true,
+      "description": "Whether the scenario includes an explicit friction or error condition."
+    },
+    {
+      "name": "checkout_entered",
+      "type": "boolean",
+      "required": true,
+      "description": "Session-level ground-truth outcome."
+    },
+    {
+      "name": "purchase_completed",
+      "type": "boolean",
+      "required": true,
+      "description": "Session-level ground-truth outcome."
+    },
+    {
+      "name": "event_count",
+      "type": "int32",
+      "required": true,
+      "description": "Raw event count after generation and validation."
+    },
+    {
+      "name": "expected_behavior_summary",
+      "type": "string",
+      "required": true,
+      "description": "Short human-readable explanation of the intended behavior pattern."
+    },
+    {
+      "name": "generator_model",
+      "type": "string",
+      "required": true,
+      "description": "LLM model id used for generation."
+    },
+    {
+      "name": "prompt_version",
+      "type": "string",
+      "required": true,
+      "description": "Prompt or persona-card version used for generation."
+    },
+    {
+      "name": "generator_version",
+      "type": "string",
+      "required": true,
+      "description": "Synthetic generator implementation version."
+    },
+    {
+      "name": "seed",
+      "type": "int64",
+      "required": true,
+      "description": "Deterministic generation seed."
+    }
+  ]
+}

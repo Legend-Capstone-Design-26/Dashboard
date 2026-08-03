@@ -1,0 +1,526 @@
+{
+  "generated_at": "2026-08-02T13:26:25.157Z",
+  "input": {
+    "output_dir": "C:\\바탕화면\\capstone\\Dashboard\\dashboard-be\\benchmark\\output\\merged-7500",
+    "events_path": "C:\\바탕화면\\capstone\\Dashboard\\dashboard-be\\benchmark\\output\\merged-7500\\events.jsonl",
+    "sessions_path": "C:\\바탕화면\\capstone\\Dashboard\\dashboard-be\\benchmark\\output\\merged-7500\\sessions.json"
+  },
+  "overall": {
+    "sessions": 7500,
+    "events": 89616,
+    "difficulty_hard_sessions": 2753,
+    "error_injected_sessions": 4811,
+    "checkout_rate": 0.629867,
+    "purchase_rate": 0.3868,
+    "transition_validity_rate": 0.998533,
+    "hard_constraint_satisfaction_rate": 0.980933,
+    "event_count_stats": {
+      "count": 7500,
+      "min": 2,
+      "p50": 12,
+      "mean": 11.949,
+      "p95": 16,
+      "max": 20
+    },
+    "unique_path_stats": {
+      "count": 7500,
+      "min": 2,
+      "p50": 6,
+      "mean": 6.625,
+      "p95": 10,
+      "max": 12
+    },
+    "revisit_rate_stats": {
+      "count": 7500,
+      "min": 0,
+      "p50": 0.4444444444444444,
+      "mean": 0.445,
+      "p95": 0.5833333333333334,
+      "max": 0.7272727272727273
+    },
+    "exact_duplicate_group_count": 10,
+    "exact_duplicate_session_count": 104,
+    "exact_duplicate_session_rate": 0.013867
+  },
+  "by_persona": [
+    {
+      "key": "cart_abandoner",
+      "sessions": 1500,
+      "constraint_satisfaction_rate": 0.992,
+      "transition_validity_rate": 1,
+      "checkout_rate": 0.992,
+      "purchase_rate": 0,
+      "error_session_rate": 0.732,
+      "event_count_stats": {
+        "count": 1500,
+        "min": 8,
+        "p50": 11,
+        "mean": 11.448,
+        "p95": 14,
+        "max": 16
+      },
+      "unique_path_stats": {
+        "count": 1500,
+        "min": 3,
+        "p50": 5,
+        "mean": 5.282,
+        "p95": 7,
+        "max": 8
+      },
+      "revisit_rate_stats": {
+        "count": 1500,
+        "min": 0.3,
+        "p50": 0.5384615384615384,
+        "mean": 0.535,
+        "p95": 0.6363636363636364,
+        "max": 0.7272727272727273
+      }
+    },
+    {
+      "key": "explorer",
+      "sessions": 1500,
+      "constraint_satisfaction_rate": 1,
+      "transition_validity_rate": 1,
+      "checkout_rate": 0.007333,
+      "purchase_rate": 0,
+      "error_session_rate": 0.467333,
+      "event_count_stats": {
+        "count": 1500,
+        "min": 9,
+        "p50": 14,
+        "mean": 14,
+        "p95": 17,
+        "max": 19
+      },
+      "unique_path_stats": {
+        "count": 1500,
+        "min": 6,
+        "p50": 8,
+        "mean": 8.62,
+        "p95": 11,
+        "max": 12
+      },
+      "revisit_rate_stats": {
+        "count": 1500,
+        "min": 0.18181818181818182,
+        "p50": 0.38461538461538464,
+        "mean": 0.382,
+        "p95": 0.47368421052631576,
+        "max": 0.5625
+      }
+    },
+    {
+      "key": "goal_oriented_buyer",
+      "sessions": 1500,
+      "constraint_satisfaction_rate": 0.998667,
+      "transition_validity_rate": 1,
+      "checkout_rate": 0.999333,
+      "purchase_rate": 0.999333,
+      "error_session_rate": 0.355333,
+      "event_count_stats": {
+        "count": 1500,
+        "min": 2,
+        "p50": 10,
+        "mean": 10.505,
+        "p95": 13,
+        "max": 15
+      },
+      "unique_path_stats": {
+        "count": 1500,
+        "min": 2,
+        "p50": 6,
+        "mean": 5.735,
+        "p95": 7,
+        "max": 8
+      },
+      "revisit_rate_stats": {
+        "count": 1500,
+        "min": 0,
+        "p50": 0.45454545454545453,
+        "mean": 0.45,
+        "p95": 0.5384615384615384,
+        "max": 0.6153846153846154
+      }
+    },
+    {
+      "key": "impulse_buyer",
+      "sessions": 1500,
+      "constraint_satisfaction_rate": 0.914,
+      "transition_validity_rate": 1,
+      "checkout_rate": 0.999333,
+      "purchase_rate": 0.934667,
+      "error_session_rate": 0.355333,
+      "event_count_stats": {
+        "count": 1500,
+        "min": 3,
+        "p50": 10,
+        "mean": 9.715,
+        "p95": 11,
+        "max": 13
+      },
+      "unique_path_stats": {
+        "count": 1500,
+        "min": 2,
+        "p50": 6,
+        "mean": 5.578,
+        "p95": 6,
+        "max": 8
+      },
+      "revisit_rate_stats": {
+        "count": 1500,
+        "min": 0.25,
+        "p50": 0.4444444444444444,
+        "mean": 0.422,
+        "p95": 0.5,
+        "max": 0.625
+      }
+    },
+    {
+      "key": "price_comparison",
+      "sessions": 1500,
+      "constraint_satisfaction_rate": 1,
+      "transition_validity_rate": 0.992667,
+      "checkout_rate": 0.151333,
+      "purchase_rate": 0,
+      "error_session_rate": 0.503333,
+      "event_count_stats": {
+        "count": 1500,
+        "min": 10,
+        "p50": 14,
+        "mean": 14.076,
+        "p95": 18,
+        "max": 20
+      },
+      "unique_path_stats": {
+        "count": 1500,
+        "min": 6,
+        "p50": 8,
+        "mean": 7.913,
+        "p95": 10,
+        "max": 11
+      },
+      "revisit_rate_stats": {
+        "count": 1500,
+        "min": 0.2857142857142857,
+        "p50": 0.42857142857142855,
+        "mean": 0.435,
+        "p95": 0.5,
+        "max": 0.631578947368421
+      }
+    }
+  ],
+  "by_source": [
+    {
+      "key": "llm-ecommerce-balanced-7500-v1-shard-2",
+      "sessions": 2500,
+      "constraint_satisfaction_rate": 0.9712,
+      "transition_validity_rate": 1,
+      "checkout_rate": 0.6084,
+      "purchase_rate": 0.3724,
+      "error_session_rate": 0.4244,
+      "event_count_stats": {
+        "count": 2500,
+        "min": 7,
+        "p50": 11,
+        "mean": 11.735,
+        "p95": 16,
+        "max": 19
+      },
+      "unique_path_stats": {
+        "count": 2500,
+        "min": 3,
+        "p50": 6,
+        "mean": 6.595,
+        "p95": 10,
+        "max": 12
+      },
+      "revisit_rate_stats": {
+        "count": 2500,
+        "min": 0.18181818181818182,
+        "p50": 0.4444444444444444,
+        "mean": 0.438,
+        "p95": 0.5833333333333334,
+        "max": 0.7272727272727273
+      }
+    },
+    {
+      "key": "llm-ecommerce-balanced-7500-v1-shard-3",
+      "sessions": 2500,
+      "constraint_satisfaction_rate": 0.9896,
+      "transition_validity_rate": 1,
+      "checkout_rate": 0.6104,
+      "purchase_rate": 0.4,
+      "error_session_rate": 0.4516,
+      "event_count_stats": {
+        "count": 2500,
+        "min": 8,
+        "p50": 12,
+        "mean": 11.699,
+        "p95": 15,
+        "max": 19
+      },
+      "unique_path_stats": {
+        "count": 2500,
+        "min": 4,
+        "p50": 6,
+        "mean": 6.518,
+        "p95": 9,
+        "max": 11
+      },
+      "revisit_rate_stats": {
+        "count": 2500,
+        "min": 0.2727272727272727,
+        "p50": 0.4444444444444444,
+        "mean": 0.442,
+        "p95": 0.5833333333333334,
+        "max": 0.6666666666666666
+      }
+    },
+    {
+      "key": "llm-ecommerce-hard-2500-v1-shard-1",
+      "sessions": 2500,
+      "constraint_satisfaction_rate": 0.982,
+      "transition_validity_rate": 0.9956,
+      "checkout_rate": 0.6708,
+      "purchase_rate": 0.388,
+      "error_session_rate": 0.572,
+      "event_count_stats": {
+        "count": 2500,
+        "min": 2,
+        "p50": 12,
+        "mean": 12.412,
+        "p95": 17,
+        "max": 20
+      },
+      "unique_path_stats": {
+        "count": 2500,
+        "min": 2,
+        "p50": 6,
+        "mean": 6.764,
+        "p95": 10,
+        "max": 12
+      },
+      "revisit_rate_stats": {
+        "count": 2500,
+        "min": 0,
+        "p50": 0.45454545454545453,
+        "mean": 0.454,
+        "p95": 0.5833333333333334,
+        "max": 0.6666666666666666
+      }
+    }
+  ],
+  "by_difficulty": [
+    {
+      "key": "easy",
+      "sessions": 3247,
+      "constraint_satisfaction_rate": 0.989529,
+      "transition_validity_rate": 1,
+      "checkout_rate": 0.607022,
+      "purchase_rate": 0.39575,
+      "error_session_rate": 0.371728,
+      "event_count_stats": {
+        "count": 3247,
+        "min": 7,
+        "p50": 11,
+        "mean": 11.658,
+        "p95": 16,
+        "max": 19
+      },
+      "unique_path_stats": {
+        "count": 3247,
+        "min": 3,
+        "p50": 6,
+        "mean": 6.55,
+        "p95": 10,
+        "max": 12
+      },
+      "revisit_rate_stats": {
+        "count": 3247,
+        "min": 0.18181818181818182,
+        "p50": 0.4444444444444444,
+        "mean": 0.438,
+        "p95": 0.5833333333333334,
+        "max": 0.7
+      }
+    },
+    {
+      "key": "hard",
+      "sessions": 2753,
+      "constraint_satisfaction_rate": 0.975663,
+      "transition_validity_rate": 0.996004,
+      "checkout_rate": 0.665819,
+      "purchase_rate": 0.381765,
+      "error_session_rate": 0.606248,
+      "event_count_stats": {
+        "count": 2753,
+        "min": 2,
+        "p50": 12,
+        "mean": 12.381,
+        "p95": 16,
+        "max": 20
+      },
+      "unique_path_stats": {
+        "count": 2753,
+        "min": 2,
+        "p50": 6,
+        "mean": 6.722,
+        "p95": 10,
+        "max": 12
+      },
+      "revisit_rate_stats": {
+        "count": 2753,
+        "min": 0,
+        "p50": 0.45454545454545453,
+        "mean": 0.456,
+        "p95": 0.5833333333333334,
+        "max": 0.7272727272727273
+      }
+    },
+    {
+      "key": "medium",
+      "sessions": 1500,
+      "constraint_satisfaction_rate": 0.972,
+      "transition_validity_rate": 1,
+      "checkout_rate": 0.613333,
+      "purchase_rate": 0.376667,
+      "error_session_rate": 0.496,
+      "event_count_stats": {
+        "count": 1500,
+        "min": 7,
+        "p50": 12,
+        "mean": 11.786,
+        "p95": 16,
+        "max": 19
+      },
+      "unique_path_stats": {
+        "count": 1500,
+        "min": 3,
+        "p50": 6,
+        "mean": 6.61,
+        "p95": 10,
+        "max": 12
+      },
+      "revisit_rate_stats": {
+        "count": 1500,
+        "min": 0.18181818181818182,
+        "p50": 0.4444444444444444,
+        "mean": 0.44,
+        "p95": 0.5833333333333334,
+        "max": 0.7272727272727273
+      }
+    }
+  ],
+  "duplicate_examples": [
+    {
+      "duplicate_count": 13,
+      "sample_session_ids": [
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_explorer_0761",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_explorer_0788",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_explorer_0815",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_explorer_0827",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_explorer_0836"
+      ],
+      "sequence": "page_view:/|search:/search|page_view:/search|page_view:/product/electronics_5101|dwell_time:/product/electronics_5101|page_view:/review/electronics_5101|page_view:/product/electronics_5140|error:/product/electronics_5140|page_view:/category/electronics|filter_change:/category/electronics|page_view:/product/electronics_5199|dwell_time:/product/electronics_5199|page_view:/review/electronics_5199|page_view:/product/electronics_5238|dwell_time:/product/electronics_5238"
+    },
+    {
+      "duplicate_count": 13,
+      "sample_session_ids": [
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_price_comparison_0020",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_price_comparison_0041",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_price_comparison_0044",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_price_comparison_0047",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_price_comparison_0050"
+      ],
+      "sequence": "page_view:/|search:/search|filter_change:/search|page_view:/category/fashion|page_view:/product/fashion_7102|page_view:/review/fashion_7102|page_view:/search|search:/search|filter_change:/search|page_view:/product/fashion_7133|dwell_time:/product/fashion_7133|page_view:/review/fashion_7133|page_view:/product/fashion_7191|dwell_time:/product/fashion_7191|page_view:/search|search:/search|page_view:/product/fashion_7210|page_view:/review/fashion_7210"
+    },
+    {
+      "duplicate_count": 11,
+      "sample_session_ids": [
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0465",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0519",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0525",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0546",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0549"
+      ],
+      "sequence": "page_view:/|page_view:/category/electronics|page_view:/product/electronics_3301|dwell_time:/product/electronics_3301|page_view:/review/electronics_3301|page_view:/product/electronics_3310|click:/product/electronics_3310|page_view:/review/electronics_3310|page_view:/product/electronics_3322|dwell_time:/product/electronics_3322|page_view:/search|search:/search|page_view:/product/electronics_3330|dwell_time:/product/electronics_3330"
+    },
+    {
+      "duplicate_count": 11,
+      "sample_session_ids": [
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_explorer_0764",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_explorer_0791",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_explorer_0800",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_explorer_0803",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_explorer_0824"
+      ],
+      "sequence": "page_view:/|page_view:/category/home|filter_change:/category/home|page_view:/product/home_2103|dwell_time:/product/home_2103|page_view:/review/home_2103|page_view:/product/home_2148|dwell_time:/product/home_2148|page_view:/category/home|page_view:/product/home_2191|dwell_time:/product/home_2191|click:/product/home_2191|page_view:/review/home_2191|page_view:/product/home_2237|dwell_time:/product/home_2237"
+    },
+    {
+      "duplicate_count": 10,
+      "sample_session_ids": [
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0459",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0474",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0483",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0489",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0492"
+      ],
+      "sequence": "page_view:/|page_view:/category/home|dwell_time:/category/home|page_view:/product/home_4101|dwell_time:/product/home_4101|page_view:/review/home_4101|page_view:/product/home_4110|click:/product/home_4110|page_view:/search|search:/search|filter_change:/search|page_view:/product/home_4122|dwell_time:/product/home_4122|page_view:/review/home_4122|page_view:/product/home_4133|dwell_time:/product/home_4133"
+    },
+    {
+      "duplicate_count": 10,
+      "sample_session_ids": [
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_price_comparison_1394",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_price_comparison_1409",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_price_comparison_1424",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_price_comparison_1442",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_price_comparison_1460"
+      ],
+      "sequence": "page_view:/|search:/search|filter_change:/search|page_view:/product/home_1702|page_view:/review/home_1702|page_view:/product/home_1715|dwell_time:/product/home_1715|error:/product/home_1715|search:/search|page_view:/product/home_1728|page_view:/review/home_1728|page_view:/search"
+    },
+    {
+      "duplicate_count": 10,
+      "sample_session_ids": [
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_cart_abandoner_0485",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_cart_abandoner_0506",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_cart_abandoner_0515",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_cart_abandoner_0524",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_cart_abandoner_0533"
+      ],
+      "sequence": "page_view:/|search:/search|filter_change:/search|page_view:/product/fashion_4401|dwell_time:/product/fashion_4401|add_to_cart:/product/fashion_4401|page_view:/cart|checkout_start:/checkout|page_view:/checkout|dwell_time:/checkout|page_view:/cart"
+    },
+    {
+      "duplicate_count": 9,
+      "sample_session_ids": [
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0453",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0477",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0498",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0507",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0534"
+      ],
+      "sequence": "page_view:/|page_view:/category/fashion|dwell_time:/category/fashion|page_view:/product/fashion_3102|dwell_time:/product/fashion_3102|page_view:/review/fashion_3102|page_view:/product/fashion_3118|click:/product/fashion_3118|error:/product/fashion_3118|page_view:/product/fashion_3124|dwell_time:/product/fashion_3124|page_view:/review/fashion_3124|page_view:/search|search:/search|page_view:/product/fashion_3131|dwell_time:/product/fashion_3131"
+    },
+    {
+      "duplicate_count": 9,
+      "sample_session_ids": [
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_cart_abandoner_0497",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_cart_abandoner_0509",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_cart_abandoner_0518",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_cart_abandoner_0527",
+        "llm-ecommerce-balanced-7500-v1-shard-2__bench_cart_abandoner_0536"
+      ],
+      "sequence": "page_view:/|click:/|page_view:/category/home|page_view:/product/home_9055|dwell_time:/product/home_9055|add_to_cart:/product/home_9055|page_view:/cart|checkout_start:/checkout|page_view:/checkout|error:/checkout|page_view:/cart|dwell_time:/cart"
+    },
+    {
+      "duplicate_count": 8,
+      "sample_session_ids": [
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0762",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0801",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0822",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0834",
+        "llm-ecommerce-balanced-7500-v1-shard-3__bench_explorer_0852"
+      ],
+      "sequence": "page_view:/|page_view:/category/fashion|filter_change:/category/fashion|page_view:/product/fashion_5102|dwell_time:/product/fashion_5102|page_view:/review/fashion_5102|page_view:/product/fashion_5108|page_view:/review/fashion_5108|search:/search|page_view:/product/fashion_5114|dwell_time:/product/fashion_5114|page_view:/product/fashion_5120|page_view:/review/fashion_5120|click:/product/fashion_5120"
+    }
+  ]
+}

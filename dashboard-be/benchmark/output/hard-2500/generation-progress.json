@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "llm-ecommerce-hard-2500-v1",
+  "completed_batches": 250,
+  "completed_sessions": 2500,
+  "completed_events": 31031,
+  "total_batches": 250,
+  "total_sessions": 2500,
+  "updated_at": "2026-08-02T12:27:10.357Z"
+}

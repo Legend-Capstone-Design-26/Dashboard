@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-08-02T08:24:38.249Z",
+  "input": {
+    "output_dir": "D:\\KwangwoonUniv\\Capstone\\Dashboard\\dashboard-be\\benchmark\\output\\shards${shardCount}-wayshard-2",
+    "events_path": "D:\\KwangwoonUniv\\Capstone\\Dashboard\\dashboard-be\\benchmark\\output\\shards${shardCount}-wayshard-2\\events.jsonl",
+    "sessions_path": "D:\\KwangwoonUniv\\Capstone\\Dashboard\\dashboard-be\\benchmark\\output\\shards${shardCount}-wayshard-2\\sessions.json"
+  },
+  "counts": {
+    "sessions": 2500,
+    "events": 29337,
+    "sessions_with_events": 2500,
+    "orphan_event_sessions": 0
+  },
+  "metrics": {
+    "parse_success_rate": 1,
+    "schema_valid_rate": 1,
+    "temporal_violation_rate": 0,
+    "transition_validity_rate": 1,
+    "hard_constraint_satisfaction_rate": 0.8416
+  }
+}

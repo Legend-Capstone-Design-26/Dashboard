@@ -1,0 +1,100 @@
+{
+  "benchmark_id": "llm-ecommerce-balanced-7500-v1",
+  "description": "Initial balanced synthetic ecommerce benchmark for Dashboard clustering experiments.",
+  "version": 1,
+  "generator": {
+    "generator_version": "v1",
+    "prompt_version": "v1",
+    "seed_policy": "deterministic_per_session",
+    "output_format": "json"
+  },
+  "outputs": {
+    "events_jsonl": "dashboard-be/benchmark/output/events.jsonl",
+    "sessions_json": "dashboard-be/benchmark/output/sessions.json",
+    "manifest_json": "dashboard-be/benchmark/output/manifest.json"
+  },
+  "site": {
+    "site_id": "legend-ecommerce",
+    "source_type": "synthetic"
+  },
+  "dataset_shape": {
+    "benchmark_type": "balanced",
+    "persona_count": 5,
+    "sessions_per_persona": 1500,
+    "total_sessions": 7500
+  },
+  "personas": [
+    {
+      "persona_id": "goal_oriented_buyer",
+      "ground_truth_label": "목표구매형",
+      "session_count": 1500,
+      "split_counts": {
+        "benchmark": 1050,
+        "eval": 300,
+        "stress": 150
+      }
+    },
+    {
+      "persona_id": "explorer",
+      "ground_truth_label": "탐색형",
+      "session_count": 1500,
+      "split_counts": {
+        "benchmark": 1050,
+        "eval": 300,
+        "stress": 150
+      }
+    },
+    {
+      "persona_id": "price_comparison",
+      "ground_truth_label": "가격비교형",
+      "session_count": 1500,
+      "split_counts": {
+        "benchmark": 1050,
+        "eval": 300,
+        "stress": 150
+      }
+    },
+    {
+      "persona_id": "impulse_buyer",
+      "ground_truth_label": "충동구매형",
+      "session_count": 1500,
+      "split_counts": {
+        "benchmark": 1050,
+        "eval": 300,
+        "stress": 150
+      }
+    },
+    {
+      "persona_id": "cart_abandoner",
+      "ground_truth_label": "장바구니 이탈형",
+      "session_count": 1500,
+      "split_counts": {
+        "benchmark": 1050,
+        "eval": 300,
+        "stress": 150
+      }
+    }
+  ],
+  "context_variables": {
+    "device": ["mobile", "desktop"],
+    "traffic_source": ["search_engine", "direct", "ad", "social", "email"],
+    "category": ["electronics", "fashion", "beauty", "home", "grocery"],
+    "promotion_exposed": [true, false],
+    "new_user": [true, false],
+    "logged_in": [true, false],
+    "error_injected": [true, false]
+  },
+  "anti_leakage_rules": [
+    "Do not bind a persona to a fixed device.",
+    "Do not bind a persona to a fixed traffic source.",
+    "Do not encode persona id or persona name inside event props.",
+    "Do not use a fixed event count template for every session in a persona."
+  ],
+  "validation_targets": {
+    "parse_success_rate_min": 0.99,
+    "schema_valid_rate_min": 0.99,
+    "transition_validity_rate_min": 0.98,
+    "temporal_violation_rate_max": 0.01,
+    "hard_constraint_satisfaction_rate_min": 0.95
+  }
+}

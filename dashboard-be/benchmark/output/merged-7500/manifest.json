@@ -1,0 +1,78 @@
+{
+  "benchmark_id": "llm-ecommerce-merged-7500-v1",
+  "description": "Merged benchmark dataset built from pre-generated balanced shards and hard-only sessions.",
+  "generated_at": "2026-08-02T13:20:49.805Z",
+  "counts": {
+    "sessions": 7500,
+    "events": 89616,
+    "source_count": 3
+  },
+  "sources": [
+    {
+      "dir_path": "C:\\바탕화면\\capstone\\Dashboard\\dashboard-be\\benchmark\\imports\\benchmark_zip\\benchmark\\output\\shards\\3-way\\shard-3",
+      "namespace": "llm-ecommerce-balanced-7500-v1-shard-3",
+      "benchmark_id": "llm-ecommerce-balanced-7500-v1",
+      "sessions": 2500,
+      "events": 29248,
+      "shard": {
+        "shard_count": 3,
+        "shard_index": 2,
+        "shard_session_target": 2500
+      },
+      "dataset_shape": {
+        "benchmark_type": "balanced",
+        "persona_count": 5,
+        "sessions_per_persona": 1500,
+        "total_sessions": 7500,
+        "requested_sessions": 2500,
+        "generated_sessions": 2500
+      }
+    },
+    {
+      "dir_path": "C:\\바탕화면\\capstone\\Dashboard\\dashboard-be\\benchmark\\imports\\shard2_zip\\shards${shardCount}-wayshard-2",
+      "namespace": "llm-ecommerce-balanced-7500-v1-shard-2",
+      "benchmark_id": "llm-ecommerce-balanced-7500-v1",
+      "sessions": 2500,
+      "events": 29337,
+      "shard": {
+        "shard_count": 3,
+        "shard_index": 1,
+        "shard_session_target": 2500
+      },
+      "dataset_shape": {
+        "benchmark_type": "balanced",
+        "persona_count": 5,
+        "sessions_per_persona": 1500,
+        "total_sessions": 7500,
+        "requested_sessions": 2500,
+        "generated_sessions": 2500
+      }
+    },
+    {
+      "dir_path": "C:\\바탕화면\\capstone\\Dashboard\\dashboard-be\\benchmark\\output\\hard-2500",
+      "namespace": "llm-ecommerce-hard-2500-v1-shard-1",
+      "benchmark_id": "llm-ecommerce-hard-2500-v1",
+      "sessions": 2500,
+      "events": 31031,
+      "shard": {
+        "shard_count": 1,
+        "shard_index": 0,
+        "shard_session_target": 2500
+      },
+      "dataset_shape": {
+        "benchmark_type": "hard_only",
+        "persona_count": 5,
+        "sessions_per_persona": 500,
+        "total_sessions": 2500,
+        "requested_sessions": 2500,
+        "generated_sessions": 2500
+      }
+    }
+  ],
+  "dataset_shape": {
+    "benchmark_type": "merged_balanced_plus_hard",
+    "total_sessions": 7500,
+    "requested_sessions": 7500,
+    "generated_sessions": 7500
+  }
+}

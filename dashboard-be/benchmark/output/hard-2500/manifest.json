@@ -1,0 +1,89 @@
+{
+  "benchmark_id": "llm-ecommerce-hard-2500-v1",
+  "description": "Hard-only synthetic ecommerce benchmark for robustness evaluation.",
+  "generated_at": "2026-08-02T12:27:10.379Z",
+  "site": {
+    "site_id": "legend-ecommerce",
+    "source_type": "synthetic"
+  },
+  "dataset_shape": {
+    "benchmark_type": "hard_only",
+    "persona_count": 5,
+    "sessions_per_persona": 500,
+    "total_sessions": 2500,
+    "requested_sessions": 2500,
+    "generated_sessions": 2500
+  },
+  "generator": {
+    "generator_version": "v1",
+    "prompt_version": "v1",
+    "seed_policy": "deterministic_per_session",
+    "output_format": "json",
+    "actual_mode": "llm_direct_generation",
+    "model": "gpt-5.4-mini",
+    "batch_size": 10
+  },
+  "outputs": {
+    "events_jsonl": "dashboard-be/benchmark/output/hard-2500/events.jsonl",
+    "sessions_json": "dashboard-be/benchmark/output/hard-2500/sessions.json",
+    "manifest_json": "dashboard-be/benchmark/output/hard-2500/manifest.json"
+  },
+  "counts": {
+    "sessions": 2500,
+    "events": 31031
+  },
+  "personas": [
+    {
+      "persona_id": "goal_oriented_buyer",
+      "ground_truth_label": "목표구매형",
+      "session_count": 500,
+      "split_counts": {
+        "hard": 500
+      }
+    },
+    {
+      "persona_id": "explorer",
+      "ground_truth_label": "탐색형",
+      "session_count": 500,
+      "split_counts": {
+        "hard": 500
+      }
+    },
+    {
+      "persona_id": "price_comparison",
+      "ground_truth_label": "가격비교형",
+      "session_count": 500,
+      "split_counts": {
+        "hard": 500
+      }
+    },
+    {
+      "persona_id": "impulse_buyer",
+      "ground_truth_label": "충동구매형",
+      "session_count": 500,
+      "split_counts": {
+        "hard": 500
+      }
+    },
+    {
+      "persona_id": "cart_abandoner",
+      "ground_truth_label": "장바구니 이탈형",
+      "session_count": 500,
+      "split_counts": {
+        "hard": 500
+      }
+    }
+  ],
+  "validation_targets": {
+    "parse_success_rate_min": 0.99,
+    "schema_valid_rate_min": 0.99,
+    "transition_validity_rate_min": 0.98,
+    "temporal_violation_rate_max": 0.01,
+    "hard_constraint_satisfaction_rate_min": 0.95
+  },
+  "shard": {
+    "shard_count": 1,
+    "shard_index": 0,
+    "shard_session_target": 2500
+  }
+}

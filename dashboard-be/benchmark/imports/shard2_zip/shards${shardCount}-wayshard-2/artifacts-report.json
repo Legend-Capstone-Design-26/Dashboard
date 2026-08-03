@@ -1,0 +1,178 @@
+{
+  "generated_at": "2026-08-02T08:04:15.463Z",
+  "output_dir": "D:\\KwangwoonUniv\\Capstone\\Dashboard\\dashboard-be\\benchmark\\output\\shards${shardCount}-wayshard-2",
+  "counts": {
+    "sessions": 2500,
+    "events": 29337
+  },
+  "rounding": {
+    "dwell_ms": {
+      "label": "dwell_ms (체류시간)",
+      "n": 4099,
+      "unique": 30,
+      "unique_ratio": 0.007318858258111734,
+      "multiple_of_1000": 0.1000243961941937,
+      "multiple_of_500": 0.2117589656013662,
+      "multiple_of_100": 1,
+      "multiple_of_10": 1,
+      "top_values": [
+        {
+          "value": 2200,
+          "count": 491,
+          "share": 0.11978531349109539
+        },
+        {
+          "value": 2400,
+          "count": 323,
+          "share": 0.07879970724566968
+        },
+        {
+          "value": 2100,
+          "count": 316,
+          "share": 0.07709197365211028
+        },
+        {
+          "value": 1800,
+          "count": 311,
+          "share": 0.07587216394242498
+        },
+        {
+          "value": 1500,
+          "count": 287,
+          "share": 0.0700170773359356
+        },
+        {
+          "value": 1600,
+          "count": 243,
+          "share": 0.05928275189070505
+        },
+        {
+          "value": 1700,
+          "count": 233,
+          "share": 0.05684313247133447
+        },
+        {
+          "value": 2000,
+          "count": 223,
+          "share": 0.05440351305196389
+        }
+      ]
+    },
+    "event_gap_ms": {
+      "label": "이벤트 간격 (ms)",
+      "n": 26837,
+      "unique": 42,
+      "unique_ratio": 0.0015650035398889592,
+      "multiple_of_1000": 0.09982486865148861,
+      "multiple_of_500": 0.255579982859485,
+      "multiple_of_100": 0.9730968439095279,
+      "multiple_of_10": 1,
+      "top_values": [
+        {
+          "value": 900,
+          "count": 3339,
+          "share": 0.12441778142117227
+        },
+        {
+          "value": 1000,
+          "count": 2349,
+          "share": 0.08752841226664679
+        },
+        {
+          "value": 700,
+          "count": 2343,
+          "share": 0.08730484033237694
+        },
+        {
+          "value": 1500,
+          "count": 2174,
+          "share": 0.08100756418377612
+        },
+        {
+          "value": 1200,
+          "count": 1911,
+          "share": 0.07120766106494765
+        },
+        {
+          "value": 800,
+          "count": 1890,
+          "share": 0.07042515929500316
+        },
+        {
+          "value": 500,
+          "count": 1842,
+          "share": 0.06863658382084435
+        },
+        {
+          "value": 1400,
+          "count": 1512,
+          "share": 0.056340127436002536
+        }
+      ]
+    }
+  },
+  "shapes": [
+    {
+      "label": "세션당 이벤트 수",
+      "mean": 11.7348,
+      "sd": 2.338817855242251,
+      "skew": 0.6593224671863548,
+      "kurtosis": 0.02685965908159238,
+      "min": 7,
+      "p50": 11,
+      "p99": 18,
+      "max": 19
+    },
+    {
+      "label": "dwell_ms",
+      "mean": 1985.069529153452,
+      "sd": 508.5044624051708,
+      "skew": -0.08797134835485843,
+      "kurtosis": -0.4810293367195584,
+      "min": 500,
+      "p50": 2000,
+      "p99": 3000,
+      "max": 3400
+    },
+    {
+      "label": "이벤트 간격(ms)",
+      "mean": 1148.5560979245072,
+      "sd": 520.2631588659065,
+      "skew": 1.0237384990556953,
+      "kurtosis": 1.0930063943106445,
+      "min": 200,
+      "p50": 1000,
+      "p99": 2800,
+      "max": 3400
+    }
+  ],
+  "event_mix": {
+    "page_view": 14407,
+    "dwell_time": 4099,
+    "search": 1794,
+    "add_to_cart": 1639,
+    "checkout_start": 1521,
+    "filter_change": 1289,
+    "click": 1150,
+    "payment_attempt": 1132,
+    "error": 1061,
+    "checkout_complete": 931,
+    "remove_from_cart": 314
+  },
+  "click_per_page_view": 0.07982230859998611,
+  "page_type_mix": {
+    "home": 2736,
+    "search": 3767,
+    "product": 10939,
+    "cart": 2540,
+    "checkout": 3898,
+    "complete": 931,
+    "category": 1911,
+    "review": 2615
+  },
+  "flags": [
+    "dwell_ms 고유값 비율 0.7% — 값 재사용 심함",
+    "dwell_ms 왜도 -0.09 — 꼬리 없이 균등에 가까움",
+    "click/page_view = 0.08 — 실제 로그와 반대 비율"
+  ]
+}
