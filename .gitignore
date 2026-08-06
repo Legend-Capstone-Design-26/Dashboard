@@ -1,4 +1,6 @@
 node_modules/
+dashboard-be/.venv/
+dashboard-be/experiment/output/
 
 # local env
 .env
