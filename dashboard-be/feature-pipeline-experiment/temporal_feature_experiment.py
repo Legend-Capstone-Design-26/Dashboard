@@ -46,6 +46,15 @@ CORE_TEMPORAL_FEATURES = [
     "cart_to_purchase_time",
 ]
 
+TARGETED_SEQUENCE_FEATURES = [
+    "product_switch_count",
+    "pre_cart_unique_products",
+    "pre_purchase_page_count",
+    "pre_purchase_review_count",
+    "product_to_cart_latency",
+    "decision_speed",
+]
+
 BINARY_FEATURES = {"checkout_entered", "purchase_completed"}
 BASE_COUNT_FEATURES = {
     "session_duration_ms",
@@ -62,7 +71,7 @@ BASE_COUNT_FEATURES = {
     "payment_attempt_count",
     "error_count",
 }
-COUNT_OR_TIME_FEATURES = BASE_COUNT_FEATURES | set(TEMPORAL_FEATURES)
+COUNT_OR_TIME_FEATURES = BASE_COUNT_FEATURES | set(TEMPORAL_FEATURES) | set(TARGETED_SEQUENCE_FEATURES)
 K_GRID = list(range(2, 11))
 
 
@@ -113,6 +122,13 @@ def count_before(events: list[dict[str, Any]], cutoff: int | None, predicate) ->
     return sum(1 for event in events if event_ts(event) < cutoff and predicate(event))
 
 
+def last_ts_before(events: list[dict[str, Any]], cutoff: int | None, predicate) -> int | None:
+    if cutoff is None:
+        return None
+    candidates = [event_ts(event) for event in events if event_ts(event) < cutoff and predicate(event)]
+    return max(candidates) if candidates else None
+
+
 def delta_or_zero(start: int, end: int | None) -> float:
     if end is None:
         return 0.0
@@ -121,7 +137,7 @@ def delta_or_zero(start: int, end: int | None) -> float:
 
 def compute_temporal_features(events: list[dict[str, Any]]) -> dict[str, float]:
     if not events:
-        return {feature: 0.0 for feature in TEMPORAL_FEATURES}
+        return {feature: 0.0 for feature in TEMPORAL_FEATURES + TARGETED_SEQUENCE_FEATURES}
 
     start = event_ts(events[0])
     first_product = first_ts(events, lambda event: event_name(event) == "page_view" and event_path(event).startswith("/product/"))
@@ -137,6 +153,31 @@ def compute_temporal_features(events: list[dict[str, Any]]) -> dict[str, float]:
     review_dwell = [event for event in dwell_events if event_path(event).startswith("/review/")]
     total_dwell = sum(dwell_ms(event) for event in dwell_events)
 
+    product_paths = [event_path(event) for event in product_views]
+    product_switch_count = sum(
+        1 for previous, current in zip(product_paths, product_paths[1:]) if previous and current and previous != current
+    )
+    pre_cart_product_paths = {
+        event_path(event)
+        for event in events
+        if first_cart is not None
+        and event_ts(event) < first_cart
+        and event_name(event) == "page_view"
+        and event_path(event).startswith("/product/")
+    }
+    pre_purchase_page_count = count_before(events, first_purchase, lambda event: event_name(event) == "page_view")
+    last_product_before_cart = last_ts_before(
+        events,
+        first_cart,
+        lambda event: event_name(event) == "page_view" and event_path(event).startswith("/product/"),
+    )
+    product_to_cart_latency = (
+        float(max(0, first_cart - last_product_before_cart))
+        if first_cart is not None and last_product_before_cart is not None
+        else 0.0
+    )
+    time_to_purchase = delta_or_zero(start, first_purchase)
+
     return {
         "avg_time_per_page": float(total_dwell / len(page_views)) if page_views else 0.0,
         "avg_time_per_product": float(sum(dwell_ms(event) for event in product_dwell) / len(product_views)) if product_views else 0.0,
@@ -144,12 +185,18 @@ def compute_temporal_features(events: list[dict[str, Any]]) -> dict[str, float]:
         "time_to_first_product": delta_or_zero(start, first_product),
         "time_to_first_cart": delta_or_zero(start, first_cart),
         "time_to_checkout": delta_or_zero(start, first_checkout),
-        "time_to_purchase": delta_or_zero(start, first_purchase),
+        "time_to_purchase": time_to_purchase,
         "cart_to_purchase_time": delta_or_zero(first_cart, first_purchase) if first_cart is not None else 0.0,
         "product_views_before_cart": float(count_before(events, first_cart, lambda event: event_name(event) == "page_view" and event_path(event).startswith("/product/"))),
         "searches_before_cart": float(count_before(events, first_cart, lambda event: event_name(event) == "search")),
         "reviews_before_purchase": float(count_before(events, first_purchase, lambda event: event_name(event) == "page_view" and event_path(event).startswith("/review/"))),
         "filters_before_purchase": float(count_before(events, first_purchase, lambda event: event_name(event) == "filter_change")),
+        "product_switch_count": float(product_switch_count),
+        "pre_cart_unique_products": float(len(pre_cart_product_paths)),
+        "pre_purchase_page_count": float(pre_purchase_page_count),
+        "pre_purchase_review_count": float(count_before(events, first_purchase, lambda event: event_name(event) == "page_view" and event_path(event).startswith("/review/"))),
+        "product_to_cart_latency": product_to_cart_latency,
+        "decision_speed": float(time_to_purchase / max(pre_purchase_page_count, 1)) if first_purchase is not None else 0.0,
     }
 
 
@@ -242,8 +289,12 @@ def main():
     feature_sets = {
         "F0_standard_l2": FEATURE_SUBSETS["F0"],
         "F0T_core_standard_l2": FEATURE_SUBSETS["F0"] + CORE_TEMPORAL_FEATURES,
+        "F0S_targeted_standard_l2": FEATURE_SUBSETS["F0"] + TARGETED_SEQUENCE_FEATURES,
+        "F0TS_core_targeted_standard_l2": FEATURE_SUBSETS["F0"] + CORE_TEMPORAL_FEATURES + TARGETED_SEQUENCE_FEATURES,
         "F0T_standard_l2": FEATURE_SUBSETS["F0"] + TEMPORAL_FEATURES,
         "F13T_core_standard_l2": [column for column in FEATURE_SUBSETS["F0"] if column not in {"cart_add_count", "cart_remove_count", "checkout_entered", "payment_attempt_count", "purchase_completed"}] + CORE_TEMPORAL_FEATURES,
+        "F13S_targeted_standard_l2": [column for column in FEATURE_SUBSETS["F0"] if column not in {"cart_add_count", "cart_remove_count", "checkout_entered", "payment_attempt_count", "purchase_completed"}] + TARGETED_SEQUENCE_FEATURES,
+        "F13TS_core_targeted_standard_l2": [column for column in FEATURE_SUBSETS["F0"] if column not in {"cart_add_count", "cart_remove_count", "checkout_entered", "payment_attempt_count", "purchase_completed"}] + CORE_TEMPORAL_FEATURES + TARGETED_SEQUENCE_FEATURES,
         "F13T_standard_l2": [column for column in FEATURE_SUBSETS["F0"] if column not in {"cart_add_count", "cart_remove_count", "checkout_entered", "payment_attempt_count", "purchase_completed"}] + TEMPORAL_FEATURES,
     }
 

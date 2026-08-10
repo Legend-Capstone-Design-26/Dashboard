@@ -48,6 +48,7 @@ RESULT_COLUMNS = [
     "ami",
     "macro_f1",
     "hungarian_accuracy",
+    "majority_accuracy",
     "silhouette",
     "davies_bouldin",
     "calinski_harabasz",
@@ -127,6 +128,18 @@ def accuracy_hungarian(y_true, y_pred):
     return accuracy_score(y_true[valid], mapped[valid])
 
 
+def majority_vote_accuracy(y_true, y_pred):
+    valid = y_pred != -1
+    if not valid.any():
+        return 0.0
+    mapping = {}
+    for predicted in np.unique(y_pred[valid]):
+        labels, counts = np.unique(y_true[(y_pred == predicted) & valid], return_counts=True)
+        mapping[predicted] = labels[int(np.argmax(counts))]
+    mapped = np.array([mapping.get(predicted, "__noise__") for predicted in y_pred])
+    return accuracy_score(y_true[valid], mapped[valid])
+
+
 def evaluate(y_true, y_pred, space):
     noise_mask = y_pred == -1
     n_clusters = len(set(y_pred[~noise_mask]))
@@ -139,6 +152,7 @@ def evaluate(y_true, y_pred, space):
         "ami": adjusted_mutual_info_score(y_true, y_pred),
         "macro_f1": macro_f1_hungarian(y_true, y_pred),
         "hungarian_accuracy": accuracy_hungarian(y_true, y_pred),
+        "majority_accuracy": majority_vote_accuracy(y_true, y_pred),
     }
 
     clean_space, clean_pred = space[~noise_mask], y_pred[~noise_mask]

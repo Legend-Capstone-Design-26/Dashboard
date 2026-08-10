@@ -971,6 +971,98 @@ Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/temporal-feature-re
 Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/temporal-contingency/
 ```
 
+### 17.5 추가 실험: 합쳐지는 pair를 겨냥한 sequence/latency feature
+
+`goal_oriented_buyer`와 `impulse_buyer`, `explorer`와 `price_comparison`을 더 직접적으로 분리하기 위해 targeted sequence/latency feature 6개를 추가했다.
+
+추가한 feature는 다음과 같다.
+
+```text
+product_switch_count
+pre_cart_unique_products
+pre_purchase_page_count
+pre_purchase_review_count
+product_to_cart_latency
+decision_speed
+```
+
+실험 조건은 이전 temporal 실험과 동일하다.
+
+```text
+Preprocessing: standard_l2
+Clustering: K-Means(k=5) and Natural K
+Seeds: 7, 42, 2026
+Label 사용: test 평가에만 사용
+```
+
+Forced K=5 결과는 다음과 같다.
+
+| Feature Set | ARI | NMI | Macro-F1 | Hungarian Acc |
+|---|---:|---:|---:|---:|
+| F13 + core temporal | 0.634 | 0.730 | 0.688 | 0.725 |
+| F0 + core temporal | 0.623 | 0.726 | 0.648 | 0.686 |
+| F13 + core temporal + targeted | 0.561 | 0.683 | 0.568 | 0.625 |
+| F0 + core temporal + targeted | 0.537 | 0.675 | 0.531 | 0.596 |
+| F0 + targeted only | 0.536 | 0.674 | 0.530 | 0.596 |
+| F13 + targeted only | 0.463 | 0.588 | 0.579 | 0.600 |
+
+결과적으로 targeted feature 6개는 기대와 달리 성능을 개선하지 못했다.
+
+가장 좋은 기존 조합인 `F13 + core temporal`과 비교하면 다음과 같다.
+
+```text
+F13 + core temporal:
+ARI = 0.634
+Macro-F1 = 0.688
+Hungarian Acc = 0.725
+
+F13 + core temporal + targeted:
+ARI = 0.561
+Macro-F1 = 0.568
+Hungarian Acc = 0.625
+```
+
+즉 targeted feature를 추가하면 오히려 cluster structure가 약해졌다.
+
+Natural K에서는 targeted feature가 K=3 구조를 유지했지만, core temporal보다 더 좋아지지는 않았다.
+
+| Feature Set | Natural K | ARI | NMI | Macro-F1 | Hungarian Acc |
+|---|---:|---:|---:|---:|---:|
+| F0 + core temporal | 3 | 0.594 | 0.737 | 0.459 | 0.595 |
+| F0 + targeted only | 3 | 0.588 | 0.723 | 0.456 | 0.591 |
+| F13 + core temporal | 3 | 0.584 | 0.722 | 0.456 | 0.590 |
+| F13 + targeted only | 3 | 0.582 | 0.720 | 0.455 | 0.588 |
+
+Confusion matrix를 보면 targeted feature를 추가해도 구매형 pair는 계속 섞인다.
+
+예를 들어 `F13 + core temporal + targeted`, seed 2026에서는 다음과 같다.
+
+| Persona | Cluster 0 | Cluster 1 | Cluster 2 | Cluster 3 | Cluster 4 |
+|---|---:|---:|---:|---:|---:|
+| cart_abandoner | 0 | 0 | 221 | 4 | 0 |
+| explorer | 168 | 0 | 0 | 23 | 34 |
+| goal_oriented_buyer | 0 | 220 | 5 | 0 | 0 |
+| impulse_buyer | 0 | 210 | 16 | 0 | 0 |
+| price_comparison | 9 | 0 | 0 | 51 | 164 |
+
+여기서 `goal_oriented_buyer`와 `impulse_buyer`는 여전히 cluster 1에 강하게 함께 들어간다.
+
+이 결과의 해석은 다음과 같다.
+
+> 현재 추가한 targeted sequence/latency feature는 구매형 pair를 분리할 만큼 충분히 다른 신호를 제공하지 못했고, 일부 feature는 기존 core temporal 신호를 희석시키는 노이즈로 작동했다.
+
+따라서 현재까지의 최적 후보는 여전히 다음이다.
+
+```text
+F13 + core temporal + standard_l2 + K-Means(k=5)
+```
+
+targeted sequence feature 결과 파일은 다음과 같다.
+
+```text
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/targeted-sequence-feature-results.csv
+```
+
 ---
 
 ## 18. 생성된 주요 결과 파일
