@@ -14,7 +14,14 @@
     "simulate": "node scripts/simulate.js",
     "load:k6": "k6 run load/persona-load.js",
     "benchmark:generate": "node scripts/generate-synthetic-benchmark.js",
-    "benchmark:validate": "node scripts/validate-synthetic-benchmark.js"
+    "benchmark:validate": "node scripts/validate-synthetic-benchmark.js",
+    "benchmark:prepare-f0f2f3": "python benchmark/experiments/prepare_runner_inputs.py --input-dir benchmark/output/merged-7500/feature-study --output-dir benchmark/output/merged-7500/runner-inputs/f0-f2-f3",
+    "benchmark:run-f0f2f3": "python benchmark/experiments/run_feature_pipeline_experiments.py --config benchmark/experiments/f0_f2_f3_experiment_config.json",
+    "benchmark:run-f0f2f3-a3": "python benchmark/experiments/run_feature_pipeline_experiments.py --config benchmark/experiments/f0_f2_f3_a3_experiment_config.json",
+    "benchmark:prepare-f4f6f7": "python benchmark/experiments/prepare_runner_inputs.py --input-dir benchmark/output/merged-7500/feature-study --output-dir benchmark/output/merged-7500/runner-inputs/f4-f6-f7 --subsets F4,F6,F7",
+    "benchmark:run-f4f6f7": "python benchmark/experiments/run_feature_pipeline_experiments.py --config benchmark/experiments/f4_f6_f7_experiment_config.json",
+    "benchmark:prepare-f11f13f15": "python benchmark/experiments/prepare_runner_inputs.py --input-dir benchmark/output/merged-7500/feature-study --output-dir benchmark/output/merged-7500/runner-inputs/f11-f13-f15 --subsets F11,F13,F15",
+    "benchmark:run-f11f13f15": "python benchmark/experiments/run_feature_pipeline_experiments.py --config benchmark/experiments/f11_f13_f15_experiment_config.json"
   },
   "dependencies": {
     "@enejwl/ux-sdk": "file:../vendor/enejwl-ux-sdk-0.1.1.tgz",

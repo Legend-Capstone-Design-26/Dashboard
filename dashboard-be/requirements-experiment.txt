@@ -1,0 +1,7 @@
+numpy==1.26.4
+scipy==1.13.1
+scikit-learn==1.5.2
+umap-learn==0.5.7
+hdbscan==0.8.40
+torch==2.5.1
+pytest==8.3.4

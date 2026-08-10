@@ -1,0 +1,3 @@
+feature_subset,model,seed,n_features,accuracy,macro_f1
+F0,logistic_regression,2026,19,0.9013333333333333,0.9004146872306966
+F0,random_forest,2026,19,0.8826666666666667,0.882133166000034

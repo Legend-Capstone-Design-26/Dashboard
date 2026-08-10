@@ -1,0 +1,100 @@
+{
+  "benchmark_id": "llm-ecommerce-merged-7500-v1",
+  "feature_subset": "F15",
+  "feature_order": [
+    "session_duration_ms",
+    "event_count",
+    "page_view_count",
+    "click_count",
+    "search_count",
+    "filter_count",
+    "product_detail_count",
+    "review_view_count",
+    "cart_add_count",
+    "cart_remove_count",
+    "checkout_entered",
+    "payment_attempt_count",
+    "purchase_completed",
+    "error_count"
+  ],
+  "label_order": [
+    "cart_abandoner",
+    "explorer",
+    "goal_oriented_buyer",
+    "impulse_buyer",
+    "price_comparison"
+  ],
+  "split_counts": {
+    "train": 5243,
+    "val": 1118,
+    "test": 1139
+  },
+  "preprocessing": {
+    "session_duration_ms": {
+      "type": "log1p+standard",
+      "mean": 9.353643417358398,
+      "scale": 0.41878029704093933
+    },
+    "event_count": {
+      "type": "log1p+standard",
+      "mean": 2.5454235076904297,
+      "scale": 0.1792484074831009
+    },
+    "page_view_count": {
+      "type": "log1p+standard",
+      "mean": 1.8597631454467773,
+      "scale": 0.3299039900302887
+    },
+    "click_count": {
+      "type": "log1p+standard",
+      "mean": 0.31502676010131836,
+      "scale": 0.3679841160774231
+    },
+    "search_count": {
+      "type": "log1p+standard",
+      "mean": 0.44513610005378723,
+      "scale": 0.4645453989505768
+    },
+    "filter_count": {
+      "type": "log1p+standard",
+      "mean": 0.3324846923351288,
+      "scale": 0.4317338168621063
+    },
+    "product_detail_count": {
+      "type": "log1p+standard",
+      "mean": 1.6462994813919067,
+      "scale": 0.3053544759750366
+    },
+    "review_view_count": {
+      "type": "log1p+standard",
+      "mean": 0.5167505741119385,
+      "scale": 0.6080018281936646
+    },
+    "cart_add_count": {
+      "type": "log1p+standard",
+      "mean": 0.4761665165424347,
+      "scale": 0.347226083278656
+    },
+    "cart_remove_count": {
+      "type": "log1p+standard",
+      "mean": 0.09122097492218018,
+      "scale": 0.23432518541812897
+    },
+    "checkout_entered": {
+      "type": "binary_passthrough"
+    },
+    "payment_attempt_count": {
+      "type": "log1p+standard",
+      "mean": 0.3250860273838043,
+      "scale": 0.3558346629142761
+    },
+    "purchase_completed": {
+      "type": "binary_passthrough"
+    },
+    "error_count": {
+      "type": "log1p+standard",
+      "mean": 0.32762473821640015,
+      "scale": 0.3463006019592285
+    }
+  }
+}

@@ -1,0 +1,2 @@
+feature_subset,pipeline,seed,n_features,distinct_train_vectors,runtime_sec,n_clusters,noise_ratio,ari,nmi,ami,macro_f1,silhouette,davies_bouldin,calinski_harabasz,selected_k,val_silhouette,selected_n_neighbors,selected_min_cluster_size,selected_min_samples,umap_fallback_ratio,selected_latent_dim
+F0,A1,42,19,3247,2.22,3,0.0,0.5230403484373427,0.6655888312358036,0.6646847233273985,0.4356840555464351,0.4399245585384101,1.1299596914516634,798.6817020051456,3,0.43828886274666495,,,,0.0,

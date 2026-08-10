@@ -1,0 +1,6 @@
+,cart_abandoner,explorer,goal_oriented_buyer,impulse_buyer,price_comparison
+cart_abandoner,225,0,0,0,0
+explorer,1,224,0,0,0
+goal_oriented_buyer,0,0,203,22,0
+impulse_buyer,15,0,189,22,0
+price_comparison,30,186,0,0,8

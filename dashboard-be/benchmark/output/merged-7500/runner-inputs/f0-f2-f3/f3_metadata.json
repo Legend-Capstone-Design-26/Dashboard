@@ -1,0 +1,44 @@
+{
+  "benchmark_id": "llm-ecommerce-merged-7500-v1",
+  "feature_subset": "F3",
+  "feature_order": [
+    "search_count",
+    "filter_count",
+    "product_detail_count",
+    "review_view_count"
+  ],
+  "label_order": [
+    "cart_abandoner",
+    "explorer",
+    "goal_oriented_buyer",
+    "impulse_buyer",
+    "price_comparison"
+  ],
+  "split_counts": {
+    "train": 5243,
+    "val": 1118,
+    "test": 1139
+  },
+  "preprocessing": {
+    "search_count": {
+      "type": "log1p+standard",
+      "mean": 0.44513610005378723,
+      "scale": 0.4645453989505768
+    },
+    "filter_count": {
+      "type": "log1p+standard",
+      "mean": 0.3324846923351288,
+      "scale": 0.4317338168621063
+    },
+    "product_detail_count": {
+      "type": "log1p+standard",
+      "mean": 1.6462994813919067,
+      "scale": 0.3053544759750366
+    },
+    "review_view_count": {
+      "type": "log1p+standard",
+      "mean": 0.5167505741119385,
+      "scale": 0.6080018281936646
+    }
+  }
+}

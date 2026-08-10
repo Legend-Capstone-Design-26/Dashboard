@@ -1,0 +1,31 @@
+{
+  "input_dir": "benchmark/output/merged-7500/runner-inputs/f0-f2-f3",
+  "output_dir": "benchmark/output/merged-7500/experiment-results/f0-f2-f3-a3",
+  "subsets": ["F0", "F2", "F3"],
+  "pipelines": ["A3"],
+  "seeds": [1, 2, 3],
+  "kmeans": {
+    "n_clusters": 5,
+    "n_init": 20,
+    "max_iter": 300
+  },
+  "umap": {
+    "n_components": 3,
+    "n_neighbors": 20,
+    "min_dist": 0.0,
+    "metric": "euclidean"
+  },
+  "hdbscan": {
+    "min_cluster_size": 30,
+    "min_samples": 10,
+    "prediction_data": true
+  },
+  "vae": {
+    "latent_dim": 4,
+    "hidden_dim": 32,
+    "epochs": 50,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "beta": 1.0
+  }
+}

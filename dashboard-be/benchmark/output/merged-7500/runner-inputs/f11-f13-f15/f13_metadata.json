@@ -1,0 +1,104 @@
+{
+  "benchmark_id": "llm-ecommerce-merged-7500-v1",
+  "feature_subset": "F13",
+  "feature_order": [
+    "session_duration_ms",
+    "event_count",
+    "page_view_count",
+    "click_count",
+    "depth",
+    "unique_page_ratio",
+    "revisit_rate",
+    "backtrack_count",
+    "loop_rate",
+    "search_count",
+    "filter_count",
+    "product_detail_count",
+    "review_view_count",
+    "error_count"
+  ],
+  "label_order": [
+    "cart_abandoner",
+    "explorer",
+    "goal_oriented_buyer",
+    "impulse_buyer",
+    "price_comparison"
+  ],
+  "split_counts": {
+    "train": 5243,
+    "val": 1118,
+    "test": 1139
+  },
+  "preprocessing": {
+    "session_duration_ms": {
+      "type": "log1p+standard",
+      "mean": 9.353643417358398,
+      "scale": 0.41878029704093933
+    },
+    "event_count": {
+      "type": "log1p+standard",
+      "mean": 2.5454235076904297,
+      "scale": 0.1792484074831009
+    },
+    "page_view_count": {
+      "type": "log1p+standard",
+      "mean": 1.8597631454467773,
+      "scale": 0.3299039900302887
+    },
+    "click_count": {
+      "type": "log1p+standard",
+      "mean": 0.31502676010131836,
+      "scale": 0.3679841160774231
+    },
+    "depth": {
+      "type": "standard_fallback",
+      "mean": 6.6614532470703125,
+      "scale": 1.644790768623352
+    },
+    "unique_page_ratio": {
+      "type": "standard",
+      "mean": 0.5575414896011353,
+      "scale": 0.07995792478322983
+    },
+    "revisit_rate": {
+      "type": "standard",
+      "mean": 0.44245854020118713,
+      "scale": 0.07995791733264923
+    },
+    "backtrack_count": {
+      "type": "log1p+standard",
+      "mean": 0.089854396879673,
+      "scale": 0.24386723339557648
+    },
+    "loop_rate": {
+      "type": "standard",
+      "mean": 0.012363609857857227,
+      "scale": 0.03507597744464874
+    },
+    "search_count": {
+      "type": "log1p+standard",
+      "mean": 0.44513610005378723,
+      "scale": 0.4645453989505768
+    },
+    "filter_count": {
+      "type": "log1p+standard",
+      "mean": 0.3324846923351288,
+      "scale": 0.4317338168621063
+    },
+    "product_detail_count": {
+      "type": "log1p+standard",
+      "mean": 1.6462994813919067,
+      "scale": 0.3053544759750366
+    },
+    "review_view_count": {
+      "type": "log1p+standard",
+      "mean": 0.5167505741119385,
+      "scale": 0.6080018281936646
+    },
+    "error_count": {
+      "type": "log1p+standard",
+      "mean": 0.32762473821640015,
+      "scale": 0.3463006019592285
+    }
+  }
+}

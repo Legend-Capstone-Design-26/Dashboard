@@ -1,0 +1,11 @@
+                     precision    recall  f1-score   support
+
+     cart_abandoner       0.93      1.00      0.96       225
+           explorer       0.99      0.98      0.98       225
+goal_oriented_buyer       0.76      0.43      0.55       225
+      impulse_buyer       0.59      0.80      0.68       226
+   price_comparison       0.98      0.98      0.98       224
+
+           accuracy                           0.84      1125
+          macro avg       0.85      0.84      0.83      1125
+       weighted avg       0.85      0.84      0.83      1125
