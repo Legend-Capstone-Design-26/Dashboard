@@ -28,22 +28,22 @@ def build_strata(frame, columns):
     return frame[columns].astype(str).agg("|".join, axis=1)
 
 
-def make_candidate_split(frame, columns):
+def make_candidate_split(frame, columns, split_seed=SPLIT_SEED):
     strata = build_strata(frame, columns)
     train_idx, holdout_idx = train_test_split(
-        frame.index, test_size=0.30, random_state=SPLIT_SEED, stratify=strata
+        frame.index, test_size=0.30, random_state=split_seed, stratify=strata
     )
     val_idx, test_idx = train_test_split(
-        holdout_idx, test_size=0.50, random_state=SPLIT_SEED, stratify=strata.loc[holdout_idx]
+        holdout_idx, test_size=0.50, random_state=split_seed, stratify=strata.loc[holdout_idx]
     )
     return train_idx, val_idx, test_idx
 
 
-def make_stratified_split(frame):
+def make_stratified_split(frame, split_seed=SPLIT_SEED):
     failures = []
     for columns in STRATIFICATION_CANDIDATES:
         try:
-            train_idx, val_idx, test_idx = make_candidate_split(frame, columns)
+            train_idx, val_idx, test_idx = make_candidate_split(frame, columns, split_seed)
         except ValueError as exc:
             failures.append(f"{'+'.join(columns)}: {exc}")
             continue
@@ -63,15 +63,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--features", default="artifacts/features.csv")
     parser.add_argument("--out", default="artifacts/split.json")
+    parser.add_argument("--seed", type=int, default=SPLIT_SEED)
     args = parser.parse_args()
 
     here = os.path.dirname(__file__)
     frame = pd.read_csv(os.path.abspath(os.path.join(here, args.features)))
 
-    stratified_by, train_idx, val_idx, test_idx = make_stratified_split(frame)
+    stratified_by, train_idx, val_idx, test_idx = make_stratified_split(frame, args.seed)
 
     split = {
-        "split_seed": SPLIT_SEED,
+        "split_seed": args.seed,
         "stratified_by": stratified_by,
         "train": sorted(frame.loc[train_idx, "session_id"].tolist()),
         "val": sorted(frame.loc[val_idx, "session_id"].tolist()),

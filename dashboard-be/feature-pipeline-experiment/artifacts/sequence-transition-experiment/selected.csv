@@ -1,0 +1,2 @@
+variant,n_features,val_stability_ari,val_silhouette,test_ari,test_nmi,test_ami,test_macro_f1,test_hungarian_accuracy,test_majority_accuracy
+F13_core_temporal_transition_top20,40,1.0,0.2542466099919657,0.6968353814716274,0.7523293179996561,0.7512074803084617,0.8091493510547233,0.8168888888888889,0.8168888888888889

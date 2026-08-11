@@ -1051,7 +1051,7 @@ Confusion matrix를 보면 targeted feature를 추가해도 구매형 pair는 �
 
 > 현재 추가한 targeted sequence/latency feature는 구매형 pair를 분리할 만큼 충분히 다른 신호를 제공하지 못했고, 일부 feature는 기존 core temporal 신호를 희석시키는 노이즈로 작동했다.
 
-따라서 현재까지의 최적 후보는 여전히 다음이다.
+이 시점까지의 최적 후보는 다음이었다.
 
 ```text
 F13 + core temporal + standard_l2 + K-Means(k=5)
@@ -1065,7 +1065,211 @@ Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/targeted-sequence-f
 
 ---
 
-## 18. 생성된 주요 결과 파일
+## 18. 추가 실험: label-free K 선택 기준 확장
+
+Silhouette 하나만으로 Natural K를 고르는 것이 너무 제한적일 수 있으므로, `F13 + core temporal`과 `F0 + core temporal`에 대해 K 선택 기준을 확장했다.
+
+비교한 label-free 기준은 다음과 같다.
+
+```text
+KMeans K=2..10:
+- validation Silhouette 최대
+- validation Calinski-Harabasz 최대
+- validation Davies-Bouldin 최소
+- seed stability ARI 최대
+
+GMM K=2..10:
+- BIC 최소
+- AIC 최소
+- covariance_type = diag, full
+```
+
+정답 persona label은 K 선택에는 사용하지 않았고, 선택된 K의 test 평가에만 사용했다.
+
+### 18.1 선택된 K
+
+| 기준 | F13 + core temporal | F0 + core temporal |
+|---|---:|---:|
+| KMeans Silhouette | 3 | 3 |
+| KMeans Calinski-Harabasz | 2 | 2 |
+| KMeans Davies-Bouldin | 2 | 2 |
+| KMeans seed stability | 2 | 2 |
+| GMM BIC/AIC diag | 9 | 10 |
+| GMM BIC/AIC full | 10 | 10 |
+
+결과적으로 KMeans 내부지표는 여전히 `K=2` 또는 `K=3`을 선택했고, GMM BIC/AIC는 반대로 `K=9` 또는 `K=10`으로 과분할했다.
+
+즉 label-free 기준을 확장해도 `K=5`가 자연스럽게 선택되지는 않았다.
+
+### 18.2 KMeans K-grid에서의 외부 평가
+
+`F13 + core temporal`의 KMeans K-grid 결과는 다음과 같다.
+
+| K | Majority Acc | Macro-F1 | ARI | NMI |
+|---:|---:|---:|---:|---:|
+| 2 | 0.400 | 0.233 | 0.365 | 0.559 |
+| 3 | 0.590 | 0.456 | 0.584 | 0.722 |
+| 4 | 0.747 | 0.680 | 0.671 | 0.761 |
+| 5 | 0.748 | 0.688 | 0.634 | 0.730 |
+| 6 | 0.742 | 0.726 | 0.573 | 0.656 |
+| 7 | 0.753 | 0.716 | 0.559 | 0.653 |
+| 8 | 0.722 | 0.665 | 0.488 | 0.612 |
+| 9 | 0.751 | 0.663 | 0.495 | 0.610 |
+| 10 | 0.754 | 0.635 | 0.452 | 0.592 |
+
+여기서 majority accuracy는 K가 커질수록 유리해질 수 있다. 여러 cluster가 같은 persona로 중복 매핑될 수 있기 때문이다.
+
+따라서 K=7~10에서 majority accuracy가 조금 높다고 해서 persona 복원이 더 좋다고 해석하면 안 된다. 실제로 ARI/NMI는 K=4~5 이후 떨어지는 경향을 보인다.
+
+### 18.3 K 선택 실험 결론
+
+이번 K-selection diagnostics의 결론은 다음과 같다.
+
+```text
+1. KMeans 내부지표 기준의 자연 구조는 여전히 K=2~3이다.
+2. GMM BIC/AIC는 K=5가 아니라 K=9~10 mixture component를 선호한다.
+3. label-free K 선택 기준만으로 5개 persona를 자연 선택하게 만들기는 어렵다.
+4. 5개 persona 복원이 목적이라면 K=5 constrained clustering 평가가 더 타당하다.
+5. 이 실험 범위에서는 F13 + core temporal + standard_l2 + KMeans(k=5)가 가장 해석 가능한 기준선이다.
+```
+
+생성된 파일은 다음과 같다.
+
+```text
+Dashboard/dashboard-be/feature-pipeline-experiment/k_selection_diagnostics.py
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/k-selection-diagnostics/criterion-selections.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/k-selection-diagnostics/F13_core_temporal-kmeans-k-grid.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/k-selection-diagnostics/F13_core_temporal-gmm-k-grid.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/k-selection-diagnostics/F0_core_temporal-kmeans-k-grid.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/k-selection-diagnostics/F0_core_temporal-gmm-k-grid.csv
+```
+
+### 18.4 Sequence transition의 robust K selection
+
+sequence transition top 20 feature를 추가한 representation에 대해 Silhouette 외의 label-free K 선택 기준을 실행했다.
+
+```text
+- Bootstrap consensus stability: bootstrap train sample마다 validation assignment가 재현되는가
+- Prediction Strength: 서로 다른 half-sample에서 학습한 cluster가 반대 half-sample에도 유지되는가
+- Gap Statistic: 동일 범위의 무작위 reference data보다 clustering 이득이 있는가
+```
+
+| K selection criterion | Selected K | Test Majority Acc | Test Macro-F1 | Test ARI |
+|---|---:|---:|---:|---:|
+| Silhouette 최대 | 2 | 0.400 | 0.233 | 0.364 |
+| Bootstrap consensus 최대 | 2 | 0.400 | 0.233 | 0.364 |
+| Prediction Strength 최대 | 2 | 0.400 | 0.233 | 0.364 |
+| Gap Statistic | 10 | 0.795 | 0.647 | 0.449 |
+
+K=5의 label-free 지표는 다음과 같았다.
+
+```text
+Silhouette = 0.254
+Consensus stability ARI = 0.869
+Prediction Strength = 0.506
+```
+
+반면 K=2는 Silhouette `0.351`, consensus stability `0.999`, Prediction Strength `0.993`으로 가장 높은 재현성을 보였다.
+
+Gap Statistic은 K가 커질수록 계속 증가해 K=10을 선택했다. 이는 40차원 L2-normalized feature 공간에서 bounding-box uniform reference가 실제 데이터의 manifold를 적절히 표현하지 못하는 high-dimensional reference artifact 가능성이 크다. 따라서 이 Gap 결과는 K=10이 의미 있는 persona 수라는 근거로 해석하지 않는다.
+
+이 실험의 결론은 다음과 같다.
+
+```text
+1. Sequence transition은 K=5 constrained persona recovery를 크게 개선한다.
+2. 그러나 자연 K 선택 기준은 K=5에 합의하지 않는다.
+3. Silhouette, consensus, Prediction Strength는 모두 K=2의 상위 행동군 구조를 선호한다.
+4. 따라서 K=5는 자연 군집 수가 아니라 사전 정의 persona taxonomy를 복원하는 constrained segmentation으로 보고해야 한다.
+```
+
+생성된 파일은 다음과 같다.
+
+```text
+Dashboard/dashboard-be/feature-pipeline-experiment/robust_k_selection.py
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/robust-k-selection/k-grid.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/robust-k-selection/criterion-selections.csv
+```
+
+---
+
+## 19. 추가 실험: K=5 model 및 sequence transition 비교
+
+### 19.1 Clustering model 비교
+
+동일한 `F13 + core temporal + standard_l2` feature와 `K=5` 조건에서 KMeans, GMM, Agglomerative, Spectral clustering을 비교했다.
+
+Spectral과 Agglomerative는 새 session에 대한 `predict` API가 없으므로, train에서 만든 unsupervised cluster ID를 각각 최근접 이웃과 최근접 centroid로 validation/test에 전파했다. 정답 persona label은 모든 model 및 hyperparameter 선택 과정에서 사용하지 않았다.
+
+| Model | Validation Silhouette | Test ARI | Macro-F1 | Hungarian Acc | Majority Acc |
+|---|---:|---:|---:|---:|---:|
+| Agglomerative | 0.330 | 0.578 | 0.672 | 0.698 | 0.716 |
+| KMeans | 0.326 | 0.634 | 0.688 | 0.725 | 0.748 |
+| GMM full | 0.325 | 0.535 | 0.545 | 0.607 | 0.633 |
+| GMM diag | 0.277 | 0.584 | 0.656 | 0.671 | 0.703 |
+| Spectral (best tested) | 0.280 | 0.222 | 0.269 | 0.341 | 0.406 |
+
+Agglomerative가 validation silhouette에서는 가장 높았지만, persona 복원 지표는 KMeans가 가장 좋았다. 따라서 clustering head를 바꾸는 것만으로는 5 persona 복원을 개선하지 못했다.
+
+### 19.2 Session transition feature
+
+기존 targeted scalar feature와 달리, 원본 event sequence를 의미 상태로 정규화한 뒤 연속 전이를 count feature로 추가했다.
+
+```text
+예시 상태 전이:
+product -> review
+product -> add_cart
+cart -> checkout_start
+search -> product
+review -> filter
+```
+
+전이 vocabulary는 train split에서 20회 이상 나타난 전이만 사용했다. `F13 + core temporal`에 train 빈도 상위 10, 20, 40개 전이 feature를 각각 추가했고, KMeans(k=5)로 평가했다.
+
+| Variant | Validation Stability ARI | Validation Silhouette | Test ARI | Macro-F1 | Hungarian Acc | Majority Acc |
+|---|---:|---:|---:|---:|---:|---:|
+| Baseline (20 features) | 0.971 | 0.326 | 0.634 | 0.688 | 0.725 | 0.748 |
+| + top 10 transitions | 0.992 | 0.267 | 0.624 | 0.777 | 0.784 | 0.784 |
+| + top 20 transitions | 1.000 | 0.254 | 0.697 | 0.809 | 0.817 | 0.817 |
+| + top 40 transitions | 1.000 | 0.195 | 0.682 | 0.797 | 0.799 | 0.799 |
+
+### 19.3 Independent split 재현
+
+동일한 experiment를 서로 다른 두 stratified split seed (`17`, `2027`)에서 다시 실행했다. 모든 split에서 persona, difficulty, split source 비율을 유지했다.
+
+| Variant | Split 20260803 Acc | Split 17 Acc | Split 2027 Acc | Mean Acc | Mean Macro-F1 | Mean ARI |
+|---|---:|---:|---:|---:|---:|---:|
+| Baseline | 0.748 | 0.752 | 0.732 | 0.744 | 0.688 | 0.624 |
+| + top 20 transitions | 0.817 | 0.802 | 0.795 | 0.805 | 0.799 | 0.679 |
+| + top 40 transitions | 0.799 | 0.812 | 0.800 | 0.804 | 0.801 | 0.685 |
+
+transition feature는 세 split 모두 baseline을 명확히 넘었다. 특히 top 20 transition은 feature 수가 더 적으면서 평균 Hungarian/majority accuracy `0.805`를 기록했다.
+
+다만 validation stability만으로 transition top 20을 항상 선택할 수는 없었다. split seed 17에서는 baseline, top 20, top 40이 모두 stability `1.000`이었다. 따라서 현재 결과는 다음처럼 해석해야 한다.
+
+```text
+1. State-transition representation은 K=5 persona recovery를 robust하게 개선한다.
+2. Silhouette과 stability는 transition dimension 수(10/20/40)를 일관되게 고르기에 충분하지 않다.
+3. top 20은 sparse representation으로서 가장 좋은 accuracy-복잡도 trade-off를 보이는 탐색적 후보이다.
+4. 논문의 최종 pipeline으로 확정하려면 transition dimension 수를 사전에 고정하거나 별도의 development split을 둬야 한다.
+```
+
+Silhouette은 baseline보다 낮으므로, sequence representation이 더 응집적인 Euclidean blob을 만들었다기보다 persona recovery에 유리한 순서 구조를 제공한 것으로 해석해야 한다.
+
+생성된 파일은 다음과 같다.
+
+```text
+Dashboard/dashboard-be/feature-pipeline-experiment/fixed_k5_model_comparison.py
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/fixed-k5-model-comparison/F13_core_temporal-results.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/sequence_transition_experiment.py
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/sequence-transition-experiment/results.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/sequence-transition-experiment/vocabulary.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/sequence-transition-experiment/split-seed-17/results.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/sequence-transition-experiment/split-seed-2027/results.csv
+```
+
+---
+
+## 20. 생성된 주요 결과 파일
 
 ### Natural K 전체 결과
 
@@ -1120,10 +1324,35 @@ Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/temporal-feature-re
 Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/temporal-contingency/
 ```
 
+### K-selection diagnostics
+
+```text
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/k-selection-diagnostics/criterion-selections.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/k-selection-diagnostics/*-kmeans-k-grid.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/k-selection-diagnostics/*-gmm-k-grid.csv
+```
+
+### sequence robust K selection
+
+```text
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/robust-k-selection/k-grid.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/robust-k-selection/criterion-selections.csv
+```
+
+### K=5 model 및 sequence transition 비교
+
+```text
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/fixed-k5-model-comparison/F13_core_temporal-results.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/sequence-transition-experiment/results.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/sequence-transition-experiment/vocabulary.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/sequence-transition-experiment/split-seed-17/results.csv
+Dashboard/dashboard-be/feature-pipeline-experiment/artifacts/sequence-transition-experiment/split-seed-2027/results.csv
+```
+
 ---
 
-## 19. 최종 한 줄 결론
+## 21. 최종 한 줄 결론
 
 이번 실험은 다음을 보여준다.
 
-> LLM으로 생성한 5개 persona 정보는 현재 19개 행동 feature에 충분히 포함되어 있지만, 비지도 clustering의 자연스러운 거리 구조에서는 5개 persona가 그대로 분리되기보다 `탐색/비교형`, `구매형`, `장바구니 이탈형` 같은 3개 상위 행동군으로 먼저 나타난다. hard 데이터는 이 경향을 강화하지만 유일한 원인은 아니며, 5개 persona를 더 잘 복원하려면 clustering head 변경과 sequence/temporal feature 추가가 필요하다.
+> LLM으로 생성한 5개 persona 정보는 aggregate 행동 feature만으로는 자연스럽게 2~3개 상위 행동군으로 먼저 나타나고, sequence transition을 추가해도 label-free K selection은 K=2를 선호한다. 다만 K=5 constrained KMeans에서는 sequence transition이 5개 persona를 약 0.80 accuracy로 robust하게 복원한다. 따라서 K=5는 자연 군집 수가 아니라 사전 정의 persona taxonomy를 복원하는 constrained segmentation으로 해석해야 한다.

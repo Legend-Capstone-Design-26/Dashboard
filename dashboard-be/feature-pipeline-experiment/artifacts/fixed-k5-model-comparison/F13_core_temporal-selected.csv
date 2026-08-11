@@ -1,0 +1,2 @@
+configuration,model,k,val_silhouette,val_stability_ari,test_ari,test_nmi,test_ami,test_macro_f1,test_hungarian_accuracy,test_majority_accuracy,covariance_type,n_neighbors
+agglomerative,agglomerative,5,0.33012473687265576,1.0,0.5782958350686597,0.6865659371616557,0.6851129002647122,0.6717931912947014,0.6977777777777779,0.7164444444444444,,
